@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>РОЗКЛАД // НТУ «ДП»</title>
+
+  <!-- Жирні шрифти з сильним характером -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@600;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #F4EFE6;
+      --black: #0F0F11;
+      --white: #FFFFFF;
+      
+      --lime: #C6FF3D;
+      --pink: #FF4FD8;
+      --yellow: #FFD400;
+      --cyan: #00F5D4;
+      --blue: #3D5AFE;
+      --orange: #FF6B00;
+      --purple: #B388FF;
+      
+      --border-thick: 3.5px solid var(--black);
+      --shadow-hard: 6px 6px 0px var(--black);
+      --shadow-hard-lg: 9px 9px 0px var(--black);
+      --shadow-hard-sm: 3px 3px 0px var(--black);
+      
+      --bounce-ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--black);
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      background-image: radial-gradient(var(--black) 1px, transparent 0);
+      background-size: 28px 28px;
+      position: relative;
+    }
+
+    .bg-floating-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    .float-item {
+      position: absolute;
+      font-size: 1.8rem;
+      user-select: none;
+      opacity: 0.35;
+      filter: drop-shadow(2px 2px 0px var(--black));
+      animation: floatDrift linear infinite alternate;
+      will-change: transform;
+    }
+
+    @keyframes floatDrift {
+      0% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+      }
+      50% {
+        transform: translate(25px, -35px) rotate(15deg) scale(1.1);
+      }
+      100% {
+        transform: translate(-20px, 20px) rotate(-12deg) scale(0.95);
+      }
+    }
+
+    .ticker-wrap {
+      background: var(--black);
+      color: var(--lime);
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.95rem;
+      padding: 0.6rem 0;
+      overflow: hidden;
+      white-space: nowrap;
+      border-bottom: var(--border-thick);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+    }
+
+    .ticker {
+      display: inline-block;
+      animation: marquee 20s linear infinite;
+    }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .header {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      position: relative;
+    }
+
+    @media (min-width: 900px) {
+      .header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+    }
+
+    .header-main {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    .badge-pill {
+      background: var(--yellow);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard-sm);
+      font-weight: 900;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+      transform: rotate(-2deg);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .badge-pill.pink {
+      background: var(--pink);
+      color: var(--white);
+      transform: rotate(2deg);
+    }
+
+    .main-title {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: clamp(2.4rem, 6vw, 4.2rem);
+      line-height: 0.95;
+      text-transform: uppercase;
+      letter-spacing: -0.04em;
+      color: var(--black);
+      position: relative;
+    }
+
+    .main-title span {
+      display: inline-block;
+      background: var(--lime);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard);
+      padding: 0 0.4rem;
+      transform: rotate(-1deg);
+      margin-left: 0.2rem;
+    }
+
+    .controls-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .btn-brutal {
+      background: var(--white);
+      color: var(--black);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard);
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      padding: 0.8rem 1.4rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s var(--bounce-ease), background-color 0.15s ease;
+      user-select: none;
+    }
+
+    .btn-brutal:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 8px 8px 0px var(--black);
+    }
+
+    .btn-brutal:active {
+      transform: translate(4px, 4px) !important;
+      box-shadow: 1px 1px 0px var(--black) !important;
+    }
+
+    .btn-brutal.active {
+      background: var(--cyan);
+      box-shadow: var(--shadow-hard);
+    }
+
+    .btn-brutal.pink-accent.active {
+      background: var(--pink);
+      color: var(--white);
+    }
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.75rem;
+    }
+
+    @media (min-width: 640px) {
+      .schedule-grid {
+        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      }
+    }
+
+    @media (min-width: 1250px) {
+      .schedule-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
+
+    .schedule-grid.today-only {
+      display: flex;
+      justify-content: center;
+    }
+
+    .schedule-grid.today-only .day-card {
+      max-width: 580px;
+      width: 100%;
+      transform: rotate(0deg) !important;
+    }
+
+    .day-card {
+      background: var(--white);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard-lg);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s var(--bounce-ease);
+      position: relative;
+    }
+
+    .day-card:nth-child(1) { transform: rotate(-0.8deg); }
+    .day-card:nth-child(2) { transform: rotate(0.8deg); }
+    .day-card:nth-child(3) { transform: rotate(-1.1deg); }
+    .day-card:nth-child(4) { transform: rotate(0.6deg); }
+    .day-card:nth-child(5) { transform: rotate(-0.7deg); }
+
+    .day-card:hover {
+      transform: translateY(-6px) scale(1.01) !important;
+      box-shadow: 12px 12px 0px var(--black);
+      z-index: 20;
+    }
+
+    .day-card.is-today {
+      box-shadow: 10px 10px 0px var(--pink) !important;
+      border-color: var(--black);
+      outline: 4px solid var(--black);
+    }
+
+    .day-header {
+      padding: 1rem 1.1rem;
+      border-bottom: var(--border-thick);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--yellow);
+    }
+
+    .day-card:nth-child(1) .day-header { background: var(--yellow); }
+    .day-card:nth-child(2) .day-header { background: var(--cyan); }
+    .day-card:nth-child(3) .day-header { background: var(--pink); color: #fff; }
+    .day-card:nth-child(4) .day-header { background: var(--lime); }
+    .day-card:nth-child(5) .day-header { background: var(--orange); color: #fff; }
+
+    .day-title {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 1.35rem;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+    }
+
+    .day-meta-badge {
+      font-size: 0.75rem;
+      font-weight: 900;
+      background: var(--black);
+      color: var(--white);
+      padding: 0.25rem 0.55rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .pairs-body {
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: #FAFAFA;
+      flex: 1;
+    }
+
+    .pair-block {
+      background: var(--white);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard-sm);
+      border-radius: 8px;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      position: relative;
+      transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s var(--bounce-ease), background-color 0.2s ease;
+      user-select: none;
+    }
+
+    .pair-block:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0px var(--black);
+    }
+
+    .pair-block.done {
+      background: #EBEAE5;
+      opacity: 0.7;
+      text-decoration: line-through;
+    }
+
+    @keyframes pairBreathing {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: var(--shadow-hard-sm);
+      }
+      50% {
+        transform: scale(1.018);
+        box-shadow: 6px 6px 0px var(--pink);
+      }
+    }
+
+    .pair-block.is-current-pair {
+      animation: pairBreathing 3.2s ease-in-out infinite;
+      border-color: var(--pink) !important;
+      outline: 3px solid var(--pink);
+      background: #FFF9FE;
+      z-index: 5;
+    }
+
+    .pair-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .pair-number {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.8rem;
+      background: var(--black);
+      color: var(--white);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .pair-hours {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--black);
+      background: var(--bg);
+      border: 2px solid var(--black);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    .live-badge {
+      background: var(--pink);
+      color: var(--white);
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      border: 1.5px solid var(--black);
+      animation: blinker 1.5s ease-in-out infinite;
+    }
+
+    @keyframes blinker {
+      50% { opacity: 0.6; }
+    }
+
+    .pair-name {
+      font-size: 0.98rem;
+      font-weight: 900;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    .pair-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.2rem;
+      padding-top: 0.4rem;
+      border-top: 2px dashed rgba(0,0,0,0.15);
+    }
+
+    .teacher-tag {
+      font-size: 0.8rem;
+      font-weight: 800;
+      background: var(--lime);
+      border: 2px solid var(--black);
+      padding: 0.2rem 0.5rem;
+      border-radius: 5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .btn-done-check {
+      background: var(--white);
+      border: 2px solid var(--black);
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 900;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      box-shadow: 2px 2px 0px var(--black);
+      transition: all 0.1s var(--bounce-ease);
+    }
+
+    .btn-done-check:hover {
+      background: var(--yellow);
+    }
+
+    .btn-done-check:active {
+      transform: translate(2px, 2px);
+      box-shadow: 0 0 0;
+    }
+
+    .pair-block.is-window {
+      background: var(--bg);
+      border: 3px dashed var(--black);
+      box-shadow: none;
+      padding: 0.9rem;
+    }
+
+    .window-title {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.92rem;
+      color: var(--black);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .window-subtitle {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #666;
+    }
+
+    .weekend-card {
+      grid-column: 1 / -1;
+      background: var(--yellow);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard-lg);
+      border-radius: 16px;
+      padding: 4rem 2rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+      transform: rotate(-1deg);
+    }
+
+    .weekend-card h2 {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      text-transform: uppercase;
+    }
+
+    .meme-sticker {
+      position: absolute;
+      top: -12px;
+      right: -8px;
+      background: var(--pink);
+      color: var(--white);
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.7rem;
+      padding: 0.3rem 0.6rem;
+      border: 2px solid var(--black);
+      box-shadow: var(--shadow-hard-sm);
+      transform: rotate(12deg);
+      border-radius: 4px;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    /* Canvas для конфетті */
+    #confettiCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .footer {
+      margin-top: auto;
+      background: var(--white);
+      border-top: var(--border-thick);
+      padding: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      font-weight: 800;
+      position: relative;
+      z-index: 10;
+    }
+
+    .clock-badge {
+      background: var(--lime);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard-sm);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-family: 'Archivo Black', sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Плаваючі фонові елементи (мемні декоративні штучки) -->
+  <div class="bg-floating-container" id="floatingBg"></div>
+
+  <!-- Конфетті canvas -->
+  <canvas id="confettiCanvas"></canvas>
+
+  <div class="ticker-wrap">
+    <div class="ticker">
+      ⚡ НТУ «ДНІПРОВСЬКА ПОЛІТЕХНІКА» 🔥 1899 ⚡ РОЗКЛАД ПАР ⚡ 8:00 ПЕРША ПАРА 💀 НЕ СПИ НА ВИШМАТІ 🚀 ЗДАВАЙ ЛАБИ ВЧАСНО 🤙 ВІКНО = ЧАС ДЛЯ КАВИ ☕️ ⚡ НТУ «ДНІПРОВСЬКА ПОЛІТЕХНІКА» 🔥 1899 ⚡ РОЗКЛАД ПАР ⚡ 8:00 ПЕРША ПАРА 💀
+    </div>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- Шапка -->
+    <header class="header">
+      <div class="header-main">
+        <div class="tags-row">
+          <div class="badge-pill">🔥 НТУ ДП · 1899</div>
+          <div class="badge-pill pink">⚡ ДЕННИЙ СТАВІНГ</div>
+        </div>
+        <h1 class="main-title">РОЗКЛАД <span>ПАР</span> 🤙</h1>
+      </div>
+
+      <!-- Кнопки-перемикачі -->
+      <div class="controls-wrapper">
+        <button class="btn-brutal active" id="btnWeek" onclick="setViewMode('week')">
+          📅 ВЕСЬ ТИЖДЕНЬ
+        </button>
+        <button class="btn-brutal pink-accent" id="btnToday" onclick="setViewMode('today')">
+          ⚡ СЬОГОДНІ
+        </button>
+      </div>
+    </header>
+
+    <!-- Сетка дней -->
+    <main class="schedule-grid" id="scheduleContainer"></main>
+
+    <!-- Футер -->
+    <footer class="footer">
+      <div>🏛️ НАЦІОНАЛЬНИЙ ТЕХНІЧНИЙ УНІВЕРСИТЕТ «ДНІПРОВСЬКА ПОЛІТЕХНІКА»</div>
+      <div class="clock-badge" id="liveClock">⏰ 00:00:00</div>
+    </footer>
+  </div>
+
+  <script>
+    // Точний графік дзвінків НТУ «ДП»
+    const timeSlots = {
+      1: { text: "8:00 – 9:20", start: 8 * 60, end: 9 * 60 + 20 },
+      2: { text: "9:35 – 10:55", start: 9 * 60 + 35, end: 10 * 60 + 55 },
+      3: { text: "11:20 – 12:40", start: 11 * 60 + 20, end: 12 * 60 + 40 },
+      4: { text: "12:55 – 14:15", start: 12 * 60 + 55, end: 14 * 60 + 15 },
+      5: { text: "14:30 – 15:50", start: 14 * 60 + 30, end: 15 * 60 + 50 },
+      6: { text: "16:05 – 17:25", start: 16 * 60 + 5, end: 17 * 60 + 25 },
+      7: { text: "17:35 – 18:55", start: 17 * 60 + 35, end: 18 * 60 + 55 },
+      8: { text: "19:05 – 20:25", start: 19 * 60 + 5, end: 20 * 60 + 25 }
+    };
+
+    const scheduleData = [
+      {
+        dayId: 1,
+        dayName: "Понеділок",
+        badge: "Початок пекла 💀",
+        sticker: "ТРЕБА ВИЖИТИ",
+        pairs: [
+          { num: 1, subject: "-", teacher: "" },
+          { num: 2, subject: "Цивілізаційні процеси в укр. суспільстві", teacher: "Первий" },
+          { num: 3, subject: "Вступ до фаху", teacher: "Новицький" },
+          { num: 4, subject: "Вступ до фаху", teacher: "Новицький" }
+        ]
+      },
+      {
+        dayId: 2,
+        dayName: "Вівторок",
+        badge: "Спорт + Фізика ⚡",
+        sticker: "ХАРДКОР",
+        pairs: [
+          { num: 1, subject: "Фізична культура і спорт", teacher: "Спортзал 🏃‍♂️" },
+          { num: 2, subject: "Інженерна та комп'ютерна графіка", teacher: "Довгаль" },
+          { num: 3, subject: "Фізика", teacher: "Куцева" },
+          { num: 4, subject: "Фізика", teacher: "Куцева" }
+        ]
+      },
+      {
+        dayId: 3,
+        dayName: "Середа",
+        badge: "Екватор 🧠",
+        sticker: "ВИШМАТ ТАЙМ",
+        pairs: [
+          { num: 1, subject: "-", teacher: "" },
+          { num: 2, subject: "Іноземна мова", teacher: "English 🇬🇧" },
+          { num: 3, subject: "Вища математика", teacher: "Уланова" },
+          { num: 4, subject: "Інженерна та комп'ютерна графіка", teacher: "Довгаль" }
+        ]
+      },
+      {
+        dayId: 4,
+        dayName: "Четвер",
+        badge: "Кодинг + Матан 💻",
+        sticker: "КОДИНГ 🚀",
+        pairs: [
+          { num: 1, subject: "-", teacher: "" },
+          { num: 2, subject: "Вища математика", teacher: "Клименко" },
+          { num: 3, subject: "Комп'ютерні технології та програмування", teacher: "Колісниченко" },
+          { num: 4, subject: "Комп'ютерні технології та програмування", teacher: "Колісниченко" }
+        ]
+      },
+      {
+        dayId: 5,
+        dayName: "П'ятниця",
+        badge: "Майже свобода 🎉",
+        sticker: "ФІНІШ 🏁",
+        pairs: [
+          { num: 1, subject: "Цивілізаційні процеси в укр. суспільстві", teacher: "Первий" },
+          { num: 2, subject: "-", teacher: "" },
+          { num: 3, subject: "-", teacher: "" },
+          { num: 4, subject: "Цивілізаційні процеси в укр. суспільстві", teacher: "Первий" }
+        ]
+      }
+    ];
+
+    let currentView = 'week';
+    const completedPairs = new Set();
+
+    function getCurrentPairNum() {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      for (const [num, slot] of Object.entries(timeSlots)) {
+        if (currentMinutes >= slot.start && currentMinutes <= slot.end) {
+          return parseInt(num, 10);
+        }
+      }
+      return null;
+    }
+
+    function initFloatingBackground() {
+      const container = document.getElementById('floatingBg');
+      if (!container) return;
+
+      const memeItems = ['⚡', '⭐', '👾', '☕', '🎮', '🦄', '🍕', '💥', '🚀', '🧠', '💻', '🔥', '✨', '🗿', '💎'];
+      const count = 16; // Кількість декоративних елементів
+
+      container.innerHTML = '';
+
+      for (let i = 0; i < count; i++) {
+        const item = document.createElement('div');
+        item.className = 'float-item';
+        item.textContent = memeItems[i % memeItems.length];
+
+        // Довільні стартові позиції та параметри анімації
+        const posX = Math.random() * 95; // %
+        const posY = Math.random() * 95; // %
+        const duration = 12 + Math.random() * 16; // 12s - 28s
+        const delay = -(Math.random() * 10); // Від'ємний затрим для природності
+        const size = 1.4 + Math.random() * 1.2; // rem
+
+        item.style.left = `${posX}vw`;
+        item.style.top = `${posY}vh`;
+        item.style.fontSize = `${size}rem`;
+        item.style.animationDuration = `${duration}s`;
+        item.style.animationDelay = `${delay}s`;
+
+        container.appendChild(item);
+      }
+    }
+
+    function renderSchedule() {
+      const container = document.getElementById('scheduleContainer');
+      const now = new Date();
+      const today = now.getDay(); // 1 = Пн, 5 = Пт, 0/6 = Вихідні
+      const currentPairNum = getCurrentPairNum();
+
+      container.innerHTML = '';
+
+      if (currentView === 'today') {
+        container.classList.add('today-only');
+
+        if (today === 0 || today === 6) {
+          container.innerHTML = `
+            <div class="weekend-card">
+              <div style="font-size: 4rem;">🏖️🍕🎮</div>
+              <h2>ВИХІДНИЙ! СПИ ДАЛІ</h2>
+              <p style="font-size: 1.1rem; font-weight: 800; max-width: 450px;">
+                Сьогодні ніяких пар. Відпочивай або чекни графік на весь тиждень зверху!
+              </p>
+            </div>
+          `;
+          return;
+        }
+
+        const todayData = scheduleData.find(d => d.dayId === today);
+        if (todayData) {
+          container.appendChild(createDayCard(todayData, true, currentPairNum));
+        }
+      } else {
+        container.classList.remove('today-only');
+        scheduleData.forEach((dayData) => {
+          const isToday = dayData.dayId === today;
+          container.appendChild(createDayCard(dayData, isToday, isToday ? currentPairNum : null));
+        });
+      }
+    }
+
+    function createDayCard(dayData, isToday, currentPairNum) {
+      const card = document.createElement('div');
+      card.className = `day-card ${isToday ? 'is-today' : ''}`;
+
+      let pairsHtml = '';
+      dayData.pairs.forEach((pair) => {
+        const timeObj = timeSlots[pair.num] || { text: "" };
+        const time = timeObj.text;
+        const isEmpty = pair.subject === "-";
+        const pairKey = `${dayData.dayId}-${pair.num}`;
+        const isDone = completedPairs.has(pairKey);
+        const isCurrent = (isToday && pair.num === currentPairNum);
+
+        if (isEmpty) {
+          pairsHtml += `
+            <div class="pair-block is-window ${isCurrent ? 'is-current-pair' : ''}">
+              <div class="pair-top-row">
+                <span class="pair-number">#${pair.num} ПАРА</span>
+                <span class="pair-hours">⏰ ${time}</span>
+                ${isCurrent ? `<span class="live-badge">🔴 ЗАРАЗ</span>` : ''}
+              </div>
+              <div class="window-title">ВІКНО 🎉 Заряджайся</div>
+              <div class="window-subtitle">Кава ☕️ / ТікТок 📱 / Чіл 😎</div>
+            </div>
+          `;
+        } else {
+          pairsHtml += `
+            <div class="pair-block ${isDone ? 'done' : ''} ${isCurrent ? 'is-current-pair' : ''}" id="card-${pairKey}">
+              <div class="pair-top-row">
+                <span class="pair-number">#${pair.num} ПАРА</span>
+                <span class="pair-hours">⏰ ${time}</span>
+                ${isCurrent ? `<span class="live-badge">🔴 LIVE</span>` : ''}
+              </div>
+              <div class="pair-name">${escapeHtml(pair.subject)}</div>
+              <div class="pair-footer">
+                ${pair.teacher ? `<span class="teacher-tag">👨‍🏫 ${escapeHtml(pair.teacher)}</span>` : `<span></span>`}
+                <button class="btn-done-check" onclick="toggleDone('${pairKey}', event)">
+                  ${isDone ? '✅ ВИЖИВ' : '👌 ВІДСИДІВ'}
+                </button>
+              </div>
+            </div>
+          `;
+        }
+      });
+
+      card.innerHTML = `
+        <div class="meme-sticker">${dayData.sticker}</div>
+        <div class="day-header">
+          <span class="day-title">${dayData.dayName}</span>
+          <span class="day-meta-badge">${isToday ? '🔥 СЬОГОДНІ' : dayData.badge}</span>
+        </div>
+        <div class="pairs-body">
+          ${pairsHtml}
+        </div>
+      `;
+
+      return card;
+    }
+
+    function toggleDone(pairKey, event) {
+      event.stopPropagation();
+      const cardEl = document.getElementById(`card-${pairKey}`);
+      
+      if (completedPairs.has(pairKey)) {
+        completedPairs.delete(pairKey);
+        if (cardEl) {
+          cardEl.classList.remove('done');
+          const btn = cardEl.querySelector('.btn-done-check');
+          if (btn) btn.textContent = '👌 ВІДСИДІВ';
+        }
+      } else {
+        completedPairs.add(pairKey);
+        if (cardEl) {
+          cardEl.classList.add('done');
+          const btn = cardEl.querySelector('.btn-done-check');
+          if (btn) btn.textContent = '✅ ВИЖИВ';
+        }
+        const rect = event.target.getBoundingClientRect();
+        launchConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      }
+    }
+
+    function setViewMode(mode) {
+      currentView = mode;
+      document.getElementById('btnWeek').classList.toggle('active', mode === 'week');
+      document.getElementById('btnToday').classList.toggle('active', mode === 'today');
+      renderSchedule();
+    }
+
+    function escapeHtml(str) {
+      const p = document.createElement('p');
+      p.textContent = str;
+      return p.innerHTML;
+    }
+
+    let lastCheckedPair = null;
+    function updateClock() {
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      const clockEl = document.getElementById('liveClock');
+      if (clockEl) clockEl.textContent = `⏰ ${timeStr}`;
+
+      // Перевіряємо зміну пар щохвилини
+      const currentPair = getCurrentPairNum();
+      if (currentPair !== lastCheckedPair) {
+        lastCheckedPair = currentPair;
+        renderSchedule();
+      }
+    }
+
+    const canvas = document.getElementById('confettiCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function launchConfetti(x, y) {
+      const colors = ['#C6FF3D', '#FF4FD8', '#FFD400', '#00F5D4', '#3D5AFE', '#FF6B00', '#0F0F11'];
+      for (let i = 0; i < 45; i++) {
+        particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 14,
+          vy: (Math.random() - 0.8) * 14,
+          size: Math.random() * 9 + 5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rot: Math.random() * 360,
+          vRot: (Math.random() - 0.5) * 12,
+          alpha: 1
+        });
+      }
+    }
+
+    function confettiLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.35;
+        p.rot += p.vRot;
+        p.alpha -= 0.016;
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rot * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.strokeRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+
+        if (p.alpha <= 0) particles.splice(i, 1);
+      }
+      requestAnimationFrame(confettiLoop);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initFloatingBackground();
+      renderSchedule();
+      updateClock();
+      setInterval(updateClock, 1000);
+      confettiLoop();
+    });
+  </script>
+</body>
+</html>
