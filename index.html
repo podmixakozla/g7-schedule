@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>РОЗКЛАД // НТУ «ДП»</title>
+  <title>РОЗКЛАД G7 // НТУ «ДП»</title>
 
   <!-- Жирні шрифти з сильним характером -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,6 +24,12 @@
       --orange: #FF6B00;
       --purple: #B388FF;
       
+      --cal-theory: #D0E8FF;
+      --cal-control: #FFD400;
+      --cal-session: #FF4FD8;
+      --cal-vacation: #B2F2BB;
+      --cal-practice: #FFF3BF;
+
       --border-thick: 3.5px solid var(--black);
       --shadow-hard: 6px 6px 0px var(--black);
       --shadow-hard-lg: 9px 9px 0px var(--black);
@@ -74,15 +80,9 @@
     }
 
     @keyframes floatDrift {
-      0% {
-        transform: translate(0, 0) rotate(0deg) scale(1);
-      }
-      50% {
-        transform: translate(25px, -35px) rotate(15deg) scale(1.1);
-      }
-      100% {
-        transform: translate(-20px, 20px) rotate(-12deg) scale(0.95);
-      }
+      0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+      50% { transform: translate(25px, -35px) rotate(15deg) scale(1.1); }
+      100% { transform: translate(-20px, 20px) rotate(-12deg) scale(0.95); }
     }
 
     .ticker-wrap {
@@ -171,6 +171,12 @@
       transform: rotate(2deg);
     }
 
+    .badge-pill.cyan {
+      background: var(--cyan);
+      color: var(--black);
+      transform: rotate(-1deg);
+    }
+
     .main-title {
       font-family: 'Archivo Black', sans-serif;
       font-size: clamp(2.4rem, 6vw, 4.2rem);
@@ -204,14 +210,14 @@
       border: var(--border-thick);
       box-shadow: var(--shadow-hard);
       font-family: 'Archivo Black', sans-serif;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       text-transform: uppercase;
-      padding: 0.8rem 1.4rem;
+      padding: 0.8rem 1.25rem;
       border-radius: 8px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.5rem;
       transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s var(--bounce-ease), background-color 0.15s ease;
       user-select: none;
     }
@@ -234,6 +240,11 @@
     .btn-brutal.pink-accent.active {
       background: var(--pink);
       color: var(--white);
+    }
+
+    .btn-brutal.yellow-accent.active {
+      background: var(--yellow);
+      color: var(--black);
     }
 
     .schedule-grid {
@@ -272,7 +283,7 @@
       border-radius: 14px;
       display: flex;
       flex-direction: column;
-      overflow: visible; /* Дозволяє стікеру виходити за краї без обрізання чи злітання */
+      overflow: visible;
       transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s var(--bounce-ease);
       position: relative;
     }
@@ -331,7 +342,6 @@
       white-space: nowrap;
     }
 
-    /* Надійна фіксація червоних/рожевих наліпок над каркою дня */
     .meme-sticker {
       position: absolute;
       top: -12px;
@@ -511,6 +521,367 @@
       text-transform: uppercase;
     }
 
+    .calendar-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      width: 100%;
+    }
+
+    .calendar-box {
+      background: var(--white);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard-lg);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .calendar-title-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: var(--border-thick);
+      padding-bottom: 0.85rem;
+    }
+
+    .calendar-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Sticky Legend Container */
+    .legend-container.sticky-legend {
+      position: sticky;
+      top: 48px;
+      z-index: 85;
+      background: var(--white);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard);
+      padding: 0.85rem 1.1rem;
+      border-radius: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      align-items: center;
+    }
+
+    .legend-title {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.88rem;
+      text-transform: uppercase;
+      color: var(--black);
+      background: var(--yellow);
+      border: 2px solid var(--black);
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      box-shadow: 2px 2px 0px var(--black);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.84rem;
+      font-weight: 900;
+    }
+
+    .legend-color-box {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--black);
+      border-radius: 5px;
+      box-shadow: 2px 2px 0px var(--black);
+    }
+
+    .legend-color-box.theory { background: var(--cal-theory); }
+    .legend-color-box.control { background: var(--cal-control); }
+    .legend-color-box.session { background: var(--cal-session); }
+    .legend-color-box.vacation { background: var(--cal-vacation); }
+    .legend-color-box.practice { background: var(--cal-practice); }
+
+    .legend-text-num {
+      color: #1E3A8A;
+      font-weight: 900;
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--white);
+      border: 2px solid var(--black);
+      padding: 0 0.35rem;
+      border-radius: 4px;
+      box-shadow: 2px 2px 0px var(--black);
+    }
+
+    .legend-text-den {
+      color: var(--black);
+      font-weight: 800;
+      background: var(--white);
+      border: 2px solid var(--black);
+      padding: 0 0.35rem;
+      border-radius: 4px;
+      box-shadow: 2px 2px 0px var(--black);
+    }
+
+    .months-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .months-grid {
+        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      }
+    }
+
+    @media (min-width: 1280px) {
+      .months-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Neo-brutalist Month Card */
+    .month-card {
+      background: var(--white);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard);
+      border-radius: 12px;
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      position: relative;
+      transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s var(--bounce-ease), opacity 0.2s ease;
+    }
+
+    .month-card.is-current-month {
+      border: 4px solid var(--black) !important;
+      box-shadow: 9px 9px 0px var(--pink) !important;
+      opacity: 1 !important;
+      z-index: 10;
+    }
+
+    .month-card.is-other-month {
+      opacity: 0.88;
+    }
+
+    .month-card.is-other-month:hover {
+      opacity: 1;
+      transform: translateY(-4px);
+      box-shadow: 8px 8px 0px var(--black);
+    }
+
+    .current-month-sticker {
+      position: absolute;
+      top: -14px;
+      right: 14px;
+      background: var(--pink);
+      color: var(--white);
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.78rem;
+      padding: 0.3rem 0.7rem;
+      border: 2.5px solid var(--black);
+      box-shadow: var(--shadow-hard-sm);
+      transform: rotate(3deg);
+      border-radius: 6px;
+      z-index: 25;
+      pointer-events: none;
+    }
+
+    .month-name {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 1.15rem;
+      text-transform: uppercase;
+      padding-bottom: 0.5rem;
+      border-bottom: var(--border-thick);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Collapsed Month Bar */
+    .month-strip {
+      background: var(--white);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard-sm);
+      border-radius: 10px;
+      padding: 0.85rem 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 1rem;
+      text-transform: uppercase;
+      transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s var(--bounce-ease), background-color 0.15s ease;
+      user-select: none;
+    }
+
+    .month-strip:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px var(--black);
+      background: var(--yellow);
+    }
+
+    .month-strip-badge {
+      font-size: 0.78rem;
+      background: var(--black);
+      color: var(--white);
+      padding: 0.2rem 0.55rem;
+      border-radius: 5px;
+    }
+
+    /* Weekday Headers */
+    .weekdays-header {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: var(--black);
+      background: var(--yellow);
+      border: 2px solid var(--black);
+      border-radius: 6px;
+      padding: 0.35rem 0;
+      box-shadow: 2px 2px 0px var(--black);
+      margin-bottom: 0.25rem;
+    }
+
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+
+    /* Day Cell Brutalism */
+    .day-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.88rem;
+      font-weight: 800;
+      border-radius: 6px;
+      border: 2px solid var(--black);
+      user-select: none;
+      position: relative;
+      box-shadow: 2px 2px 0px var(--black);
+      transition: transform 0.12s var(--bounce-ease);
+      background: var(--white);
+      cursor: default;
+    }
+
+    .day-cell:hover:not(.empty) {
+      transform: scale(1.1);
+      z-index: 10;
+    }
+
+    .day-cell.empty {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+    }
+
+    .day-cell.type-theory { background: var(--cal-theory); }
+    .day-cell.type-control { background: var(--cal-control); }
+    
+    .day-cell.type-session { 
+      background: var(--cal-session); 
+      color: var(--white); 
+      font-weight: 900;
+    }
+
+    .day-cell.type-vacation { 
+      background-color: var(--cal-vacation);
+      background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.06) 4px, rgba(0,0,0,0.06) 8px);
+      color: #0F5132;
+    }
+
+    .day-cell.type-practice { background: var(--cal-practice); }
+
+    .day-cell.is-numerator {
+      color: #1E3A8A;
+      font-weight: 900;
+      font-size: 0.95rem;
+    }
+
+    .day-cell .session-emoji {
+      position: absolute;
+      top: -5px;
+      right: -3px;
+      font-size: 0.72rem;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    /* Student Day Easter Egg Styling */
+    .day-cell.is-student-day {
+      background: var(--lime) !important;
+      border: 2.5px solid var(--black) !important;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .day-cell.is-student-day::after {
+      content: "🎓";
+      position: absolute;
+      top: -6px;
+      right: -4px;
+      font-size: 0.75rem;
+    }
+
+    /* TODAY PULSE ANIMATION */
+    @keyframes pulseToday {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 3px var(--pink), 0 0 12px var(--pink);
+      }
+      50% {
+        transform: scale(1.18);
+        box-shadow: 0 0 0 5px var(--lime), 0 0 18px var(--lime);
+        z-index: 20;
+      }
+    }
+
+    .day-cell.is-today-cal {
+      animation: pulseToday 1.5s ease-in-out infinite !important;
+      background: var(--yellow) !important;
+      color: var(--black) !important;
+      font-weight: 900 !important;
+      border: 2.5px solid var(--black) !important;
+      z-index: 15;
+    }
+
+    .calendar-footer-bar {
+      background: var(--yellow);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard-sm);
+      border-radius: 12px;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .cat-sticker-card {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--white);
+      border: 2.5px solid var(--black);
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.85rem;
+      transform: rotate(2deg);
+      box-shadow: var(--shadow-hard-sm);
+    }
+
     #confettiCanvas {
       position: fixed;
       top: 0;
@@ -556,7 +927,7 @@
 
   <div class="ticker-wrap">
     <div class="ticker">
-      ⚡ НТУ «ДНІПРОВСЬКА ПОЛІТЕХНІКА» 🔥 1899 ⚡ РОЗКЛАД ПАР ⚡ 8:00 ПЕРША ПАРА 💀 НЕ СПИ НА ВИШМАТІ 🚀 ЗДАВАЙ ЛАБИ ВЧАСНО 🤙 ВІКНО = ЧАС ДЛЯ КАВИ ☕️ ⚡ НТУ «ДНІПРОВСЬКА ПОЛІТЕХНІКА» 🔥 1899 ⚡ РОЗКЛАД ПАР ⚡ 8:00 ПЕРША ПАРА 💀
+      ⚡ НТУ «ДНІПРОВСЬКА ПОЛІТЕХНІКА» 🔥 1899 ⚡ СПЕЦІАЛЬНІСТЬ G7 🎓 РОЗКЛАД ПАР ⚡ 8:00 ПЕРША ПАРА 💀 НЕ СПИ НА ВИШМАТІ 🚀 ЗДАВАЙ ЛАБИ ВЧАСНО 🤙 ВІКНО = ЧАС ДЛЯ КАВИ ☕️ ⚡ НТУ «ДНІПРОВСЬКА ПОЛІТЕХНІКА» 🔥 1899 ⚡ СПЕЦІАЛЬНІСТЬ G7 🎓
     </div>
   </div>
 
@@ -568,11 +939,12 @@
         <div class="tags-row">
           <div class="badge-pill">🔥 НТУ ДП · 1899</div>
           <div class="badge-pill pink">⚡ ДЕННИЙ СТАВІНГ</div>
+          <div class="badge-pill cyan">🎓 СПЕЦІАЛЬНІСТЬ G7</div>
         </div>
-        <h1 class="main-title">РОЗКЛАД <span>ПАР</span> 🤙</h1>
+        <h1 class="main-title">РОЗКЛАД <span>G7</span> 🤙</h1>
       </div>
 
-      <!-- Кнопки-перемикачі -->
+      <!-- Кнопки-перемикачі (3 розділи) -->
       <div class="controls-wrapper">
         <button class="btn-brutal active" id="btnWeek" onclick="setViewMode('week')">
           📅 ВЕСЬ ТИЖДЕНЬ
@@ -580,16 +952,19 @@
         <button class="btn-brutal pink-accent" id="btnToday" onclick="setViewMode('today')">
           ⚡ СЬОГОДНІ
         </button>
+        <button class="btn-brutal yellow-accent" id="btnCalendar" onclick="setViewMode('calendar')">
+          📆 КАЛЕНДАР 2026/27
+        </button>
       </div>
     </header>
 
-    <!-- Сітка днів -->
+    <!-- Основний контент -->
     <main class="schedule-grid" id="scheduleContainer"></main>
 
     <!-- Футер -->
     <footer class="footer">
-      <div>🏛️ НАЦІОНАЛЬНИЙ ТЕХНІЧНИЙ УНІВЕРСИТЕТ «ДНІПРОВСЬКА ПОЛІТЕХНІКА»</div>
-      <div class="clock-badge" id="liveClock">⏰ 00:00:00</div>
+      <div>🏛️ НАЦІОНАЛЬНИЙ ТЕХНІЧНИЙ УНІВЕРСИТЕТ «ДНІПРОВСЬКА ПОЛІТЕХНІКА» | 🎓 СПЕЦІАЛЬНІСТЬ G7</div>
+      <div class="clock-badge" id="liveClock">⏰ Обчислення...</div>
     </footer>
   </div>
 
@@ -669,7 +1044,153 @@
       }
     ];
 
+    const academicCalendarData = [
+      {
+        name: "Вересень 2026",
+        year: 2026,
+        monthIndex: 8,
+        emptyDays: 1,
+        daysCount: 30,
+        weeks: [
+          { start: 1, end: 6, type: "theory", numerator: true },
+          { start: 7, end: 13, type: "theory", numerator: false },
+          { start: 14, end: 20, type: "theory", numerator: true },
+          { start: 21, end: 27, type: "theory", numerator: false },
+          { start: 28, end: 30, type: "theory", numerator: true }
+        ]
+      },
+      {
+        name: "Жовтень 2026",
+        year: 2026,
+        monthIndex: 9,
+        emptyDays: 3,
+        daysCount: 31,
+        weeks: [
+          { start: 1, end: 4, type: "theory", numerator: true },
+          { start: 5, end: 11, type: "theory", numerator: false },
+          { start: 12, end: 18, type: "control", numerator: true },
+          { start: 19, end: 25, type: "theory", numerator: false },
+          { start: 26, end: 31, type: "theory", numerator: true }
+        ]
+      },
+      {
+        name: "Листопад 2026",
+        year: 2026,
+        monthIndex: 10,
+        emptyDays: 6,
+        daysCount: 30,
+        studentDay: 17,
+        weeks: [
+          { start: 1, end: 1, type: "theory", numerator: true },
+          { start: 2, end: 8, type: "theory", numerator: false },
+          { start: 9, end: 15, type: "theory", numerator: true },
+          { start: 16, end: 22, type: "theory", numerator: false },
+          { start: 23, end: 29, type: "control", numerator: true },
+          { start: 30, end: 30, type: "theory", numerator: false }
+        ]
+      },
+      {
+        name: "Грудень 2026",
+        year: 2026,
+        monthIndex: 11,
+        emptyDays: 1,
+        daysCount: 31,
+        weeks: [
+          { start: 1, end: 6, type: "session", numerator: false },
+          { start: 7, end: 13, type: "session", numerator: true },
+          { start: 14, end: 20, type: "vacation", numerator: false },
+          { start: 21, end: 27, type: "vacation", numerator: true },
+          { start: 28, end: 31, type: "vacation", numerator: false }
+        ]
+      },
+      {
+        name: "Січень 2027",
+        year: 2027,
+        monthIndex: 0,
+        emptyDays: 4,
+        daysCount: 31,
+        weeks: [
+          { start: 1, end: 3, type: "vacation", numerator: false },
+          { start: 4, end: 10, type: "vacation", numerator: true },
+          { start: 11, end: 17, type: "vacation", numerator: false },
+          { start: 18, end: 24, type: "vacation", numerator: true },
+          { start: 25, end: 31, type: "theory", numerator: false }
+        ]
+      },
+      {
+        name: "Лютий 2027",
+        year: 2027,
+        monthIndex: 1,
+        emptyDays: 0,
+        daysCount: 28,
+        weeks: [
+          { start: 1, end: 7, type: "theory", numerator: true },
+          { start: 8, end: 14, type: "theory", numerator: false },
+          { start: 15, end: 21, type: "theory", numerator: true },
+          { start: 22, end: 28, type: "theory", numerator: false }
+        ]
+      },
+      {
+        name: "Березень 2027",
+        year: 2027,
+        monthIndex: 2,
+        emptyDays: 0,
+        daysCount: 31,
+        weeks: [
+          { start: 1, end: 7, type: "theory", numerator: true },
+          { start: 8, end: 14, type: "theory", numerator: false },
+          { start: 15, end: 21, type: "theory", numerator: true },
+          { start: 22, end: 28, type: "theory", numerator: false },
+          { start: 29, end: 31, type: "control", numerator: true }
+        ]
+      },
+      {
+        name: "Квітень 2027",
+        year: 2027,
+        monthIndex: 3,
+        emptyDays: 3,
+        daysCount: 30,
+        weeks: [
+          { start: 1, end: 4, type: "control", numerator: true },
+          { start: 5, end: 11, type: "theory", numerator: false },
+          { start: 12, end: 18, type: "theory", numerator: true },
+          { start: 19, end: 25, type: "theory", numerator: false },
+          { start: 26, end: 30, type: "theory", numerator: true }
+        ]
+      },
+      {
+        name: "Травень 2027",
+        year: 2027,
+        monthIndex: 4,
+        emptyDays: 5,
+        daysCount: 31,
+        weeks: [
+          { start: 1, end: 2, type: "theory", numerator: true },
+          { start: 3, end: 9, type: "theory", numerator: false },
+          { start: 10, end: 16, type: "theory", numerator: true },
+          { start: 17, end: 23, type: "theory", numerator: false },
+          { start: 24, end: 30, type: "control", numerator: true },
+          { start: 31, end: 31, type: "session", numerator: false }
+        ]
+      },
+      {
+        name: "Червень 2027",
+        year: 2027,
+        monthIndex: 5,
+        emptyDays: 1,
+        daysCount: 30,
+        weeks: [
+          { start: 1, end: 6, type: "session", numerator: false },
+          { start: 7, end: 13, type: "session", numerator: true },
+          { start: 14, end: 20, type: "theory", numerator: false },
+          { start: 21, end: 27, type: "practice", numerator: true },
+          { start: 28, end: 30, type: "practice", numerator: false }
+        ]
+      }
+    ];
+
     let currentView = 'week';
+    let expandedMonthsMap = {};
 
     function getCurrentPairNum() {
       const now = new Date();
@@ -721,6 +1242,12 @@
 
       container.innerHTML = '';
 
+      if (currentView === 'calendar') {
+        container.classList.remove('today-only');
+        container.appendChild(renderCalendarView());
+        return;
+      }
+
       if (currentView === 'today') {
         container.classList.add('today-only');
 
@@ -730,7 +1257,7 @@
               <div style="font-size: 4rem;">🏖️🍕🎮</div>
               <h2>ВИХІДНИЙ! СПИ ДАЛІ</h2>
               <p style="font-size: 1.1rem; font-weight: 800; max-width: 450px;">
-                Сьогодні ніяких пар. Відпочивай або чекни графік на весь тиждень зверху!
+                Сьогодні ніяких пар. Відпочивай або чекни розклад / календар зверху!
               </p>
             </div>
           `;
@@ -747,6 +1274,193 @@
           const isToday = dayData.dayId === today;
           container.appendChild(createDayCard(dayData, isToday, isToday ? currentPairNum : null));
         });
+      }
+    }
+
+    function renderCalendarView() {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'calendar-wrapper';
+      wrapper.style.gridColumn = '1 / -1';
+
+      const now = new Date();
+      const curMonth = now.getMonth();
+      const curDate = now.getDate();
+      const curYear = now.getFullYear();
+
+      // Знаходимо індекс поточного місяця в даного навчального року
+      let currentMonthIdx = academicCalendarData.findIndex(m => m.year === curYear && m.monthIndex === curMonth);
+      if (currentMonthIdx === -1) {
+        currentMonthIdx = 0; // За замовчуванням Вересень 2026
+      }
+
+      // За замовчуванням відкриваємо тільки поточний та наступний місяць
+      if (Object.keys(expandedMonthsMap).length === 0) {
+        expandedMonthsMap[currentMonthIdx] = true;
+        if (currentMonthIdx + 1 < academicCalendarData.length) {
+          expandedMonthsMap[currentMonthIdx + 1] = true;
+        }
+      }
+
+      let monthsHtml = '';
+
+      academicCalendarData.forEach((m, idx) => {
+        const isCurrentMonth = (curYear === m.year && curMonth === m.monthIndex);
+        const isExpanded = !!expandedMonthsMap[idx];
+
+        if (!isExpanded) {
+          // Згорнута компактна полоска
+          monthsHtml += `
+            <div class="month-strip" onclick="toggleMonthExpand(${idx})">
+              <span>📅 ${m.name}</span>
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                ${isCurrentMonth ? '<span class="month-strip-badge">🔥 ЗАРАЗ</span>' : ''}
+                <span>Розгорнути ➔</span>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        let daysGridHtml = '';
+
+        // Порожні клітинки на початку місяця
+        for (let i = 0; i < m.emptyDays; i++) {
+          daysGridHtml += `<div class="day-cell empty"></div>`;
+        }
+
+        // Дні місяця
+        for (let day = 1; day <= m.daysCount; day++) {
+          const weekInfo = m.weeks.find(w => day >= w.start && day <= w.end) || { type: 'theory', numerator: false };
+          const isStudentDay = (m.studentDay === day);
+          const isToday = (curYear === m.year && curMonth === m.monthIndex && curDate === day);
+          const isSession = (weekInfo.type === 'session');
+
+          const cellClasses = [
+            'day-cell',
+            `type-${weekInfo.type}`,
+            weekInfo.numerator ? 'is-numerator' : '',
+            isStudentDay ? 'is-student-day' : '',
+            isToday ? 'is-today-cal' : ''
+          ].filter(Boolean).join(' ');
+
+          const titleAttr = `${day} ${m.name}: ${weekInfo.numerator ? 'Чисельник' : 'Знаменник'}, ${getWeekTypeName(weekInfo.type)}${isStudentDay ? ' (День студента! Натисни)' : ''}`;
+
+          const studentOnClick = isStudentDay ? `onclick="triggerStudentDayConfetti(event)"` : '';
+          const sessionEmojiHtml = isSession ? `<span class="session-emoji">💀</span>` : '';
+
+          daysGridHtml += `
+            <div class="${cellClasses}" title="${titleAttr}" ${studentOnClick}>
+              ${day}
+              ${sessionEmojiHtml}
+            </div>
+          `;
+        }
+
+        const cardClasses = [
+          'month-card',
+          isCurrentMonth ? 'is-current-month' : 'is-other-month'
+        ].join(' ');
+
+        monthsHtml += `
+          <div class="${cardClasses}">
+            ${isCurrentMonth ? `<div class="current-month-sticker">🔥 ЗАРАЗ 👈</div>` : ''}
+            <div class="month-name">
+              <span>${m.name}</span>
+              <button class="btn-brutal" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="toggleMonthExpand(${idx})">
+                Згорнути ✕
+              </button>
+            </div>
+            <div class="weekdays-header">
+              <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
+            </div>
+            <div class="days-grid">
+              ${daysGridHtml}
+            </div>
+          </div>
+        `;
+      });
+
+      const allExpanded = academicCalendarData.every((_, i) => expandedMonthsMap[i]);
+
+      wrapper.innerHTML = `
+        <div class="calendar-box">
+          <div class="calendar-title-bar">
+            <div class="tags-row">
+              <div class="badge-pill">📆 НАВЧАЛЬНИЙ КАЛЕНДАР 2026/27</div>
+            </div>
+            <div class="calendar-actions">
+              <button class="btn-brutal" onclick="toggleAllMonths(${!allExpanded})">
+                ${allExpanded ? '📁 ЗГОРНУТИ ВСІ' : '📂 РОЗГОРНУТИ ВСІ'}
+              </button>
+            </div>
+          </div>
+
+          <!-- Sticky Легенда -->
+          <div class="legend-container sticky-legend">
+            <div class="legend-title">Легенда:</div>
+            <div class="legend-item"><div class="legend-color-box theory"></div> теорія</div>
+            <div class="legend-item"><div class="legend-color-box control"></div> контроль</div>
+            <div class="legend-item"><div class="legend-color-box session"></div> сесія 💀</div>
+            <div class="legend-item"><div class="legend-color-box vacation"></div> канікули 🌴</div>
+            <div class="legend-item"><div class="legend-color-box practice"></div> практика</div>
+            <div class="legend-item"><span class="legend-text-num">1</span> чисельник</div>
+            <div class="legend-item"><span class="legend-text-den">8</span> знаменник</div>
+            <div class="legend-item"><span style="background:var(--lime); border:2px solid #000; border-radius:5px; padding:0 0.35rem; font-weight:900;">🎓 17</span> День студента</div>
+          </div>
+
+          <!-- Сітка місяців -->
+          <div class="months-grid">
+            ${monthsHtml}
+          </div>
+        </div>
+      `;
+
+      return wrapper;
+    }
+
+    function toggleMonthExpand(idx) {
+      expandedMonthsMap[idx] = !expandedMonthsMap[idx];
+      renderSchedule();
+    }
+
+    function toggleAllMonths(expand) {
+      academicCalendarData.forEach((_, i) => {
+        expandedMonthsMap[i] = expand;
+      });
+      renderSchedule();
+    }
+
+    function triggerStudentDayConfetti(e) {
+      const rect = e.target.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      
+      const colors = ['#C6FF3D', '#FF4FD8', '#FFD400', '#00F5D4', '#FF6B00', '#3D5AFE'];
+      for (let i = 0; i < 45; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 4 + Math.random() * 8;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 3,
+          vRot: (Math.random() - 0.5) * 20,
+          rot: Math.random() * 360,
+          size: 8 + Math.random() * 8,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          alpha: 1
+        });
+      }
+    }
+
+    function getWeekTypeName(type) {
+      switch(type) {
+        case 'theory': return 'Теоретичне навчання';
+        case 'control': return 'Контрольні заходи';
+        case 'session': return 'Сесія 💀';
+        case 'vacation': return 'Канікули 🌴';
+        case 'practice': return 'Практика';
+        default: return '';
       }
     }
 
@@ -810,6 +1524,7 @@
       currentView = mode;
       document.getElementById('btnWeek').classList.toggle('active', mode === 'week');
       document.getElementById('btnToday').classList.toggle('active', mode === 'today');
+      document.getElementById('btnCalendar').classList.toggle('active', mode === 'calendar');
       renderSchedule();
     }
 
@@ -819,17 +1534,115 @@
       return p.innerHTML;
     }
 
+    function getNextClassInfo() {
+      const now = new Date();
+      const timeline = [];
+
+      for (let dayOffset = 0; dayOffset <= 7; dayOffset++) {
+        const targetDate = new Date(now);
+        targetDate.setDate(now.getDate() + dayOffset);
+        const dayOfWeek = targetDate.getDay();
+
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+        const daySchedule = scheduleData.find(d => d.dayId === dayOfWeek);
+        if (!daySchedule) continue;
+
+        daySchedule.pairs.forEach(pair => {
+          if (pair.subject === "-") return;
+
+          const slot = timeSlots[pair.num];
+          if (!slot) return;
+
+          const startHour = Math.floor(slot.start / 60);
+          const startMin = slot.start % 60;
+          const endHour = Math.floor(slot.end / 60);
+          const endMin = slot.end % 60;
+
+          const startTime = new Date(targetDate);
+          startTime.setHours(startHour, startMin, 0, 0);
+
+          const endTime = new Date(targetDate);
+          endTime.setHours(endHour, endMin, 0, 0);
+
+          timeline.push({
+            dayId: dayOfWeek,
+            dayName: daySchedule.dayName,
+            num: pair.num,
+            subject: pair.subject,
+            teacher: pair.teacher,
+            startTime,
+            endTime,
+            dayOffset
+          });
+        });
+      }
+
+      const currentClass = timeline.find(item => now >= item.startTime && now <= item.endTime);
+      if (currentClass) {
+        return {
+          type: 'IN_CLASS',
+          class: currentClass,
+          remainingMs: currentClass.endTime - now
+        };
+      }
+
+      const nextClass = timeline.find(item => now < item.startTime);
+      if (nextClass) {
+        return {
+          type: 'NEXT_CLASS',
+          class: nextClass,
+          remainingMs: nextClass.startTime - now
+        };
+      }
+
+      return null;
+    }
+
+    function formatTimeRemaining(ms) {
+      const totalSec = Math.floor(ms / 1000);
+      const days = Math.floor(totalSec / 86400);
+      const hours = Math.floor((totalSec % 86400) / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+
+      const pad = (n) => String(n).padStart(2, '0');
+
+      if (days > 0) {
+        return `${days}д ${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+      }
+      if (hours > 0) {
+        return `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+      }
+      return `${pad(mins)}:${pad(secs)}`;
+    }
+
     let lastCheckedPair = null;
     function updateClock() {
-      const now = new Date();
-      const timeStr = now.toTimeString().split(' ')[0];
       const clockEl = document.getElementById('liveClock');
-      if (clockEl) clockEl.textContent = `⏰ ${timeStr}`;
+      if (!clockEl) return;
+
+      const status = getNextClassInfo();
+
+      if (!status) {
+        clockEl.textContent = "🎉 Немає майбутніх пар";
+        return;
+      }
+
+      const timeStr = formatTimeRemaining(status.remainingMs);
+
+      if (status.type === 'IN_CLASS') {
+        clockEl.innerHTML = `⏳ До кінця #${status.class.num} пари: <strong>${timeStr}</strong>`;
+      } else {
+        const isToday = status.class.dayOffset === 0;
+        const dayLabel = isToday ? '' : ` (${status.class.dayName})`;
+        clockEl.innerHTML = `⏰ До #${status.class.num} пари${dayLabel}: <strong>${timeStr}</strong>`;
+      }
 
       const currentPair = getCurrentPairNum();
       if (currentPair !== lastCheckedPair) {
         lastCheckedPair = currentPair;
-        renderSchedule();
+        if (currentView !== 'calendar') renderSchedule();
       }
     }
 
