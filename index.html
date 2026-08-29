@@ -239,7 +239,7 @@
     .schedule-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 1.75rem;
+      gap: 2rem;
     }
 
     @media (min-width: 640px) {
@@ -272,7 +272,7 @@
       border-radius: 14px;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      overflow: visible; /* Дозволяє стікеру виходити за краї без обрізання чи злітання */
       transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s var(--bounce-ease);
       position: relative;
     }
@@ -296,12 +296,15 @@
     }
 
     .day-header {
-      padding: 1rem 1.1rem;
+      padding: 1.2rem 1.1rem 1rem;
       border-bottom: var(--border-thick);
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: var(--yellow);
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+      position: relative;
     }
 
     .day-card:nth-child(1) .day-header { background: var(--yellow); }
@@ -325,6 +328,26 @@
       padding: 0.25rem 0.55rem;
       border-radius: 6px;
       text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* Надійна фіксація червоних/рожевих наліпок над каркою дня */
+    .meme-sticker {
+      position: absolute;
+      top: -12px;
+      right: 12px;
+      background: var(--pink);
+      color: var(--white);
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.72rem;
+      padding: 0.25rem 0.65rem;
+      border: 2px solid var(--black);
+      box-shadow: var(--shadow-hard-sm);
+      transform: rotate(3deg);
+      border-radius: 6px;
+      z-index: 25;
+      pointer-events: none;
+      white-space: nowrap;
     }
 
     .pairs-body {
@@ -334,6 +357,8 @@
       gap: 1rem;
       background: #FAFAFA;
       flex: 1;
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
     }
 
     .pair-block {
@@ -353,12 +378,6 @@
     .pair-block:hover {
       transform: translate(-2px, -2px);
       box-shadow: 5px 5px 0px var(--black);
-    }
-
-    .pair-block.done {
-      background: #EBEAE5;
-      opacity: 0.7;
-      text-decoration: line-through;
     }
 
     @keyframes pairBreathing {
@@ -430,7 +449,7 @@
 
     .pair-footer {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
       margin-top: 0.2rem;
       padding-top: 0.4rem;
@@ -447,27 +466,6 @@
       display: inline-flex;
       align-items: center;
       gap: 0.3rem;
-    }
-
-    .btn-done-check {
-      background: var(--white);
-      border: 2px solid var(--black);
-      cursor: pointer;
-      font-size: 0.75rem;
-      font-weight: 900;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      box-shadow: 2px 2px 0px var(--black);
-      transition: all 0.1s var(--bounce-ease);
-    }
-
-    .btn-done-check:hover {
-      background: var(--yellow);
-    }
-
-    .btn-done-check:active {
-      transform: translate(2px, 2px);
-      box-shadow: 0 0 0;
     }
 
     .pair-block.is-window {
@@ -513,24 +511,6 @@
       text-transform: uppercase;
     }
 
-    .meme-sticker {
-      position: absolute;
-      top: -12px;
-      right: -8px;
-      background: var(--pink);
-      color: var(--white);
-      font-family: 'Archivo Black', sans-serif;
-      font-size: 0.7rem;
-      padding: 0.3rem 0.6rem;
-      border: 2px solid var(--black);
-      box-shadow: var(--shadow-hard-sm);
-      transform: rotate(12deg);
-      border-radius: 4px;
-      z-index: 5;
-      pointer-events: none;
-    }
-
-    /* Canvas для конфетті */
     #confettiCanvas {
       position: fixed;
       top: 0;
@@ -568,7 +548,7 @@
 </head>
 <body>
 
-  <!-- Плаваючі фонові елементи (мемні декоративні штучки) -->
+  <!-- Плаваючі фонові елементи -->
   <div class="bg-floating-container" id="floatingBg"></div>
 
   <!-- Конфетті canvas -->
@@ -603,7 +583,7 @@
       </div>
     </header>
 
-    <!-- Сетка дней -->
+    <!-- Сітка днів -->
     <main class="schedule-grid" id="scheduleContainer"></main>
 
     <!-- Футер -->
@@ -690,7 +670,6 @@
     ];
 
     let currentView = 'week';
-    const completedPairs = new Set();
 
     function getCurrentPairNum() {
       const now = new Date();
@@ -709,7 +688,7 @@
       if (!container) return;
 
       const memeItems = ['⚡', '⭐', '👾', '☕', '🎮', '🦄', '🍕', '💥', '🚀', '🧠', '💻', '🔥', '✨', '🗿', '💎'];
-      const count = 16; // Кількість декоративних елементів
+      const count = 16;
 
       container.innerHTML = '';
 
@@ -718,12 +697,11 @@
         item.className = 'float-item';
         item.textContent = memeItems[i % memeItems.length];
 
-        // Довільні стартові позиції та параметри анімації
-        const posX = Math.random() * 95; // %
-        const posY = Math.random() * 95; // %
-        const duration = 12 + Math.random() * 16; // 12s - 28s
-        const delay = -(Math.random() * 10); // Від'ємний затрим для природності
-        const size = 1.4 + Math.random() * 1.2; // rem
+        const posX = Math.random() * 95;
+        const posY = Math.random() * 95;
+        const duration = 12 + Math.random() * 16;
+        const delay = -(Math.random() * 10);
+        const size = 1.4 + Math.random() * 1.2;
 
         item.style.left = `${posX}vw`;
         item.style.top = `${posY}vh`;
@@ -781,8 +759,6 @@
         const timeObj = timeSlots[pair.num] || { text: "" };
         const time = timeObj.text;
         const isEmpty = pair.subject === "-";
-        const pairKey = `${dayData.dayId}-${pair.num}`;
-        const isDone = completedPairs.has(pairKey);
         const isCurrent = (isToday && pair.num === currentPairNum);
 
         if (isEmpty) {
@@ -799,19 +775,18 @@
           `;
         } else {
           pairsHtml += `
-            <div class="pair-block ${isDone ? 'done' : ''} ${isCurrent ? 'is-current-pair' : ''}" id="card-${pairKey}">
+            <div class="pair-block ${isCurrent ? 'is-current-pair' : ''}">
               <div class="pair-top-row">
                 <span class="pair-number">#${pair.num} ПАРА</span>
                 <span class="pair-hours">⏰ ${time}</span>
                 ${isCurrent ? `<span class="live-badge">🔴 LIVE</span>` : ''}
               </div>
               <div class="pair-name">${escapeHtml(pair.subject)}</div>
-              <div class="pair-footer">
-                ${pair.teacher ? `<span class="teacher-tag">👨‍🏫 ${escapeHtml(pair.teacher)}</span>` : `<span></span>`}
-                <button class="btn-done-check" onclick="toggleDone('${pairKey}', event)">
-                  ${isDone ? '✅ ВИЖИВ' : '👌 ВІДСИДІВ'}
-                </button>
-              </div>
+              ${pair.teacher ? `
+                <div class="pair-footer">
+                  <span class="teacher-tag">👨‍🏫 ${escapeHtml(pair.teacher)}</span>
+                </div>
+              ` : ''}
             </div>
           `;
         }
@@ -829,29 +804,6 @@
       `;
 
       return card;
-    }
-
-    function toggleDone(pairKey, event) {
-      event.stopPropagation();
-      const cardEl = document.getElementById(`card-${pairKey}`);
-      
-      if (completedPairs.has(pairKey)) {
-        completedPairs.delete(pairKey);
-        if (cardEl) {
-          cardEl.classList.remove('done');
-          const btn = cardEl.querySelector('.btn-done-check');
-          if (btn) btn.textContent = '👌 ВІДСИДІВ';
-        }
-      } else {
-        completedPairs.add(pairKey);
-        if (cardEl) {
-          cardEl.classList.add('done');
-          const btn = cardEl.querySelector('.btn-done-check');
-          if (btn) btn.textContent = '✅ ВИЖИВ';
-        }
-        const rect = event.target.getBoundingClientRect();
-        launchConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
-      }
     }
 
     function setViewMode(mode) {
@@ -874,7 +826,6 @@
       const clockEl = document.getElementById('liveClock');
       if (clockEl) clockEl.textContent = `⏰ ${timeStr}`;
 
-      // Перевіряємо зміну пар щохвилини
       const currentPair = getCurrentPairNum();
       if (currentPair !== lastCheckedPair) {
         lastCheckedPair = currentPair;
@@ -892,23 +843,6 @@
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-
-    function launchConfetti(x, y) {
-      const colors = ['#C6FF3D', '#FF4FD8', '#FFD400', '#00F5D4', '#3D5AFE', '#FF6B00', '#0F0F11'];
-      for (let i = 0; i < 45; i++) {
-        particles.push({
-          x: x,
-          y: y,
-          vx: (Math.random() - 0.5) * 14,
-          vy: (Math.random() - 0.8) * 14,
-          size: Math.random() * 9 + 5,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          rot: Math.random() * 360,
-          vRot: (Math.random() - 0.5) * 12,
-          alpha: 1
-        });
-      }
-    }
 
     function confettiLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
