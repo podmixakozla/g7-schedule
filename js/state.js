@@ -5,7 +5,7 @@ let collapsedMonthsState = {};
 let cachedShameEntries = [];
 let currentShameSubView = 'new';
 
-const POPULAR_EMOJIS = ['🐳', '❤️', '😍', '😡', '😱', '🔥', '🥶', '💀'];
+const POPULAR_EMOJIS = ['🐳', '❤️', '😍', '😡', '😱', '🔥', '🥶', '💀', '👍', '👎'];
 let openReactionPickerId = null;
 
 const commentsCache = {};      // entryId -> array of comments
