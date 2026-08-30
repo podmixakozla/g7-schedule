@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
       .single();
 
     let authUserId: string;
+    const email = `telegram_${telegramId}@placeholder.local`;
 
     if (existingTelegramUser) {
       // Existing user: update profile fields, reuse auth UUID
@@ -154,7 +155,6 @@ Deno.serve(async (req) => {
         .eq("id", authUserId);
     } else {
       // New user: create Supabase auth user, then link telegram profile
-      const email = `telegram_${telegramId}@placeholder.local`;
       const { data: newUser, error: createError } =
         await supabase.auth.admin.createUser({
           email,
