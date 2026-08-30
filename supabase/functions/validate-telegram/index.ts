@@ -101,11 +101,32 @@ Deno.serve(async (req) => {
     // Step 1: Validate HMAC signature + expiry
     const telegramData = await validateInitData(initData, BOT_TOKEN);
 
-    const telegramId = Number(telegramData.id);
-    const username = telegramData.username || null;
-    const firstName = telegramData.first_name || null;
-    const lastName = telegramData.last_name || null;
-    const photoUrl = telegramData.photo_url || null;
+    // Parse the nested user JSON from initData — Telegram embeds user info
+    // as a URL-encoded JSON object in the "user" field, not at top level.
+    // Top-level keys are: query_id, user, auth_date, hash
+    const rawUserStr = telegramData.user;
+    if (!rawUserStr) {
+      throw new HttpError(400, "Missing 'user' field in Telegram initData");
+    }
+    let rawUser: Record<string, unknown>;
+    try {
+      rawUser = JSON.parse(rawUserStr);
+    } catch {
+      throw new HttpError(400, "Failed to parse Telegram user JSON");
+    }
+
+    console.log("[AUTH] raw telegramData keys:", Object.keys(telegramData));
+    console.log("[AUTH] parsed rawUser:", JSON.stringify(rawUser));
+
+    const telegramId = Number(rawUser.id);
+    const username = (rawUser.username as string) || null;
+    const firstName = (rawUser.first_name as string) || null;
+    const lastName = (rawUser.last_name as string) || null;
+    const photoUrl = (rawUser.photo_url as string) || null;
+
+    if (!telegramId || Number.isNaN(telegramId)) {
+      throw new HttpError(400, "Invalid or missing Telegram user ID in initData");
+    }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
