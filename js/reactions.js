@@ -100,11 +100,12 @@ function toggleReactionPicker(e, entryId) {
       }
       if (rect.left < 8) {
         picker.style.left = '0';
-        picker.style.transform = 'none';
+        picker.style.right = 'auto';
+        picker.style.setProperty('--tx', '0');
       } else if (rect.right > vw - 8) {
         picker.style.left = 'auto';
         picker.style.right = '0';
-        picker.style.transform = 'none';
+        picker.style.setProperty('--tx', '0');
       }
     });
   }
@@ -116,7 +117,7 @@ function closeReactionPicker(entryId) {
     picker.classList.remove('open', 'open-below');
     picker.style.left = '';
     picker.style.right = '';
-    picker.style.transform = '';
+    picker.style.removeProperty('--tx');
   }
   if (openReactionPickerId === entryId) openReactionPickerId = null;
 }
@@ -126,7 +127,7 @@ function closeAllReactionPickers() {
     p.classList.remove('open', 'open-below');
     p.style.left = '';
     p.style.right = '';
-    p.style.transform = '';
+    p.style.removeProperty('--tx');
   });
   openReactionPickerId = null;
 }

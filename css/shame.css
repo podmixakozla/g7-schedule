@@ -89,9 +89,21 @@
 }
 
 .shame-card.is-champion {
-  background: var(--white);
-  border: var(--border-thick);
-  box-shadow: var(--shadow-hard-lg);
+  background: linear-gradient(135deg, #FFFBF0 0%, #FFF8E1 100%);
+  border: 3.5px solid var(--black);
+  box-shadow: 6px 6px 0px var(--black), 0 0 0 2px var(--yellow);
+  transform: scale(1.03) !important;
+  z-index: 10;
+}
+
+.shame-card.is-champion:hover {
+  transform: translateY(-6px) scale(1.05) !important;
+  box-shadow: 12px 12px 0px var(--black), 0 0 0 3px var(--yellow);
+}
+
+.shame-card.is-champion .shame-card-badge {
+  background: var(--yellow);
+  color: var(--black);
 }
 
 .champion-ribbon {
@@ -184,4 +196,50 @@
   font-weight: 900;
   color: #666;
   text-align: right;
+}
+
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  cursor: pointer;
+}
+.lightbox-overlay.open {
+  opacity: 1;
+}
+.lightbox-img {
+  max-width: 92vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  cursor: default;
+}
+.lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--white);
+  background: rgba(0,0,0,0.6);
+  color: var(--white);
+  font-size: 1.3rem;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  z-index: 10;
+}
+.lightbox-close:hover {
+  background: rgba(255,255,255,0.2);
 }

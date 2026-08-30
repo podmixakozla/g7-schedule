@@ -45,14 +45,26 @@ async function toggleComments(entryId, btn) {
     }
   }
 
-  if (!isOpen && !loadedComments[entryId]) {
-    const listEl = document.getElementById(`comments-list-${entryId}`);
-    if (listEl) listEl.innerHTML = '<div class="comment-empty">⏳ Завантаження...</div>';
+  if (!isOpen) {
+    const cached = commentsCache[entryId];
+    const alreadyLoaded = loadedComments[entryId] && cached;
 
-    const comments = await loadComments(entryId);
-    commentsCache[entryId] = comments;
-    loadedComments[entryId] = true;
+    if (!alreadyLoaded) {
+      const listEl = document.getElementById(`comments-list-${entryId}`);
+      if (listEl) listEl.innerHTML = '<div class="comment-empty">⏳ Завантаження...</div>';
+
+      try {
+        const comments = await loadComments(entryId);
+        commentsCache[entryId] = comments;
+        loadedComments[entryId] = true;
+      } catch {
+        commentsCache[entryId] = [];
+        loadedComments[entryId] = true;
+      }
+    }
+
     renderComments(entryId);
+    refreshCommentPreview(entryId);
   }
 }
 
@@ -82,6 +94,15 @@ function renderComments(entryId) {
   }).join('');
 
   listEl.scrollTop = listEl.scrollHeight;
+}
+
+function refreshCommentPreview(entryId) {
+  const section = document.getElementById(`comments-section-${entryId}`);
+  if (!section) return;
+  const previewEl = section.previousElementSibling;
+  if (previewEl && previewEl.classList.contains('comment-preview')) {
+    previewEl.outerHTML = buildCommentPreviewHtml(entryId);
+  }
 }
 
 async function handleCommentSubmit(e, entryId) {
@@ -120,6 +141,7 @@ async function handleCommentSubmit(e, entryId) {
       created_at: new Date().toISOString(),
     });
     renderComments(entryId);
+    refreshCommentPreview(entryId);
 
     form.reset();
   } catch (err) {
@@ -155,6 +177,7 @@ async function adminDeleteComment(commentId, entryId) {
       commentsCache[entryId] = commentsCache[entryId].filter(c => c.id !== commentId);
     }
     renderComments(entryId);
+    refreshCommentPreview(entryId);
   } catch (err) {
     console.error("Delete comment error:", err);
     alert("Не вдалося видалити коментар: " + err.message);

@@ -12,9 +12,7 @@ function getTotalReactions(entry) {
 
 function getFilteredShameEntries(entries) {
   if (currentShameSubView === 'top') {
-    return [...entries]
-      .filter(e => getTotalReactions(e) > 0)
-      .sort((a, b) => getTotalReactions(b) - getTotalReactions(a));
+    return entries.filter(e => e.is_week_champion || e.is_month_champion);
   }
   return entries;
 }
@@ -66,6 +64,29 @@ async function loadShameEntries() {
       } else {
         cachedShameEntries = initialDemoShameEntries;
       }
+
+      // Eagerly load comments for preview
+      if (supabaseClient && cachedShameEntries.length > 0) {
+        const entryIds = cachedShameEntries.map(e => e.id);
+        try {
+          const { data: allComments, error: commentsErr } = await supabaseClient
+            .from('comments')
+            .select('*')
+            .in('entry_id', entryIds)
+            .order('created_at', { ascending: true });
+          if (commentsErr) {
+            console.warn("Eager comments load error:", commentsErr);
+          } else if (allComments) {
+            entryIds.forEach(id => { commentsCache[id] = []; loadedComments[id] = true; });
+            allComments.forEach(c => {
+              if (!commentsCache[c.entry_id]) commentsCache[c.entry_id] = [];
+              commentsCache[c.entry_id].push(c);
+            });
+          }
+        } catch (e) {
+          console.warn("Eager comments load exception:", e);
+        }
+      }
     } catch (err) {
       console.warn("Supabase load error (using fallback):", err);
       cachedShameEntries = initialDemoShameEntries;
@@ -82,10 +103,11 @@ function renderShameGrid(entries) {
   grid.innerHTML = '';
 
   if (entries.length === 0) {
+    const isTopView = currentShameSubView === 'top';
     grid.innerHTML = `
       <div style="grid-column: 1/-1; text-align: center; padding: 3rem; background: var(--white); border: var(--border-thick); border-radius: 12px; box-shadow: var(--shadow-hard);">
-        <h3 style="font-family: 'Archivo Black', sans-serif; font-size: 1.5rem;">ПОКИ ЩО ТИША 😇</h3>
-        <p style="font-weight: 800; margin-top: 0.5rem;">Ніхто ще не потрапив на дошку. Будь першим, хто додасть героя!</p>
+        <h3 style="font-family: 'Archivo Black', sans-serif; font-size: 1.5rem;">${isTopView ? 'ТОП ЩЕ НЕ СФОРМОВАНО 🤷' : 'ПОКИ ЩО ТИША 😇'}</h3>
+        <p style="font-weight: 800; margin-top: 0.5rem;">${isTopView ? 'Постів з реакціями поки немає.' : 'Ніхто ще не потрапив на дошку. Будь першим, хто додасть героя!'}</p>
       </div>
     `;
     return;
@@ -112,10 +134,12 @@ function renderShameGrid(entries) {
       ? `<button class="btn-brutal" onclick="adminDeletePost(${item.id})" style="background: var(--red); color: var(--white); font-size: 0.75rem; padding: 0.3rem 0.6rem; align-self: flex-end;">🗑️ ВИДАЛИТИ</button>`
       : '';
 
+    const commentPreviewHtml = buildCommentPreviewHtml(item.id);
+
     card.innerHTML = `
       ${ribbonHtml}
       <div class="shame-card-badge">💀 ГАНЬБА</div>
-      <div class="shame-img-box">
+      <div class="shame-img-box" onclick="openLightbox('${escapeHtml(item.photo_url)}', '${escapeHtml(item.name)}')" style="cursor: pointer;">
         <img class="shame-img" src="${escapeHtml(item.photo_url)}" alt="${escapeHtml(item.name)}" onerror="this.src='https://placehold.co/600x400/0F0F11/FF4FD8?text=ФОТО+ВТРАЧЕНО'" />
       </div>
       <div class="shame-name">${escapeHtml(item.name)}</div>
@@ -124,7 +148,7 @@ function renderShameGrid(entries) {
 
       <div class="reactions-bar" id="reactions-bar-${item.id}">${reactionsHtml}</div>
 
-      <button class="comments-toggle-btn" onclick="toggleComments(${item.id}, this)">💬 Коментарі</button>
+      ${commentPreviewHtml}
 
       <div class="comments-section" id="comments-section-${item.id}">
         <div class="comments-list" id="comments-list-${item.id}">
@@ -198,3 +222,56 @@ async function adminDeletePost(postId) {
     alert("Не вдалося видалити запис: " + err.message);
   }
 }
+
+function buildCommentPreviewHtml(entryId) {
+  const comments = commentsCache[entryId] || [];
+  const count = comments.length;
+
+  if (count === 0) {
+    return `<div class="comment-preview" onclick="toggleComments(${entryId}, this)">
+      <span class="comment-preview-empty">Будь першим, хто прокоментує 👀</span>
+    </div>`;
+  }
+
+  const last = comments[comments.length - 1];
+  const author = escapeHtml(last.author || 'Анонім');
+  const text = escapeHtml(last.text);
+  const truncated = text.length > 80 ? text.slice(0, 80) + '…' : text;
+  const label = count === 1 ? '1 коментар' : (count < 5 ? `${count} коментарі` : `${count} коментарів`);
+
+  return `<div class="comment-preview" onclick="toggleComments(${entryId}, this)">
+    <span class="comment-preview-author">${author}</span>
+    <span class="comment-preview-text">${truncated}</span>
+    <span class="comment-preview-count">💬 ${label}</span>
+  </div>`;
+}
+
+function openLightbox(src, alt) {
+  const existing = document.getElementById('photoLightbox');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'photoLightbox';
+  overlay.className = 'lightbox-overlay';
+  overlay.innerHTML = `
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img class="lightbox-img" src="${src}" alt="${alt || ''}" />
+  `;
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeLightbox();
+  });
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('open'));
+}
+
+function closeLightbox() {
+  const overlay = document.getElementById('photoLightbox');
+  if (overlay) {
+    overlay.classList.remove('open');
+    setTimeout(() => overlay.remove(), 250);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeLightbox();
+});

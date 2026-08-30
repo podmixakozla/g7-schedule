@@ -77,9 +77,12 @@
   position: absolute;
   bottom: calc(100% + 8px);
   left: 50%;
-  transform: translateX(-50%);
+  --tx: -50%;
+  transform: translateX(var(--tx));
   display: none;
+  flex-direction: row;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: 0.2rem;
   background: var(--white);
@@ -98,13 +101,13 @@
 }
 
 .reaction-picker.open {
-  display: inline-flex;
+  display: flex;
   animation: pickerPop 0.18s var(--bounce-ease);
 }
 
 @keyframes pickerPop {
-  0% { transform: scale(0.6); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0% { transform: translateX(var(--tx)) scale(0.6); opacity: 0; }
+  100% { transform: translateX(var(--tx)) scale(1); opacity: 1; }
 }
 
 .reaction-picker-emoji {
