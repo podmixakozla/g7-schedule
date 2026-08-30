@@ -124,6 +124,11 @@
   white-space: nowrap;
 }
 
+.champion-ribbon + .champion-ribbon {
+  top: 14px;
+  transform: translateX(-50%) rotate(2deg);
+}
+
 .champion-ribbon.is-month {
   background: var(--pink);
   color: var(--white);

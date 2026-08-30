@@ -121,7 +121,9 @@ function renderShameGrid(entries) {
     const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' }) : 'Сьогодні';
 
     let ribbonHtml = '';
-    if (item.is_month_champion) {
+    if (item.is_month_champion && item.is_week_champion) {
+      ribbonHtml = `<div class="champion-ribbon is-month">🏆 ХІТ МІСЯЦЯ</div><div class="champion-ribbon">👑 ХІТ ТИЖНЯ</div>`;
+    } else if (item.is_month_champion) {
       ribbonHtml = `<div class="champion-ribbon is-month">🏆 ХІТ МІСЯЦЯ</div>`;
     } else if (item.is_week_champion) {
       ribbonHtml = `<div class="champion-ribbon">👑 ХІТ ТИЖНЯ</div>`;

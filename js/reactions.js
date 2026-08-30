@@ -2,6 +2,7 @@
 // Reactions — server-side via upsert_reaction RPC (auth required)
 // One reaction per user per post. Toggle: same emoji removes, different replaces.
 // After every RPC call, re-fetch ALL state from DB. No optimistic counter manipulation.
+// Picker is portaled to <body> so card transforms/animations don't affect its position.
 // ------------------------------------------------------------------
 
 async function getUserReactionsFromDB() {
@@ -67,106 +68,108 @@ function buildReactionsHtml(item) {
       `;
     }).join('');
 
-  const pickerEmojisHtml = POPULAR_EMOJIS.map(emoji => `
-    <button class="reaction-picker-emoji" onclick="handleReaction(${item.id}, '${emoji}')">${emoji}</button>
-  `).join('');
-
   return `
     ${usedPillsHtml}
-    <div class="reaction-add-wrapper">
-      <button class="reaction-add-btn" onclick="toggleReactionPicker(event, ${item.id})">+</button>
-      <div class="reaction-picker" id="reaction-picker-${item.id}">${pickerEmojisHtml}</div>
-    </div>
+    <button class="reaction-add-btn" onclick="toggleReactionPicker(event, ${item.id})">+</button>
   `;
 }
 
+// ── Portal picker ──
+let activePickerEntryId = null;
+let activePickerEl = null;
+
 function toggleReactionPicker(e, entryId) {
   e.stopPropagation();
-  const picker = document.getElementById(`reaction-picker-${entryId}`);
-  if (!picker) return;
 
-  const isOpen = picker.classList.contains('open');
-  closeAllReactionPickers();
-  if (!isOpen) {
-    picker.classList.add('open');
-    openReactionPickerId = entryId;
+  // If clicking + on the same post that's already open, close it
+  if (activePickerEntryId === entryId && activePickerEl) {
+    closeReactionPicker();
+    return;
+  }
 
-    requestAnimationFrame(() => {
-      const rect = picker.getBoundingClientRect();
-      const vw = window.innerWidth;
+  // Close any existing picker
+  closeReactionPicker();
 
-      if (rect.top < 0) {
-        picker.classList.add('open-below');
-      }
-      if (rect.left < 8) {
-        picker.style.left = '0';
-        picker.style.right = 'auto';
-        picker.style.setProperty('--tx', '0');
-      } else if (rect.right > vw - 8) {
-        picker.style.left = 'auto';
-        picker.style.right = '0';
-        picker.style.setProperty('--tx', '0');
-      }
+  if (!currentUser) {
+    showAuthOverlay();
+    return;
+  }
+
+  // Build picker element
+  const userReactionKey = getUserReaction(entryId);
+  const picker = document.createElement('div');
+  picker.className = 'reaction-picker open';
+  picker.innerHTML = POPULAR_EMOJIS.map(emoji => {
+    const isMine = userReactionKey === emoji;
+    return `<button class="reaction-picker-emoji ${isMine ? 'is-mine' : ''}" data-emoji="${emoji}">${emoji}</button>`;
+  }).join('');
+
+  // Wire up click handlers
+  picker.querySelectorAll('.reaction-picker-emoji').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      handleReaction(entryId, btn.dataset.emoji);
     });
-  }
-}
-
-function closeReactionPicker(entryId) {
-  const picker = document.getElementById(`reaction-picker-${entryId}`);
-  if (picker) {
-    picker.classList.remove('open', 'open-below');
-    picker.style.left = '';
-    picker.style.right = '';
-    picker.style.removeProperty('--tx');
-  }
-  if (openReactionPickerId === entryId) openReactionPickerId = null;
-}
-
-function closeAllReactionPickers() {
-  document.querySelectorAll('.reaction-picker.open').forEach(p => {
-    p.classList.remove('open', 'open-below');
-    p.style.left = '';
-    p.style.right = '';
-    p.style.removeProperty('--tx');
   });
-  openReactionPickerId = null;
+
+  // Append to body (portal)
+  document.body.appendChild(picker);
+  activePickerEntryId = entryId;
+  activePickerEl = picker;
+
+  // Position after render
+  const btn = e.currentTarget;
+  requestAnimationFrame(() => {
+    positionPortalPicker(picker, btn);
+  });
+
+  // Recalculate on scroll/resize while open
+  const reposition = () => {
+    if (activePickerEl) positionPortalPicker(picker, btn);
+  };
+  window.addEventListener('scroll', reposition, { passive: true });
+  window.addEventListener('resize', reposition, { passive: true });
+  picker._repositionCleanup = () => {
+    window.removeEventListener('scroll', reposition);
+    window.removeEventListener('resize', reposition);
+  };
 }
 
-document.addEventListener('click', closeAllReactionPickers);
+function positionPortalPicker(picker, btn) {
+  const btnRect = btn.getBoundingClientRect();
+  const pickerRect = picker.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
 
-// ── DEBUG: query DB state after each reaction operation ──
-async function debugReactionState(entryId, label) {
-  if (!supabaseClient || !currentUser) return;
-  console.group(`%c[REACTION DEBUG] ${label}`, 'color: #ff6fd8; font-weight: bold');
-  try {
-    // 1. Query reactions table for this user + entry
-    const { data: myRows, error: e1 } = await supabaseClient
-      .from('reactions')
-      .select('id, entry_id, user_id, emoji, created_at')
-      .eq('user_id', currentUser.id)
-      .eq('entry_id', entryId);
-    if (e1) console.error('reactions query error:', e1);
-    else console.log('reactions table rows:', myRows);
+  // Center on the + button, below it
+  let left = btnRect.left + btnRect.width / 2 - pickerRect.width / 2;
+  let top = btnRect.bottom + 6;
 
-    // 2. Query reaction_counts for this entry
-    const { data: counts, error: e2 } = await supabaseClient
-      .from('reaction_counts')
-      .select('*')
-      .eq('entry_id', entryId);
-    if (e2) console.error('reaction_counts query error:', e2);
-    else console.log('reaction_counts view:', counts);
+  // Clamp within viewport
+  if (left + pickerRect.width > vw - 8) left = vw - pickerRect.width - 8;
+  if (left < 8) left = 8;
 
-    // 3. Log userReactionsMap state
-    console.log('userReactionsMap[entryId]:', userReactionsMap[String(entryId)] || null);
-
-    // 4. Log entry.reactions from cache
-    const entry = cachedShameEntries.find(e => e.id === entryId);
-    console.log('entry.reactions (cache):', entry ? entry.reactions : 'NOT FOUND');
-  } catch (err) {
-    console.error('debug query failed:', err);
+  // If below viewport, show above the button
+  if (top + pickerRect.height > vh - 8) {
+    top = btnRect.top - pickerRect.height - 6;
   }
-  console.groupEnd();
+  if (top < 8) top = btnRect.bottom + 6;
+
+  picker.style.left = left + 'px';
+  picker.style.top = top + 'px';
 }
+
+function closeReactionPicker() {
+  if (activePickerEl) {
+    if (activePickerEl._repositionCleanup) activePickerEl._repositionCleanup();
+    activePickerEl.remove();
+    activePickerEl = null;
+  }
+  activePickerEntryId = null;
+}
+
+document.addEventListener('click', closeReactionPicker);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeReactionPicker(); });
 
 async function handleReaction(entryId, emoji) {
   if (!currentUser) {
@@ -174,14 +177,11 @@ async function handleReaction(entryId, emoji) {
     return;
   }
 
-  closeReactionPicker(entryId);
+  closeReactionPicker();
 
   const previousEmoji = getUserReaction(entryId);
   const togglingOff = previousEmoji === emoji;
 
-  console.log(`[REACTION] click emoji="${emoji}" previous="${previousEmoji}" togglingOff=${togglingOff}`);
-
-  // Call RPC — same emoji = toggle off (delete), different = upsert
   if (supabaseClient) {
     try {
       const { data, error } = await supabaseClient.rpc('upsert_reaction', {
@@ -189,19 +189,10 @@ async function handleReaction(entryId, emoji) {
         p_emoji: togglingOff ? previousEmoji : emoji,
       });
       if (error) throw error;
-      console.log('[REACTION] RPC succeeded, data:', data);
 
-      // DEBUG: log DB state BEFORE refresh
-      await debugReactionState(entryId, 'AFTER RPC, BEFORE refresh');
-
-      // Re-fetch BOTH user reactions AND global counts from DB
       await refreshUserReactions();
       await refreshReactionCounts();
 
-      // DEBUG: log DB state AFTER refresh
-      await debugReactionState(entryId, 'AFTER refresh');
-
-      // Re-render the specific post's reactions bar
       const entry = cachedShameEntries.find(e => e.id === entryId);
       if (entry) {
         const bar = document.getElementById(`reactions-bar-${entryId}`);
@@ -215,16 +206,6 @@ async function handleReaction(entryId, emoji) {
             }
           }
         }
-      }
-
-      // DEBUG: log rendered DOM
-      const barFinal = document.getElementById(`reactions-bar-${entryId}`);
-      if (barFinal) {
-        const pills = barFinal.querySelectorAll('.reaction-btn');
-        console.log('[REACTION] rendered pills:', Array.from(pills).map(p => ({
-          text: p.textContent.trim(),
-          isMine: p.classList.contains('is-mine'),
-        })));
       }
     } catch (err) {
       console.warn("Reaction error:", err);
