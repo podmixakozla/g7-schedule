@@ -145,27 +145,51 @@ Deno.serve(async (req) => {
           },
         });
 
-      if (createError || !newUser?.user) {
-        console.error("createUser error:", createError);
-        throw new HttpError(500, "Failed to create auth user");
+      if (createError) {
+        // email_exists = orphaned auth user from a prior partially-failed login.
+        // Recover by listing users and matching email in JS.
+        if (createError.code === "email_exists" || createError.status === 422) {
+          let existingUser: { id: string } | null = null;
+          let page = 1;
+          const perPage = 100;
+          while (true) {
+            const { data: batch, error: listError } =
+              await supabase.auth.admin.listUsers({ page, perPage });
+            if (listError || !batch?.users?.length) break;
+            existingUser = batch.users.find(
+              (u: { email?: string }) => u.email === email
+            ) as { id: string } | null;
+            if (existingUser || batch.users.length < perPage) break;
+            page++;
+          }
+          if (!existingUser) {
+            console.error("email_exists but user not found via listUsers:", createError);
+            throw new HttpError(500, "Failed to recover existing auth user");
+          }
+          authUserId = existingUser.id;
+          console.log(`Recovered orphaned auth user ${authUserId} for telegram_id ${telegramId}`);
+        } else {
+          console.error("createUser error:", createError);
+          throw new HttpError(500, "Failed to create auth user");
+        }
+      } else {
+        authUserId = newUser.user.id;
       }
 
-      authUserId = newUser.user.id;
-
-      // Insert telegram profile linked to the auth UUID
+      // Self-healing: upsert telegram_users row (creates if missing, no-op if exists)
       const { error: insertError } = await supabase
         .from("telegram_users")
-        .insert({
+        .upsert({
           id: authUserId,
           telegram_id: telegramId,
           username,
           first_name: firstName,
           last_name: lastName,
           photo_url: photoUrl,
-        });
+        }, { onConflict: "id" });
 
       if (insertError) {
-        console.error("telegram_users insert error:", insertError);
+        console.error("telegram_users upsert error:", insertError);
         throw new HttpError(500, "Failed to create Telegram profile");
       }
     }
