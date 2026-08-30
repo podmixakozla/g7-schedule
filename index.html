@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>РОЗКЛАД НТУ ДП // G7 + ДОШКА ГАНЬБИ</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23E8B93E'/><text y='.9em' x='50' text-anchor='middle' font-size='72'>📅</text></svg>">
 
   <!-- Жирні шрифти з сильним характером -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,6 +13,9 @@
 
   <!-- Supabase JS Client CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Telegram WebApp SDK — must load before auth.js -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/app-container.css">
@@ -25,6 +29,7 @@
   <link rel="stylesheet" href="css/modal.css">
   <link rel="stylesheet" href="css/confetti.css">
   <link rel="stylesheet" href="css/footer.css">
+  <link rel="stylesheet" href="css/auth.css">
 </head>
 <body>
 
@@ -33,6 +38,9 @@
 
   <!-- Конфетті canvas -->
   <canvas id="confettiCanvas"></canvas>
+
+  <!-- Auth Overlay -->
+  <div class="auth-overlay" id="authOverlay"></div>
 
   <div class="app-container">
     
@@ -120,7 +128,7 @@
       </div>
       <div style="display: flex; align-items: center; gap: 0.4rem;">
         <div class="clock-badge" id="liveClock">⏰ Завантаження...</div>
-        <button class="btn-clear-tiny" onclick="clearBoard()" title="Адмін-очищення">🗑️</button>
+        <button class="btn-clear-tiny" id="btnClearBoard" onclick="clearBoard()" title="Адмін-очищення" style="display: none;">🗑️</button>
       </div>
     </footer>
   </div>
@@ -136,10 +144,7 @@
       <div class="error-banner" id="modalError"></div>
 
       <form id="shameForm" onsubmit="handleShameSubmit(event)">
-        <div class="form-group">
-          <label class="form-label">Ім'я / Нікнейм героя 👤</label>
-          <input type="text" id="shameName" class="form-input" placeholder="Наприклад: Вася Дебаггер" required />
-        </div>
+        <input type="hidden" id="shameName" />
 
         <div class="form-group" style="margin-top: 0.8rem;">
           <label class="form-label">За що потрапив? 📝</label>
@@ -152,11 +157,6 @@
             <span id="fileLabel">📁 Тисни сюди для вибору фото</span>
             <input type="file" id="shamePhoto" accept="image/*" onchange="handleFileSelect(event)" required />
           </div>
-        </div>
-
-        <div class="form-group" style="margin-top: 0.8rem;">
-          <label class="form-label">Пароль групи 🔑</label>
-          <input type="password" id="shamePassword" class="form-input" placeholder="Введіть пароль групи" required />
         </div>
 
         <div style="margin-top: 1.25rem;">
@@ -176,6 +176,7 @@
   <script src="js/schedule.js"></script>
   <script src="js/calendar.js"></script>
   <script src="js/clock.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/reactions.js"></script>
   <script src="js/comments.js"></script>
   <script src="js/shame-board.js"></script>

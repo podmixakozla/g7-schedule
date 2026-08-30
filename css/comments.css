@@ -71,6 +71,15 @@
   flex-direction: column;
   gap: 0.4rem;
 }
+.comment-form-author {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--black);
+  opacity: 0.6;
+  padding: 0 0.1rem;
+}
 .comment-form input,
 .comment-form textarea {
   font-family: 'Space Grotesk', sans-serif;

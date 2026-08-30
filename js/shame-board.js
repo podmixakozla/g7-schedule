@@ -34,8 +34,35 @@ async function loadShameEntries() {
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        cachedShameEntries = data;
+      // Load reaction counts from the new reaction_counts view
+      let reactionCounts = {};
+      try {
+        const { data: rcData } = await supabaseClient
+          .from('reaction_counts')
+          .select('*');
+        if (rcData) {
+          rcData.forEach(rc => {
+            if (!reactionCounts[rc.entry_id]) reactionCounts[rc.entry_id] = {};
+            reactionCounts[rc.entry_id][rc.emoji] = rc.count;
+          });
+        }
+      } catch {
+        // reaction_counts view may not exist yet — fall back to legacy
+      }
+
+      // Merge: new reaction_counts takes priority over legacy JSONB
+      const entries = (data || []).map(entry => {
+        const merged = { ...entry };
+        if (reactionCounts[entry.id]) {
+          merged.reactions = reactionCounts[entry.id];
+        } else if (!merged.reactions) {
+          merged.reactions = {};
+        }
+        return merged;
+      });
+
+      if (entries.length > 0) {
+        cachedShameEntries = entries;
       } else {
         cachedShameEntries = initialDemoShameEntries;
       }
@@ -80,6 +107,11 @@ function renderShameGrid(entries) {
 
     const reactionsHtml = buildReactionsHtml(item);
 
+    const isAdmin = currentUser && currentUser.is_admin;
+    const adminDeleteHtml = isAdmin
+      ? `<button class="btn-brutal" onclick="adminDeletePost(${item.id})" style="background: var(--red); color: var(--white); font-size: 0.75rem; padding: 0.3rem 0.6rem; align-self: flex-end;">🗑️ ВИДАЛИТИ</button>`
+      : '';
+
     card.innerHTML = `
       ${ribbonHtml}
       <div class="shame-card-badge">💀 ГАНЬБА</div>
@@ -99,11 +131,12 @@ function renderShameGrid(entries) {
           <div class="comment-empty">⏳ Завантаження...</div>
         </div>
         <form class="comment-form" onsubmit="handleCommentSubmit(event, ${item.id})">
-          <input type="text" class="comment-author-input" placeholder="Ім'я" required maxlength="40" />
+          <div class="comment-form-author" id="comment-author-${item.id}"></div>
           <textarea class="comment-text-input" placeholder="Написати коментар..." required maxlength="300"></textarea>
           <button type="submit" class="comment-submit-btn">Надіслати</button>
         </form>
       </div>
+      ${adminDeleteHtml}
     `;
 
     grid.appendChild(card);
@@ -111,34 +144,57 @@ function renderShameGrid(entries) {
 }
 
 async function clearBoard() {
-  const password = prompt("Введи адмін-пароль:");
-  if (password === null) return;
+  if (!currentUser || !currentUser.is_admin) return;
+  if (!confirm("Видалити ВСІ записи з дошки ганьби? Це незворотно!")) return;
 
-  if (password !== "kaceta") {
-    showModalError("Невірний пароль 🚫");
-    openShameModal();
-    return;
-  }
+  try {
+    const token = localStorage.getItem('g7_auth_token');
+    const response = await fetch(`${EDGE_FUNCTION_URL}/admin-clear-board`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-  if (supabaseClient) {
-    try {
-      const { error } = await supabaseClient
-        .from('board_entries')
-        .delete()
-        .neq('id', 0);
-
-      if (error) {
-        console.error("Помилка видалення Supabase:", error);
-        showModalError("Не вдалося очистити дошку в Supabase 💥");
-        openShameModal();
-        return;
-      }
-    } catch (err) {
-      console.error("Clear error:", err);
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || 'Failed to clear board');
     }
-  }
 
-  cachedShameEntries = [];
-  renderShameGrid(cachedShameEntries);
-  spawnConfettiBurst(20);
+    cachedShameEntries = [];
+    renderShameGrid(cachedShameEntries);
+    spawnConfettiBurst(20);
+  } catch (err) {
+    console.error("Clear board error:", err);
+    alert("Не вдалося очистити дошку: " + err.message);
+  }
+}
+
+async function adminDeletePost(postId) {
+  if (!currentUser || !currentUser.is_admin) return;
+  if (!confirm("Видалити цей запис з дошки ганьби?")) return;
+
+  try {
+    const token = localStorage.getItem('g7_auth_token');
+    const response = await fetch(`${EDGE_FUNCTION_URL}/admin-delete-post`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ post_id: postId }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || 'Failed to delete post');
+    }
+
+    cachedShameEntries = cachedShameEntries.filter(e => e.id !== postId);
+    renderShameGrid(getFilteredShameEntries(cachedShameEntries));
+  } catch (err) {
+    console.error("Delete post error:", err);
+    alert("Не вдалося видалити запис: " + err.message);
+  }
 }

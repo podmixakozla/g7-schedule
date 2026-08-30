@@ -118,23 +118,12 @@
   box-shadow: 5px 5px 0px var(--black);
 }
 
-@keyframes pairBreathing {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.018);
-  }
-}
 
 .pair-block.is-current-pair {
-  animation: pairBreathing 3.2s ease-in-out infinite;
-  border-color: var(--pink) !important;
-  outline: 3px solid var(--pink);
-  background: #FFF9FE;
-  box-shadow: 6px 6px 0px var(--pink);
+  border-left: 5px solid var(--pink);
+  background: #FFF5F9;
+  box-shadow: 4px 4px 0px var(--pink);
   z-index: 5;
-  will-change: transform;
 }
 
 .pair-top-row {
@@ -167,16 +156,13 @@
   background: var(--pink);
   color: var(--white);
   font-family: 'Archivo Black', sans-serif;
-  font-size: 0.7rem;
-  padding: 0.15rem 0.45rem;
-  border-radius: 4px;
-  border: 1.5px solid var(--black);
-  animation: blinker 1.5s ease-in-out infinite;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
 }
 
-@keyframes blinker {
-  50% { opacity: 0.6; }
-}
 
 .pair-name {
   font-size: 0.98rem;
@@ -228,23 +214,233 @@
   color: #666;
 }
 
+/* ═══════════════════════════════════════════════
+   WEEKEND CARD — asymmetric split composition
+   ═══════════════════════════════════════════════ */
+
 .weekend-card {
-  grid-column: 1 / -1;
-  background: var(--yellow);
+  max-width: min(680px, 88vw);
+  width: 100%;
+  margin: 0 auto;
   border: var(--border-thick);
-  box-shadow: var(--shadow-hard-lg);
-  border-radius: 16px;
-  padding: 4rem 2rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.25rem;
+  box-shadow: 14px 14px 0px var(--black);
+  border-radius: 18px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(120px, 32%) 1fr;
   transform: rotate(-1deg);
+  transition: transform 0.3s var(--bounce-ease), box-shadow 0.3s ease-out;
+  animation: weekendEntry 0.5s var(--bounce-ease) both;
+  position: relative;
 }
 
-.weekend-card h2 {
+@keyframes weekendEntry {
+  from {
+    opacity: 0;
+    transform: rotate(-4deg) translateY(30px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-1deg) translateY(0) scale(1);
+  }
+}
+
+.weekend-card:hover {
+  transform: rotate(0deg) translateY(-6px) scale(1.02);
+  box-shadow: 20px 20px 0px var(--black);
+}
+
+/* ── LEFT PANEL ── */
+.weekend-left {
+  background: var(--black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.weekend-left::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 14px 14px;
+  pointer-events: none;
+}
+
+.weekend-left::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: var(--cyan);
+  clip-path: polygon(0 60%, 100% 0%, 100% 100%, 0 100%);
+  opacity: 0.7;
+}
+
+.weekend-zzz {
   font-family: 'Archivo Black', sans-serif;
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(2.8rem, 8vw, 5.5rem);
+  color: var(--white);
+  line-height: 0.85;
+  text-align: center;
+  z-index: 1;
+  animation: zzzFloat 3.5s ease-in-out infinite;
+  user-select: none;
+  text-shadow: 4px 4px 0px var(--cyan);
+  letter-spacing: -0.04em;
+}
+
+.weekend-zzz small {
+  font-size: 0.55em;
+  display: block;
+  transform: translateX(10px);
+  opacity: 0.5;
+}
+
+@keyframes zzzFloat {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+/* ── RIGHT PANEL ── */
+.weekend-right {
+  background: var(--white);
+  padding: clamp(1.1rem, 2.5vw, 1.8rem) clamp(1rem, 2.5vw, 1.8rem) clamp(1rem, 2vw, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+  min-width: 0;
+}
+
+.weekend-right::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--black) 1px, transparent 1px);
+  background-size: 18px 18px;
+  opacity: 0.025;
+  pointer-events: none;
+}
+
+.weekend-top-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.weekend-label {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 0.72rem;
   text-transform: uppercase;
+  background: var(--yellow);
+  color: var(--black);
+  border: 2px solid var(--black);
+  box-shadow: var(--shadow-hard-sm);
+  padding: 0.2rem 0.55rem;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.weekend-tag {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--black);
+  opacity: 0.25;
+}
+
+.weekend-heading {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+  color: var(--black);
+  position: relative;
+  word-break: break-word;
+}
+
+.weekend-heading::after {
+  content: '';
+  position: absolute;
+  bottom: 1px;
+  left: -3px;
+  right: -3px;
+  height: 10px;
+  background: var(--cyan);
+  opacity: 0.35;
+  border-radius: 2px;
+  z-index: -1;
+  transform: skewX(-3deg);
+}
+
+.weekend-subheading {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: clamp(0.9rem, 2.8vw, 1.5rem);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--black);
+  opacity: 0.35;
+  margin-top: -0.1rem;
+  transform: translateX(6px);
+}
+
+.weekend-desc {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: clamp(0.75rem, 1.6vw, 0.85rem);
+  color: var(--black);
+  opacity: 0.4;
+  margin-top: 0.15rem;
+}
+
+/* ── TABLET (≤ 640px): stack vertically ── */
+@media (max-width: 640px) {
+  .weekend-card {
+    grid-template-columns: 1fr;
+    max-width: min(440px, 92vw);
+    box-shadow: 10px 10px 0px var(--black);
+  }
+
+  .weekend-left {
+    padding: clamp(1.2rem, 4vw, 2rem) 1rem;
+  }
+
+  .weekend-right {
+    padding: clamp(1rem, 3vw, 1.4rem) clamp(1rem, 3vw, 1.4rem) clamp(0.9rem, 2.5vw, 1.2rem);
+  }
+}
+
+/* ── MOBILE (≤ 400px): tighter ── */
+@media (max-width: 400px) {
+  .weekend-card {
+    max-width: 100%;
+    box-shadow: 8px 8px 0px var(--black);
+  }
+
+  .weekend-left {
+    padding: 1.2rem 0.8rem;
+  }
+
+  .weekend-right {
+    padding: 1rem;
+    gap: 0.35rem;
+  }
+
+  .weekend-top-row {
+    gap: 0.35rem;
+  }
 }

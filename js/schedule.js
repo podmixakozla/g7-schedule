@@ -1,6 +1,6 @@
 function renderSchedule() {
   const container = document.getElementById('scheduleContainer');
-  const now = new Date();
+  const now = getNow();
   const today = now.getDay();
   const currentPairNum = getCurrentPairNum();
 
@@ -12,11 +12,18 @@ function renderSchedule() {
     if (today === 0 || today === 6) {
       container.innerHTML = `
         <div class="weekend-card">
-          <div style="font-size: 4rem;">🏖️🍕🎮</div>
-          <h2>ВИХІДНИЙ! СПИ ДАЛІ</h2>
-          <p style="font-size: 1.1rem; font-weight: 800; max-width: 450px;">
-            Сьогодні ніяких пар!
-          </p>
+          <div class="weekend-left">
+            <div class="weekend-zzz">Z<small>z</small>z</div>
+          </div>
+          <div class="weekend-right">
+            <div class="weekend-top-row">
+              <span class="weekend-label">💤 ${today === 0 ? 'НЕДІЛЯ' : 'СУБОТА'}</span>
+              <span class="weekend-tag"> free day</span>
+            </div>
+            <h2 class="weekend-heading">ВИХІДНИЙ!</h2>
+            <h3 class="weekend-subheading">СПИ ДАЛІ</h3>
+            <p class="weekend-desc">Сьогодні ніяких пар!</p>
+          </div>
         </div>
       `;
       return;
@@ -52,7 +59,7 @@ function createDayCard(dayData, isToday, currentPairNum) {
           <div class="pair-top-row">
             <span class="pair-number">#${pair.num} ПАРА</span>
             <span class="pair-hours">⏰ ${time}</span>
-            ${isCurrent ? `<span class="live-badge">🔴 ЗАРАЗ</span>` : ''}
+            ${isCurrent ? `<span class="live-badge">ЗАРАЗ</span>` : ''}
           </div>
           <div class="window-title">ВІКНО 🎉</div>
           <div class="window-subtitle">🎉🎉🎉🎉🎉🎉🎉</div>
@@ -64,7 +71,7 @@ function createDayCard(dayData, isToday, currentPairNum) {
           <div class="pair-top-row">
             <span class="pair-number">#${pair.num} ПАРА</span>
             <span class="pair-hours">⏰ ${time}</span>
-            ${isCurrent ? `<span class="live-badge">🔴 LIVE</span>` : ''}
+            ${isCurrent ? `<span class="live-badge">ЗАРАЗ</span>` : ''}
           </div>
           <div class="pair-name">${escapeHtml(pair.subject)}</div>
           <div class="pair-footer">

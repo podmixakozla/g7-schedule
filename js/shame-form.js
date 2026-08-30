@@ -1,4 +1,8 @@
 function openShameModal() {
+  if (!currentUser) {
+    showAuthOverlay();
+    return;
+  }
   document.getElementById('modalError').style.display = 'none';
   document.getElementById('shameForm').reset();
   document.getElementById('fileLabel').textContent = '📁 Тисни сюди для вибору фото';
@@ -32,21 +36,23 @@ function showModalError(msg) {
 async function handleShameSubmit(e) {
   e.preventDefault();
 
-  const nameVal = document.getElementById('shameName').value.trim();
+  if (!currentUser) {
+    showAuthOverlay();
+    return;
+  }
+
+  const nameVal = (function() {
+    const first = currentUser.first_name || '';
+    const last = currentUser.last_name || '';
+    return (first && last) ? first + ' ' + last : first || currentUser.username || 'Анонім';
+  })();
   const reasonVal = document.getElementById('shameReason').value.trim();
   const photoInput = document.getElementById('shamePhoto');
-  const passVal = document.getElementById('shamePassword').value;
 
   const submitBtn = document.getElementById('btnSubmitShame');
   const submitText = document.getElementById('submitBtnText');
 
-  // 1. Перевірка пароля
-  if (passVal !== "anime") {
-    showModalError("Пароль невірний, ти не з наших 👀");
-    return;
-  }
-
-  // 2. Перевірка файлу
+  // Verify file
   const file = photoInput.files[0];
   if (!file) {
     showModalError("Будь ласка, завантажте фото-доказ! 📸");
@@ -88,7 +94,7 @@ async function handleShameSubmit(e) {
       const { error: insertErr } = await supabaseClient
         .from('board_entries')
         .insert([
-          { name: nameVal, reason: reasonVal, photo_url: photoUrl }
+          { name: nameVal, reason: reasonVal, photo_url: photoUrl, creator_id: currentUser.id }
         ]);
 
       if (insertErr) throw insertErr;

@@ -22,9 +22,10 @@ function setViewMode(mode) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initFloatingBackground();
   renderSchedule();
   updateClockAndCountdown();
   setInterval(updateClockAndCountdown, 1000);
+  await initAuth();
 });

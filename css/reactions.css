@@ -76,17 +76,25 @@
 .reaction-picker {
   position: absolute;
   bottom: calc(100% + 8px);
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   display: none;
-  align-items: center;
-  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.2rem;
   background: var(--white);
   border: 2.5px solid var(--black);
   border-radius: 30px;
-  padding: 0.4rem 0.55rem;
+  padding: 0.35rem 0.45rem;
   box-shadow: var(--shadow-hard-sm);
   z-index: 30;
   white-space: nowrap;
+  max-width: 90vw;
+}
+
+.reaction-picker.open-below {
+  bottom: auto;
+  top: calc(100% + 8px);
 }
 
 .reaction-picker.open {
@@ -125,4 +133,17 @@
   font-size: 0.8rem;
   min-width: 0.8rem;
   text-align: center;
+}
+
+@media (max-width: 480px) {
+  .reaction-picker {
+    gap: 0.15rem;
+    padding: 0.3rem 0.35rem;
+    border-radius: 20px;
+    max-width: 85vw;
+  }
+  .reaction-picker-emoji {
+    font-size: 1.15rem;
+    padding: 0.1rem 0.2rem;
+  }
 }

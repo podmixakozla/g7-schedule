@@ -4,7 +4,7 @@ function renderCalendar() {
 
   grid.innerHTML = '';
 
-  const now = new Date();
+  const now = getNow();
   const currentYear = now.getFullYear();
   const currentMonthIdx = now.getMonth();
   const currentDayDate = now.getDate();

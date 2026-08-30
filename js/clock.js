@@ -1,5 +1,5 @@
 function getCurrentPairNum() {
-  const now = new Date();
+  const now = getNow();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   for (const [num, slot] of Object.entries(timeSlots)) {
@@ -11,7 +11,7 @@ function getCurrentPairNum() {
 }
 
 function updateClockAndCountdown() {
-  const now = new Date();
+  const now = getNow();
   const clockEl = document.getElementById('liveClock');
   const dayOfWeek = now.getDay(); // 0 = Нд, 1 = Пн, ... 6 = Сб
   const currentMinutes = now.getHours() * 60 + now.getMinutes();

@@ -1,3 +1,4 @@
+let currentUser = null;
 let currentView = 'week';
 let collapsedMonthsState = {};
 
