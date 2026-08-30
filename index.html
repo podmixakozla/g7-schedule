@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>РОЗКЛАД НТУ ДП // G7 + ДОШКА ГАНЬБИ</title>
 
+  <!-- Жирні шрифти з сильним характером -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@600;700;900&display=swap" rel="stylesheet">
@@ -2185,6 +2186,17 @@
       } catch (e) {
         return {};
       }
+    }
+
+    function getUserReaction(entryId) {
+      const reactions = getUserReactionsMap();
+      return reactions[String(entryId)] || null;
+    }
+
+    function setUserReaction(entryId, emoji) {
+      const reactions = getUserReactionsMap();
+      reactions[String(entryId)] = emoji;
+      localStorage.setItem('shame_user_reactions', JSON.stringify(reactions));
     }
 
     const POPULAR_EMOJIS = ['🐳', '❤️', '😡', '😱', '🔥'];
