@@ -41,11 +41,11 @@ async function handleShameSubmit(e) {
     return;
   }
 
-  const nameVal = (function() {
-    const first = currentUser.first_name || '';
-    const last = currentUser.last_name || '';
-    return (first && last) ? first + ' ' + last : first || currentUser.username || 'Анонім';
-  })();
+  const nameVal = document.getElementById('shameName').value.trim();
+  if (!nameVal) {
+    showModalError("Введіть ім'я героя! 🤡");
+    return;
+  }
   const reasonVal = document.getElementById('shameReason').value.trim();
   const photoInput = document.getElementById('shamePhoto');
 

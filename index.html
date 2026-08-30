@@ -144,7 +144,10 @@
       <div class="error-banner" id="modalError"></div>
 
       <form id="shameForm" onsubmit="handleShameSubmit(event)">
-        <input type="hidden" id="shameName" />
+        <div class="form-group">
+          <label class="form-label">Ім'я / Нікнейм героя 🤡</label>
+          <input type="text" id="shameName" class="form-input" placeholder="Хто потрапив на дошку?" required maxlength="100" />
+        </div>
 
         <div class="form-group" style="margin-top: 0.8rem;">
           <label class="form-label">За що потрапив? 📝</label>
