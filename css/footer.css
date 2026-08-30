@@ -1,0 +1,64 @@
+.footer {
+  margin-top: auto;
+  background: var(--white);
+  border-top: var(--border-thick);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-weight: 800;
+  position: relative;
+  z-index: 10;
+}
+
+.footer-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.8rem;
+}
+
+.footer-tag {
+  white-space: nowrap;
+  background: var(--bg);
+  border: 2px solid var(--black);
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: 0.85rem;
+  box-shadow: 2px 2px 0px var(--black);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.clock-badge {
+  background: var(--lime);
+  border: var(--border-thick);
+  box-shadow: var(--shadow-hard-sm);
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.btn-clear-tiny {
+  background: transparent;
+  border: none;
+  font-size: 0.65rem;
+  opacity: 0.25;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  user-select: none;
+}
+
+.btn-clear-tiny:hover {
+  opacity: 0.9;
+  transform: scale(1.25);
+}

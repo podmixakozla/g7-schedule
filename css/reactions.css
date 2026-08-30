@@ -1,0 +1,128 @@
+/* ---- Реакції на пости ---- */
+.reactions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.reaction-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  background: var(--white);
+  border: 2px solid var(--black);
+  border-radius: 20px;
+  padding: 0.3rem 0.65rem;
+  box-shadow: 2px 2px 0px var(--black);
+  cursor: pointer;
+  transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s var(--bounce-ease), background-color 0.15s ease;
+}
+
+.reaction-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px var(--black);
+}
+
+.reaction-btn:active {
+  transform: translate(1px, 1px) scale(0.95);
+  box-shadow: 1px 1px 0px var(--black);
+}
+
+.reaction-btn.just-reacted {
+  background: var(--yellow);
+  animation: reactionPop 0.3s var(--bounce-ease);
+}
+
+.reaction-btn.is-mine {
+  background: var(--yellow);
+  box-shadow: 2px 2px 0px var(--black);
+}
+
+.reaction-add-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.reaction-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
+  font-weight: 900;
+  background: var(--white);
+  border: 2px solid var(--black);
+  border-radius: 50%;
+  box-shadow: 2px 2px 0px var(--black);
+  cursor: pointer;
+  transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s var(--bounce-ease);
+}
+
+.reaction-add-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px var(--black);
+}
+
+.reaction-add-btn:active {
+  transform: translate(1px, 1px) scale(0.92);
+  box-shadow: 1px 1px 0px var(--black);
+}
+
+.reaction-picker {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: none;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--white);
+  border: 2.5px solid var(--black);
+  border-radius: 30px;
+  padding: 0.4rem 0.55rem;
+  box-shadow: var(--shadow-hard-sm);
+  z-index: 30;
+  white-space: nowrap;
+}
+
+.reaction-picker.open {
+  display: inline-flex;
+  animation: pickerPop 0.18s var(--bounce-ease);
+}
+
+@keyframes pickerPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.reaction-picker-emoji {
+  background: none;
+  border: none;
+  font-size: 1.35rem;
+  cursor: pointer;
+  padding: 0.15rem 0.25rem;
+  border-radius: 50%;
+  transition: transform 0.15s var(--bounce-ease), background-color 0.15s ease;
+  line-height: 1;
+}
+
+.reaction-picker-emoji:hover {
+  transform: scale(1.35) translateY(-3px);
+  background: var(--bg);
+}
+
+@keyframes reactionPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+.reaction-count {
+  font-size: 0.8rem;
+  min-width: 0.8rem;
+  text-align: center;
+}

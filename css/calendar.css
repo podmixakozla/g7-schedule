@@ -1,0 +1,285 @@
+.calendar-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.calendar-box {
+  background: var(--white);
+  border: var(--border-thick);
+  box-shadow: var(--shadow-hard-lg);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.calendar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.legend-container.sticky-legend {
+  position: sticky;
+  top: 48px;
+  z-index: 85;
+  background: var(--white);
+  border: var(--border-thick);
+  box-shadow: var(--shadow-hard);
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: center;
+}
+
+.legend-title {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  color: var(--black);
+  background: var(--yellow);
+  border: 2px solid var(--black);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  box-shadow: 2px 2px 0px var(--black);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.legend-color-box {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--black);
+  border-radius: 5px;
+  box-shadow: 2px 2px 0px var(--black);
+}
+
+.legend-color-box.theory { background: var(--cal-theory); }
+.legend-color-box.control { background: var(--cal-control); }
+.legend-color-box.session { background: var(--cal-session); }
+.legend-color-box.vacation { background: var(--cal-vacation); }
+.legend-color-box.practice { background: var(--cal-practice); }
+
+.legend-text-num {
+  color: #1E3A8A;
+  font-weight: 900;
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--white);
+  border: 2px solid var(--black);
+  padding: 0 0.35rem;
+  border-radius: 4px;
+  box-shadow: 2px 2px 0px var(--black);
+}
+
+.legend-text-den {
+  color: var(--black);
+  font-weight: 800;
+  background: var(--white);
+  border: 2px solid var(--black);
+  padding: 0 0.35rem;
+  border-radius: 4px;
+  box-shadow: 2px 2px 0px var(--black);
+}
+
+.months-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .months-grid {
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .months-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.month-card {
+  background: var(--white);
+  border: var(--border-thick);
+  box-shadow: var(--shadow-hard);
+  border-radius: 12px;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  position: relative;
+  transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s ease-out, opacity 0.2s ease;
+}
+
+.month-card.is-current-month {
+  border: 4px solid var(--black) !important;
+  box-shadow: 9px 9px 0px var(--pink) !important;
+  opacity: 1 !important;
+  z-index: 10;
+}
+
+.month-card.is-other-month {
+  opacity: 0.88;
+}
+
+.month-card.is-other-month:hover {
+  opacity: 1;
+  transform: translateY(-4px);
+  box-shadow: 8px 8px 0px var(--black);
+}
+
+.current-month-sticker {
+  position: absolute;
+  top: -14px;
+  right: 14px;
+  background: var(--pink);
+  color: var(--white);
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.7rem;
+  border: 2.5px solid var(--black);
+  box-shadow: var(--shadow-hard-sm);
+  transform: rotate(3deg);
+  border-radius: 6px;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.month-name {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 1.15rem;
+  text-transform: uppercase;
+  padding-bottom: 0.5rem;
+  border-bottom: var(--border-thick);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.month-strip {
+  background: var(--white);
+  border: var(--border-thick);
+  box-shadow: var(--shadow-hard-sm);
+  border-radius: 10px;
+  padding: 0.85rem 1.1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.month-strip:hover {
+  background: var(--yellow);
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0px var(--black);
+}
+
+.cal-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 4px;
+}
+
+.cal-table th {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.2rem;
+  text-align: center;
+  background: var(--yellow);
+  border: 2px solid var(--black);
+  border-radius: 4px;
+  box-shadow: 2px 2px 0px var(--black);
+}
+
+.cal-cell {
+  width: 14.28%;
+  height: 38px;
+  text-align: center;
+  vertical-align: middle;
+  font-weight: 800;
+  font-size: 0.88rem;
+  border: 2px solid var(--black);
+  border-radius: 6px;
+  position: relative;
+  box-shadow: 2px 2px 0px var(--black);
+  user-select: none;
+  transition: transform 0.12s ease;
+  z-index: 1;
+}
+
+.cal-cell:hover {
+  transform: scale(1.15);
+  z-index: 50;
+  transition: transform 0.12s ease;
+}
+
+.cal-cell.empty {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.cal-cell.type-theory { background: var(--cal-theory); }
+.cal-cell.type-control { background: var(--cal-control); }
+.cal-cell.type-session { background: var(--cal-session); color: #fff; }
+.cal-cell.type-vacation { 
+  background: var(--cal-vacation); 
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.05) 4px, rgba(0,0,0,0.05) 8px);
+}
+.cal-cell.type-practice { background: var(--cal-practice); }
+
+.cal-cell.is-numerator {
+  color: #1E3A8A;
+  font-weight: 900;
+  font-size: 0.98rem;
+}
+
+@keyframes pulseToday {
+  0%, 100% {
+    box-shadow: 0 0 0 0px rgba(255, 51, 102, 0.9), 3px 3px 0px var(--black);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 51, 102, 0.4), 4px 4px 0px var(--black);
+    transform: scale(1.12);
+  }
+}
+
+.cal-cell.is-today-cell {
+  border: 3.5px solid var(--black) !important;
+  outline: 3.5px solid var(--red) !important;
+  background: var(--lime) !important;
+  color: var(--black) !important;
+  font-weight: 900 !important;
+  z-index: 40;
+  animation: pulseToday 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.cell-sticker-icon {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 0.72rem;
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(1px 1px 0px var(--black));
+}
+
+.student-day-ring {
+  border: 3px dashed var(--black) !important;
+  background: #E0C3FC !important;
+  cursor: pointer;
+}
