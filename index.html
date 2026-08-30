@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>РОЗКЛАД НТУ ДП // G7 + ДОШКА ГАНЬБИ</title>
 
-  <!-- Жирні шрифти з сильним характером -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@600;700;900&display=swap" rel="stylesheet">
@@ -19,20 +18,20 @@
       --black: #0F0F11;
       --white: #FFFFFF;
       
-      --lime: #C6FF3D;
-      --pink: #FF4FD8;
-      --yellow: #FFD400;
-      --cyan: #00F5D4;
-      --blue: #3D5AFE;
-      --orange: #FF6B00;
-      --purple: #B388FF;
-      --red: #FF3366;
+      --lime: #B4D97A;
+      --pink: #D6469B;
+      --yellow: #E8B93E;
+      --cyan: #3FBFA8;
+      --blue: #4A63C9;
+      --orange: #D9702E;
+      --purple: #9B7FD4;
+      --red: #D6455E;
       
-      --cal-theory: #D0E8FF;
-      --cal-control: #FFD400;
-      --cal-session: #FF4FD8;
-      --cal-vacation: #B2F2BB;
-      --cal-practice: #FFF3BF;
+      --cal-theory: #C7DCEF;
+      --cal-control: #E8B93E;
+      --cal-session: #D6469B;
+      --cal-vacation: #A9D9AE;
+      --cal-practice: #EDE2AE;
 
       --border-thick: 3.5px solid var(--black);
       --shadow-hard: 6px 6px 0px var(--black);
@@ -57,7 +56,7 @@
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
-      background-image: radial-gradient(var(--black) 1px, transparent 0);
+      background-image: radial-gradient(rgba(0,0,0,0.045) 1px, transparent 0);
       background-size: 28px 28px;
       position: relative;
     }
@@ -87,31 +86,6 @@
       0% { transform: translate(0, 0) rotate(0deg) scale(1); }
       50% { transform: translate(25px, -35px) rotate(15deg) scale(1.1); }
       100% { transform: translate(-20px, 20px) rotate(-12deg) scale(0.95); }
-    }
-
-    .ticker-wrap {
-      background: var(--black);
-      color: var(--lime);
-      font-family: 'Archivo Black', sans-serif;
-      font-size: 0.95rem;
-      padding: 0.6rem 0;
-      overflow: hidden;
-      white-space: nowrap;
-      border-bottom: var(--border-thick);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 4px 0 rgba(0,0,0,0.1);
-    }
-
-    .ticker {
-      display: inline-block;
-      animation: marquee 20s linear infinite;
-    }
-
-    @keyframes marquee {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
     }
 
     .app-container {
@@ -223,7 +197,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s var(--bounce-ease), background-color 0.15s ease;
+      transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s ease-out, background-color 0.15s ease;
       user-select: none;
     }
 
@@ -299,8 +273,9 @@
       display: flex;
       flex-direction: column;
       overflow: visible;
-      transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s var(--bounce-ease);
+      transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s ease-out;
       position: relative;
+      backface-visibility: hidden;
     }
 
     .day-card:nth-child(1) { transform: rotate(-0.8deg); }
@@ -308,12 +283,6 @@
     .day-card:nth-child(3) { transform: rotate(-1.1deg); }
     .day-card:nth-child(4) { transform: rotate(0.6deg); }
     .day-card:nth-child(5) { transform: rotate(-0.7deg); }
-
-    .day-card:hover {
-      transform: translateY(-6px) scale(1.01) !important;
-      box-shadow: 12px 12px 0px var(--black);
-      z-index: 20;
-    }
 
     .day-card.is-today {
       box-shadow: 10px 10px 0px var(--pink) !important;
@@ -357,24 +326,6 @@
       white-space: nowrap;
     }
 
-    .meme-sticker {
-      position: absolute;
-      top: -12px;
-      right: 12px;
-      background: var(--pink);
-      color: var(--white);
-      font-family: 'Archivo Black', sans-serif;
-      font-size: 0.72rem;
-      padding: 0.25rem 0.65rem;
-      border: 2px solid var(--black);
-      box-shadow: var(--shadow-hard-sm);
-      transform: rotate(3deg);
-      border-radius: 6px;
-      z-index: 25;
-      pointer-events: none;
-      white-space: nowrap;
-    }
-
     .pairs-body {
       padding: 1.1rem;
       display: flex;
@@ -396,7 +347,7 @@
       flex-direction: column;
       gap: 0.6rem;
       position: relative;
-      transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s var(--bounce-ease), background-color 0.2s ease;
+      transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s ease-out, background-color 0.2s ease;
       user-select: none;
     }
 
@@ -408,11 +359,9 @@
     @keyframes pairBreathing {
       0%, 100% {
         transform: scale(1);
-        box-shadow: var(--shadow-hard-sm);
       }
       50% {
         transform: scale(1.018);
-        box-shadow: 6px 6px 0px var(--pink);
       }
     }
 
@@ -421,7 +370,9 @@
       border-color: var(--pink) !important;
       outline: 3px solid var(--pink);
       background: #FFF9FE;
+      box-shadow: 6px 6px 0px var(--pink);
       z-index: 5;
+      will-change: transform;
     }
 
     .pair-top-row {
@@ -658,7 +609,7 @@
       flex-direction: column;
       gap: 0.8rem;
       position: relative;
-      transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s var(--bounce-ease), opacity 0.2s ease;
+      transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s ease-out, opacity 0.2s ease;
     }
 
     .month-card.is-current-month {
@@ -755,11 +706,13 @@
       box-shadow: 2px 2px 0px var(--black);
       user-select: none;
       transition: transform 0.12s ease;
+      z-index: 1;
     }
 
     .cal-cell:hover {
       transform: scale(1.15);
-      z-index: 30;
+      z-index: 50;
+      transition: transform 0.12s ease;
     }
 
     .cal-cell.empty {
@@ -818,6 +771,13 @@
       border: 3px dashed var(--black) !important;
       background: #E0C3FC !important;
       cursor: pointer;
+    }
+
+    .shame-subtabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: -0.5rem;
     }
 
     .shame-wrapper {
@@ -880,16 +840,17 @@
     }
 
     .shame-card {
-      background: var(--white);
-      border: var(--border-thick);
-      box-shadow: var(--shadow-hard-lg);
+      background: #F7F5F0;
+      border: 2.5px solid var(--black);
+      box-shadow: 5px 5px 0px var(--black);
       border-radius: 14px;
       padding: 1.1rem;
       display: flex;
       flex-direction: column;
       gap: 0.85rem;
       position: relative;
-      transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s var(--bounce-ease);
+      transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s ease-out;
+      z-index: 1;
     }
 
     .shame-card:nth-child(odd) { transform: rotate(-1deg); }
@@ -899,6 +860,36 @@
       transform: translateY(-6px) rotate(0deg) scale(1.02) !important;
       box-shadow: 12px 12px 0px var(--black);
       z-index: 20;
+      transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s ease-out;
+    }
+
+    .shame-card.is-champion {
+      background: var(--white);
+      border: var(--border-thick);
+      box-shadow: var(--shadow-hard-lg);
+    }
+
+    .champion-ribbon {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-2deg);
+      background: var(--yellow);
+      color: var(--black);
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.78rem;
+      padding: 0.3rem 0.8rem;
+      border: 2.5px solid var(--black);
+      box-shadow: var(--shadow-hard-sm);
+      border-radius: 8px;
+      z-index: 6;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .champion-ribbon.is-month {
+      background: var(--pink);
+      color: var(--white);
     }
 
     .shame-img-box {
@@ -932,6 +923,7 @@
       border-radius: 6px;
       transform: rotate(-3deg);
       z-index: 5;
+      pointer-events: none;
     }
 
     .shame-name {
@@ -947,6 +939,245 @@
       box-shadow: 2px 2px 0px var(--black);
       display: inline-block;
       align-self: flex-start;
+    }
+
+    /* ---- Коментарі під постом ---- */
+    /* ---- Реакції на пости ---- */
+    .reactions-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .reaction-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 0.85rem;
+      background: var(--white);
+      border: 2px solid var(--black);
+      border-radius: 20px;
+      padding: 0.3rem 0.65rem;
+      box-shadow: 2px 2px 0px var(--black);
+      cursor: pointer;
+      transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s var(--bounce-ease), background-color 0.15s ease;
+    }
+
+    .reaction-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0px var(--black);
+    }
+
+    .reaction-btn:active {
+      transform: translate(1px, 1px) scale(0.95);
+      box-shadow: 1px 1px 0px var(--black);
+    }
+
+    .reaction-btn.just-reacted {
+      background: var(--yellow);
+      animation: reactionPop 0.3s var(--bounce-ease);
+    }
+
+    .reaction-btn.is-mine {
+      background: var(--yellow);
+      box-shadow: 2px 2px 0px var(--black);
+    }
+
+    .reaction-add-wrapper {
+      position: relative;
+      display: inline-flex;
+    }
+
+    .reaction-add-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      font-size: 1rem;
+      font-weight: 900;
+      background: var(--white);
+      border: 2px solid var(--black);
+      border-radius: 50%;
+      box-shadow: 2px 2px 0px var(--black);
+      cursor: pointer;
+      transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s var(--bounce-ease);
+    }
+
+    .reaction-add-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0px var(--black);
+    }
+
+    .reaction-add-btn:active {
+      transform: translate(1px, 1px) scale(0.92);
+      box-shadow: 1px 1px 0px var(--black);
+    }
+
+    .reaction-picker {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 0;
+      display: none;
+      align-items: center;
+      gap: 0.3rem;
+      background: var(--white);
+      border: 2.5px solid var(--black);
+      border-radius: 30px;
+      padding: 0.4rem 0.55rem;
+      box-shadow: var(--shadow-hard-sm);
+      z-index: 30;
+      white-space: nowrap;
+    }
+
+    .reaction-picker.open {
+      display: inline-flex;
+      animation: pickerPop 0.18s var(--bounce-ease);
+    }
+
+    @keyframes pickerPop {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .reaction-picker-emoji {
+      background: none;
+      border: none;
+      font-size: 1.35rem;
+      cursor: pointer;
+      padding: 0.15rem 0.25rem;
+      border-radius: 50%;
+      transition: transform 0.15s var(--bounce-ease), background-color 0.15s ease;
+      line-height: 1;
+    }
+
+    .reaction-picker-emoji:hover {
+      transform: scale(1.35) translateY(-3px);
+      background: var(--bg);
+    }
+
+    @keyframes reactionPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+
+    .reaction-count {
+      font-size: 0.8rem;
+      min-width: 0.8rem;
+      text-align: center;
+    }
+
+    .comments-toggle-btn {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 0.85rem;
+      background: var(--white);
+      border: 2px solid var(--black);
+      border-radius: 8px;
+      padding: 0.45rem 0.7rem;
+      box-shadow: 3px 3px 0px var(--black);
+      cursor: pointer;
+      align-self: flex-start;
+      transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s ease-out;
+    }
+    .comments-toggle-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0px var(--black);
+    }
+    .comments-toggle-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 0px 0px 0px var(--black);
+    }
+
+    .comments-section {
+      display: none;
+      flex-direction: column;
+      gap: 0.6rem;
+      border-top: 2px dashed var(--black);
+      padding-top: 0.75rem;
+      margin-top: 0.25rem;
+    }
+    .comments-section.open { display: flex; }
+
+    .comments-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .comment-item {
+      background: var(--white);
+      border: 2px solid var(--black);
+      border-radius: 8px;
+      padding: 0.5rem 0.6rem;
+      box-shadow: 2px 2px 0px var(--black);
+      font-size: 0.82rem;
+    }
+    .comment-author {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      color: var(--black);
+      margin-bottom: 0.15rem;
+    }
+    .comment-text {
+      font-weight: 700;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .comment-empty {
+      font-weight: 700;
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-align: center;
+      padding: 0.4rem 0;
+    }
+
+    .comment-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .comment-form input,
+    .comment-form textarea {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 0.82rem;
+      border: 2px solid var(--black);
+      border-radius: 6px;
+      padding: 0.45rem 0.55rem;
+      background: var(--bg);
+    }
+    .comment-form textarea {
+      resize: vertical;
+      min-height: 44px;
+    }
+    .comment-submit-btn {
+      align-self: flex-end;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 0.82rem;
+      background: var(--yellow);
+      border: 2px solid var(--black);
+      border-radius: 6px;
+      padding: 0.4rem 0.7rem;
+      box-shadow: 2px 2px 0px var(--black);
+      cursor: pointer;
+      transition: transform 0.15s var(--bounce-ease);
+    }
+    .comment-submit-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 0px 0px 0px var(--black);
+    }
+    .comment-submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     .shame-reason {
@@ -1214,19 +1445,12 @@
   <!-- Конфетті canvas -->
   <canvas id="confettiCanvas"></canvas>
 
-  <div class="ticker-wrap">
-    <div class="ticker">
-      ⚡ НТУ «ДНІПРОВСЬКА ПОЛІТЕХНІКА» 🔥 1899 ⚡ СПЕЦІАЛЬНІСТЬ G7 🎓 ⚡ 8:00 ПЕРША ПАРА 🚀 ЗДАВАЙ ЛАБИ ВЧАСНО 🤙 ВІКНО = ЧАС ДЛЯ КАВИ ☕️ ⚡ НТУ «ДНІПРОВСЬКА ПОЛІТЕХНІКА» 🔥 1899 ⚡ РОЗКЛАД ПАР G7 ⚡
-    </div>
-  </div>
-
   <div class="app-container">
     
     <header class="header">
       <div class="header-main">
         <div class="tags-row">
           <div class="badge-pill">🔥 НТУ ДП · 1899</div>
-          <div class="badge-pill pink">⚡ ДЕННИЙ СТАВІНГ</div>
           <div class="badge-pill cyan">🎓 СПЕЦІАЛЬНІСТЬ G7</div>
         </div>
         <h1 class="main-title">РОЗКЛАД <span>G7</span> 🤙</h1>
@@ -1289,6 +1513,11 @@
         <button class="btn-brutal red-accent" onclick="openShameModal()">
           ➕ ДОДАТИ ГЕРОЯ
         </button>
+      </div>
+
+      <div class="shame-subtabs">
+        <button class="btn-brutal active" id="btnShameNew" onclick="setShameSubView('new')">🆕 НОВІ</button>
+        <button class="btn-brutal" id="btnShameTop" onclick="setShameSubView('top')">🏆 ТОП ТИЖНЯ/МІСЯЦЯ</button>
       </div>
 
       <div class="shame-grid" id="shameGrid"></div>
@@ -1668,10 +1897,9 @@
       });
 
       card.innerHTML = `
-        <div class="meme-sticker">${dayData.sticker}</div>
         <div class="day-header">
           <span class="day-title">${dayData.dayName}</span>
-          <span class="day-meta-badge">${isToday ? '🔥 СЬОГОДНІ' : dayData.badge}</span>
+          ${isToday ? `<span class="day-meta-badge">🔥 СЬОГОДНІ</span>` : ''}
         </div>
         <div class="pairs-body">
           ${pairsHtml}
@@ -1834,6 +2062,28 @@
     }
 
     let cachedShameEntries = [];
+    let currentShameSubView = 'new';
+
+    function setShameSubView(mode) {
+      currentShameSubView = mode;
+      document.getElementById('btnShameNew').classList.toggle('active', mode === 'new');
+      document.getElementById('btnShameTop').classList.toggle('active', mode === 'top');
+      renderShameGrid(getFilteredShameEntries(cachedShameEntries));
+    }
+
+    function getTotalReactions(entry) {
+      const reactions = entry.reactions || {};
+      return Object.values(reactions).reduce((sum, n) => sum + (n || 0), 0);
+    }
+
+    function getFilteredShameEntries(entries) {
+      if (currentShameSubView === 'top') {
+        return [...entries]
+          .filter(e => getTotalReactions(e) > 0)
+          .sort((a, b) => getTotalReactions(b) - getTotalReactions(a));
+      }
+      return entries;
+    }
 
     async function loadShameEntries() {
       const grid = document.getElementById('shameGrid');
@@ -1863,7 +2113,7 @@
         cachedShameEntries = initialDemoShameEntries;
       }
 
-      renderShameGrid(cachedShameEntries);
+      renderShameGrid(getFilteredShameEntries(cachedShameEntries));
     }
 
     function renderShameGrid(entries) {
@@ -1882,11 +2132,22 @@
 
       entries.forEach(item => {
         const card = document.createElement('div');
-        card.className = 'shame-card';
+        const isChampion = item.is_week_champion || item.is_month_champion;
+        card.className = `shame-card ${isChampion ? 'is-champion' : ''}`;
 
         const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' }) : 'Сьогодні';
 
+        let ribbonHtml = '';
+        if (item.is_month_champion) {
+          ribbonHtml = `<div class="champion-ribbon is-month">🏆 ХІТ МІСЯЦЯ</div>`;
+        } else if (item.is_week_champion) {
+          ribbonHtml = `<div class="champion-ribbon">👑 ХІТ ТИЖНЯ</div>`;
+        }
+
+        const reactionsHtml = buildReactionsHtml(item);
+
         card.innerHTML = `
+          ${ribbonHtml}
           <div class="shame-card-badge">💀 ГЕРОЙ ДНЯ</div>
           <div class="shame-img-box">
             <img class="shame-img" src="${escapeHtml(item.photo_url)}" alt="${escapeHtml(item.name)}" onerror="this.src='https://placehold.co/600x400/0F0F11/FF4FD8?text=ФОТО+ВТРАЧЕНО'" />
@@ -1894,10 +2155,251 @@
           <div class="shame-name">${escapeHtml(item.name)}</div>
           <div class="shame-reason">${escapeHtml(item.reason)}</div>
           <div class="shame-date">🗓️ ${dateStr}</div>
+
+          <div class="reactions-bar" id="reactions-bar-${item.id}">${reactionsHtml}</div>
+
+          <button class="comments-toggle-btn" onclick="toggleComments(${item.id}, this)">💬 Коментарі</button>
+
+          <div class="comments-section" id="comments-section-${item.id}">
+            <div class="comments-list" id="comments-list-${item.id}">
+              <div class="comment-empty">⏳ Завантаження...</div>
+            </div>
+            <form class="comment-form" onsubmit="handleCommentSubmit(event, ${item.id})">
+              <input type="text" class="comment-author-input" placeholder="Ім'я" required maxlength="40" />
+              <textarea class="comment-text-input" placeholder="Написати коментар..." required maxlength="300"></textarea>
+              <button type="submit" class="comment-submit-btn">Надіслати</button>
+            </form>
+          </div>
         `;
 
         grid.appendChild(card);
       });
+    }
+
+    // ------------------------------------------------------------------
+    // Захист від спаму реакціями - одна реакція на пост з одного браузера
+    // ------------------------------------------------------------------
+    function getUserReactionsMap() {
+      try {
+        return JSON.parse(localStorage.getItem('shame_user_reactions') || '{}');
+      } catch (e) {
+        return {};
+      }
+    }
+
+    const POPULAR_EMOJIS = ['🐳', '❤️', '😡', '😱', '🔥'];
+    let openReactionPickerId = null;
+
+    function buildReactionsHtml(item) {
+      const reactions = item.reactions || {};
+      const userReactionKey = getUserReaction(item.id);
+
+      // Пілюлі показуємо тільки для емодзі, які вже отримали хоча б одну реакцію
+      const usedPillsHtml = POPULAR_EMOJIS
+        .filter(emoji => (reactions[emoji] || 0) > 0)
+        .map(emoji => {
+          const count = reactions[emoji] || 0;
+          const isMine = userReactionKey === emoji;
+          return `
+            <button class="reaction-btn ${isMine ? 'is-mine' : ''}" onclick="handleReaction(${item.id}, '${emoji}')">
+              <span>${emoji}</span>
+              <span class="reaction-count">${count}</span>
+            </button>
+          `;
+        }).join('');
+
+      const pickerEmojisHtml = POPULAR_EMOJIS.map(emoji => `
+        <button class="reaction-picker-emoji" onclick="handleReaction(${item.id}, '${emoji}')">${emoji}</button>
+      `).join('');
+
+      return `
+        ${usedPillsHtml}
+        <div class="reaction-add-wrapper">
+          <button class="reaction-add-btn" onclick="toggleReactionPicker(event, ${item.id})">+</button>
+          <div class="reaction-picker" id="reaction-picker-${item.id}">${pickerEmojisHtml}</div>
+        </div>
+      `;
+    }
+
+    function toggleReactionPicker(e, entryId) {
+      e.stopPropagation();
+      const picker = document.getElementById(`reaction-picker-${entryId}`);
+      if (!picker) return;
+
+      const isOpen = picker.classList.contains('open');
+      closeAllReactionPickers();
+      if (!isOpen) {
+        picker.classList.add('open');
+        openReactionPickerId = entryId;
+      }
+    }
+
+    function closeReactionPicker(entryId) {
+      const picker = document.getElementById(`reaction-picker-${entryId}`);
+      if (picker) picker.classList.remove('open');
+      if (openReactionPickerId === entryId) openReactionPickerId = null;
+    }
+
+    function closeAllReactionPickers() {
+      document.querySelectorAll('.reaction-picker.open').forEach(p => p.classList.remove('open'));
+      openReactionPickerId = null;
+    }
+
+    // Закриваємо панель вибору емодзі при кліку будь-де поза нею
+    document.addEventListener('click', closeAllReactionPickers);
+
+    async function handleReaction(entryId, emoji) {
+      const previousEmoji = getUserReaction(entryId);
+      closeReactionPicker(entryId);
+
+      if (previousEmoji === emoji) {
+        // Вже поставив саме цю реакцію - ігноруємо повторний клік
+        return;
+      }
+
+      const entry = cachedShameEntries.find(e => e.id === entryId);
+      if (!entry) return;
+      if (!entry.reactions) entry.reactions = {};
+
+      // Якщо раніше стояла інша реакція - лічильник на сервері не зменшуємо навмисно,
+      // щоб не ускладнювати - старий "голос" просто більше не позначений як "мій"
+      setUserReaction(entryId, emoji);
+      entry.reactions[emoji] = (entry.reactions[emoji] || 0) + 1;
+
+      // Перемальовуємо блок реакцій цілком - працює однаково і з пілюлі, і з панелі
+      const bar = document.getElementById(`reactions-bar-${entryId}`);
+      if (bar) {
+        bar.innerHTML = buildReactionsHtml(entry);
+        const newPill = bar.querySelector('.reaction-btn.is-mine');
+        if (newPill) {
+          newPill.classList.add('just-reacted');
+          setTimeout(() => newPill.classList.remove('just-reacted'), 300);
+        }
+      }
+
+      if (supabaseClient) {
+        try {
+          const { error } = await supabaseClient.rpc('increment_reaction', {
+            entry_id_input: entryId,
+            emoji_key: emoji
+          });
+          if (error) throw error;
+        } catch (err) {
+          console.warn("Reaction error:", err);
+        }
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Коментарі під постами дошки ганьби
+    // ------------------------------------------------------------------
+    const commentsCache = {};      // entryId -> array of comments
+    const loadedComments = {};     // entryId -> bool (уже завантажено)
+    const demoCommentsFallback = { text: "Поки що ніхто не прокоментував 🤐" };
+
+    function toggleComments(entryId, btn) {
+      const section = document.getElementById(`comments-section-${entryId}`);
+      if (!section) return;
+
+      const isOpen = section.classList.contains('open');
+      if (isOpen) {
+        section.classList.remove('open');
+        return;
+      }
+
+      section.classList.add('open');
+
+      if (!loadedComments[entryId]) {
+        loadCommentsForEntry(entryId);
+      }
+    }
+
+    async function loadCommentsForEntry(entryId) {
+      const listEl = document.getElementById(`comments-list-${entryId}`);
+      if (!listEl) return;
+
+      listEl.innerHTML = '<div class="comment-empty">⏳ Завантаження...</div>';
+
+      let comments = [];
+
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('comments')
+            .select('*')
+            .eq('entry_id', entryId)
+            .order('created_at', { ascending: true });
+
+          if (error) throw error;
+          comments = data || [];
+        } catch (err) {
+          console.warn("Supabase comments load error:", err);
+          comments = [];
+        }
+      }
+
+      commentsCache[entryId] = comments;
+      loadedComments[entryId] = true;
+      renderComments(entryId);
+    }
+
+    function renderComments(entryId) {
+      const listEl = document.getElementById(`comments-list-${entryId}`);
+      if (!listEl) return;
+
+      const comments = commentsCache[entryId] || [];
+
+      if (comments.length === 0) {
+        listEl.innerHTML = `<div class="comment-empty">${escapeHtml(demoCommentsFallback.text)}</div>`;
+        return;
+      }
+
+      listEl.innerHTML = comments.map(c => `
+        <div class="comment-item">
+          <div class="comment-author">${escapeHtml(c.author)}</div>
+          <div class="comment-text">${escapeHtml(c.text)}</div>
+        </div>
+      `).join('');
+
+      listEl.scrollTop = listEl.scrollHeight;
+    }
+
+    async function handleCommentSubmit(e, entryId) {
+      e.preventDefault();
+      const form = e.target;
+      const authorInput = form.querySelector('.comment-author-input');
+      const textInput = form.querySelector('.comment-text-input');
+      const submitBtn = form.querySelector('.comment-submit-btn');
+
+      const author = authorInput.value.trim();
+      const text = textInput.value.trim();
+      if (!author || !text) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '...';
+
+      try {
+        if (supabaseClient) {
+          const { error } = await supabaseClient
+            .from('comments')
+            .insert([{ entry_id: entryId, author, text }]);
+
+          if (error) throw error;
+        }
+
+        // Оптимістичне оновлення - додаємо коментар одразу у список
+        if (!commentsCache[entryId]) commentsCache[entryId] = [];
+        commentsCache[entryId].push({ author, text, created_at: new Date().toISOString() });
+        renderComments(entryId);
+
+        form.reset();
+      } catch (err) {
+        console.warn("Comment submit error:", err);
+        alert("Не вдалося надіслати коментар 😢 Спробуй ще раз.");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Надіслати';
+      }
     }
 
     function openShameModal() {
@@ -2052,33 +2554,48 @@
       spawnConfettiBurst(20);
     }
 
+    // ------------------------------------------------------------------
+    // Надійний фікс мерехтіння при швидкому наведенні (z-index race)
+    // Замінює ненадійний CSS transition-delay трюк на JS з відміною таймера
+    // ------------------------------------------------------------------
+    function initHoverZIndexFix(selector, baseZIndex, releaseDelayMs) {
+      const pendingTimers = new WeakMap();
+      let zCounter = baseZIndex;
+
+      document.addEventListener('mouseover', (e) => {
+        const el = e.target.closest(selector);
+        if (!el) return;
+
+        if (pendingTimers.has(el)) {
+          clearTimeout(pendingTimers.get(el));
+          pendingTimers.delete(el);
+        }
+        zCounter += 1;
+        el.style.zIndex = zCounter;
+      }, true);
+
+      document.addEventListener('mouseout', (e) => {
+        const el = e.target.closest(selector);
+        if (!el) return;
+        if (el.contains(e.relatedTarget)) return; // йдемо всередину дочірнього елемента, не рахується
+
+        const timerId = setTimeout(() => {
+          el.style.zIndex = '';
+          pendingTimers.delete(el);
+        }, releaseDelayMs);
+        pendingTimers.set(el, timerId);
+      }, true);
+    }
+
+    initHoverZIndexFix('.cal-cell', 50, 140);
+    initHoverZIndexFix('.shame-card', 20, 220);
+
     function initFloatingBackground() {
+      // Прибрано за проханням користувача - мультяшний плаваючий фон
+      // виглядав занадто "іграшково" для серйозного проєкту.
       const container = document.getElementById('floatingBg');
       if (!container) return;
-
-      const memeItems = ['⚡', '⭐', '👾', '☕', '🎮', '🦄', '🍕', '💥', '🚀', '🧠', '💻', '🔥', '✨', '🗿', '💎'];
-      const count = 16;
       container.innerHTML = '';
-
-      for (let i = 0; i < count; i++) {
-        const item = document.createElement('div');
-        item.className = 'float-item';
-        item.textContent = memeItems[i % memeItems.length];
-
-        const posX = Math.random() * 95;
-        const posY = Math.random() * 95;
-        const duration = 12 + Math.random() * 16;
-        const delay = -(Math.random() * 10);
-        const size = 1.4 + Math.random() * 1.2;
-
-        item.style.left = `${posX}vw`;
-        item.style.top = `${posY}vh`;
-        item.style.fontSize = `${size}rem`;
-        item.style.animationDuration = `${duration}s`;
-        item.style.animationDelay = `${delay}s`;
-
-        container.appendChild(item);
-      }
     }
 
     function escapeHtml(str) {
@@ -2114,7 +2631,10 @@
           alpha: 1
         });
       }
+      startConfettiLoopIfNeeded();
     }
+
+    let confettiLoopRunning = false;
 
     function confettiLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -2139,7 +2659,20 @@
 
         if (p.alpha <= 0) particles.splice(i, 1);
       }
-      requestAnimationFrame(confettiLoop);
+
+      if (particles.length > 0) {
+        requestAnimationFrame(confettiLoop);
+      } else {
+        confettiLoopRunning = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    function startConfettiLoopIfNeeded() {
+      if (!confettiLoopRunning) {
+        confettiLoopRunning = true;
+        requestAnimationFrame(confettiLoop);
+      }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -2147,7 +2680,6 @@
       renderSchedule();
       updateClockAndCountdown();
       setInterval(updateClockAndCountdown, 1000);
-      confettiLoop();
     });
   </script>
 </body>
