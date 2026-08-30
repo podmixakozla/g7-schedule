@@ -122,9 +122,10 @@ async function authenticateWithTelegram() {
 
     currentUser = data.user;
     localStorage.setItem('g7_auth_token', data.session.access_token);
+    localStorage.setItem('g7_refresh_token', data.session.refresh_token || '');
     localStorage.setItem('g7_user', JSON.stringify(data.user));
 
-    await syncSupabaseSession(data.session.access_token);
+    await syncSupabaseSession(data.session.access_token, data.session.refresh_token);
 
     hideAuthOverlay();
     updateAuthUI();
@@ -143,6 +144,7 @@ async function authenticateWithTelegram() {
 // NEVER shows the auth overlay.
 async function restoreSession() {
   const savedToken = localStorage.getItem('g7_auth_token');
+  const savedRefresh = localStorage.getItem('g7_refresh_token');
   const savedUser = localStorage.getItem('g7_user');
 
   // 1. Try restoring from localStorage
@@ -158,17 +160,19 @@ async function restoreSession() {
       });
 
       if (response.ok) {
-        await syncSupabaseSession(savedToken);
+        await syncSupabaseSession(savedToken, savedRefresh);
         updateAuthUI();
         return true;
       }
 
       // Token expired — clear silently, try auto-auth below
       localStorage.removeItem('g7_auth_token');
+      localStorage.removeItem('g7_refresh_token');
       localStorage.removeItem('g7_user');
       currentUser = null;
     } catch {
       localStorage.removeItem('g7_auth_token');
+      localStorage.removeItem('g7_refresh_token');
       localStorage.removeItem('g7_user');
       currentUser = null;
     }
@@ -197,8 +201,9 @@ async function restoreSession() {
         if (response.ok && data.session) {
           currentUser = data.user;
           localStorage.setItem('g7_auth_token', data.session.access_token);
+          localStorage.setItem('g7_refresh_token', data.session.refresh_token || '');
           localStorage.setItem('g7_user', JSON.stringify(data.user));
-          await syncSupabaseSession(data.session.access_token);
+          await syncSupabaseSession(data.session.access_token, data.session.refresh_token);
           updateAuthUI();
           return true;
         }
@@ -216,6 +221,7 @@ async function restoreSession() {
 
 function logout() {
   localStorage.removeItem('g7_auth_token');
+  localStorage.removeItem('g7_refresh_token');
   localStorage.removeItem('g7_user');
   currentUser = null;
   updateAuthUI();
@@ -246,12 +252,12 @@ async function initAuth() {
   await restoreSession();
 }
 
-async function syncSupabaseSession(accessToken) {
+async function syncSupabaseSession(accessToken, refreshToken) {
   if (!supabaseClient) return;
   try {
     await supabaseClient.auth.setSession({
       access_token: accessToken,
-      refresh_token: '',
+      refresh_token: refreshToken || '',
     });
   } catch {
     // Ignore — token may still work for RPC calls

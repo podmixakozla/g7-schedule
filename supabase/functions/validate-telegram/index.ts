@@ -244,23 +244,38 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Step 3: Generate a JWT access token for this auth user
-    const { data: tokenData, error: tokenError } =
-      await supabase.auth.admin.generateAccessToken({
-        user_id: authUserId,
+    // Step 3: Generate a session via magic link + OTP verify
+    const { data: linkData, error: linkError } =
+      await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email,
       });
 
-    if (tokenError || !tokenData) {
-      console.error("generateAccessToken error:", tokenError);
-      throw new HttpError(500, "Failed to generate access token");
+    if (linkError || !linkData?.properties?.hashed_token) {
+      console.error("generateLink error:", linkError);
+      throw new HttpError(500, "Failed to generate session token");
     }
+
+    const { data: otpData, error: otpError } =
+      await supabase.auth.verifyOtp({
+        token_hash: linkData.properties.hashed_token,
+        type: 'magiclink',
+      });
+
+    if (otpError || !otpData?.session) {
+      console.error("verifyOtp error:", otpError);
+      throw new HttpError(500, "Failed to verify session token");
+    }
+
+    const session = otpData.session;
 
     // Step 4: Compute admin flag server-side
     const isAdmin = String(telegramId) === ADMIN_TELEGRAM_ID;
 
     return jsonResponse(200, {
       session: {
-        access_token: tokenData.access_token,
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
         token_type: "bearer",
       },
       user: {
