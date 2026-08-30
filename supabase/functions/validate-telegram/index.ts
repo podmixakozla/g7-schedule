@@ -147,27 +147,56 @@ Deno.serve(async (req) => {
 
       if (createError) {
         // email_exists = orphaned auth user from a prior partially-failed login.
-        // Recover by listing users and matching email in JS.
+        // Recover by looking up auth.users directly.
         if (createError.code === "email_exists" || createError.status === 422) {
-          let existingUser: { id: string } | null = null;
-          let page = 1;
-          const perPage = 100;
-          while (true) {
-            const { data: batch, error: listError } =
-              await supabase.auth.admin.listUsers({ page, perPage });
-            if (listError || !batch?.users?.length) break;
-            existingUser = batch.users.find(
-              (u: { email?: string }) => u.email === email
-            ) as { id: string } | null;
-            if (existingUser || batch.users.length < perPage) break;
-            page++;
+          console.log(`[RECOVERY] email_exists for email="${email}", telegram_id=${telegramId}`);
+          console.log(`[RECOVERY] createError:`, JSON.stringify(createError));
+
+          // Primary: direct query to auth.users table (service_role bypasses RLS)
+          let authUser: { id: string } | null = null;
+          try {
+            const { data: found, error: findErr } = await supabase
+              .schema("auth")
+              .from("users")
+              .select("id, email")
+              .eq("email", email)
+              .maybeSingle();
+            console.log(`[RECOVERY] auth.users lookup result:`, JSON.stringify({ found, findErr }));
+            if (!findErr && found) {
+              authUser = { id: found.id };
+            }
+          } catch (e) {
+            console.error("[RECOVERY] auth.users lookup threw:", e);
           }
-          if (!existingUser) {
-            console.error("email_exists but user not found via listUsers:", createError);
+
+          // Fallback: paginate listUsers() and match in JS
+          if (!authUser) {
+            console.log("[RECOVERY] auth.users lookup failed, falling back to listUsers pagination");
+            let page = 1;
+            const perPage = 100;
+            while (true) {
+              const { data: batch, error: listError } =
+                await supabase.auth.admin.listUsers({ page, perPage });
+              console.log(`[RECOVERY] listUsers page=${page}: error=${JSON.stringify(listError)}, count=${batch?.users?.length ?? 0}, emails=${JSON.stringify(batch?.users?.map((u: any) => u.email) ?? [])}`);
+              if (listError || !batch?.users?.length) break;
+              const match = batch.users.find(
+                (u: any) => u.email === email
+              ) as { id: string } | undefined;
+              if (match) {
+                authUser = { id: match.id };
+                break;
+              }
+              if (batch.users.length < perPage) break;
+              page++;
+            }
+          }
+
+          if (!authUser) {
+            console.error("[RECOVERY] FAILED: email_exists but user not found by any method. createError:", JSON.stringify(createError));
             throw new HttpError(500, "Failed to recover existing auth user");
           }
-          authUserId = existingUser.id;
-          console.log(`Recovered orphaned auth user ${authUserId} for telegram_id ${telegramId}`);
+          authUserId = authUser.id;
+          console.log(`[RECOVERY] SUCCESS: recovered auth user ${authUserId} for telegram_id ${telegramId}`);
         } else {
           console.error("createUser error:", createError);
           throw new HttpError(500, "Failed to create auth user");
