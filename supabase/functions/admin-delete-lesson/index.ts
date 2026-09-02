@@ -3,7 +3,7 @@ import { verifyAdmin, HttpError, jsonResponse } from "../_shared/verify-admin.ts
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const VALID_GROUPS = ["AR-26-1", "TK-26-1"];
+const VALID_GROUPS = ["AR-26-1", "AR-26sk-1"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
     const resolvedGroup = group_code || "AR-26-1";
     if (!VALID_GROUPS.includes(resolvedGroup)) {
-      throw new HttpError(400, "group_code must be AR-26-1 or TK-26-1");
+      throw new HttpError(400, "group_code must be AR-26-1 or AR-26sk-1");
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

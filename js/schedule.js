@@ -1,14 +1,14 @@
 // ------------------------------------------------------------------
 // Schedule Module
 // Loads schedule from Supabase; falls back to hardcoded data.
-// Supports АР-26-1 and ТК-26-1 subgroups with fallback.
+// Supports АР-26-1 and АР-26ск-1 subgroups with fallback.
 // ------------------------------------------------------------------
 
 let dbRawRows = null;
 
 const GROUP_LABELS = {
   'AR-26-1': 'АР-26-1',
-  'TK-26-1': 'ТК-26-1'
+  'AR-26sk-1': 'АР-26ск-1'
 };
 
 const DAY_NAMES = {

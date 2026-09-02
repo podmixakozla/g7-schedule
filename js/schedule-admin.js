@@ -50,7 +50,7 @@ function openScheduleAdminModal(dayOfWeek, pairNumber, groupCode) {
     ? `<div class="inherited-banner">⚠️ Це пара успадкована з АР-26-1. Збереження створить окремий запис для ${groupLabel}.</div>`
     : '';
 
-  const showDelete = existing && groupCode === 'TK-26-1';
+  const showDelete = existing && groupCode === 'AR-26sk-1';
 
   modal.innerHTML = `
     <div class="modal-box">
@@ -174,7 +174,7 @@ async function handleScheduleAdminSubmit(event) {
 }
 
 async function handleScheduleAdminDelete(dayOfWeek, pairNumber, groupCode) {
-  if (!confirm('Видалити цю пару для ТК-26-1? Вона знову успадкує з АР-26-1.')) return;
+  if (!confirm('Видалити цю пару для АР-26ск-1? Вона знову успадкує з АР-26-1.')) return;
 
   showScheduleAdminError('');
 

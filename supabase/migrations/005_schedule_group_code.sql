@@ -1,7 +1,7 @@
 -- =====================================================
 -- Add group_code to schedule_lessons
--- Supports АР-26-1 (default) and ТК-26-1 subgroups.
--- ТК-26-1 inherits from АР-26-1 when no override exists.
+-- Supports АР-26-1 (default) and АР-26ск-1 subgroups.
+-- АР-26ск-1 inherits from АР-26-1 when no override exists.
 -- =====================================================
 
 -- Add group_code column with default.
