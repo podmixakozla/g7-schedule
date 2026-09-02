@@ -144,6 +144,16 @@ function getScheduleForGroup(groupCode) {
   return scheduleData;
 }
 
+function createGroupTabs(container) {
+  const tabsHtml = Object.entries(GROUP_LABELS).map(([code, label]) =>
+    `<button class="btn-brutal group-tab ${code === currentGroup ? 'active' : ''}" onclick="setGroup('${code}')">${label}</button>`
+  ).join('');
+  const tabsContainer = document.createElement('div');
+  tabsContainer.className = 'group-tabs';
+  tabsContainer.innerHTML = tabsHtml;
+  container.appendChild(tabsContainer);
+}
+
 function renderSchedule() {
   const container = document.getElementById('scheduleContainer');
   const now = getNow();
@@ -176,14 +186,7 @@ function renderSchedule() {
       return;
     }
 
-    const tabsHtml = Object.entries(GROUP_LABELS).map(([code, label]) =>
-      `<button class="btn-brutal group-tab ${code === currentGroup ? 'active' : ''}" onclick="setGroup('${code}')">${label}</button>`
-    ).join('');
-
-    const tabsContainer = document.createElement('div');
-    tabsContainer.className = 'group-tabs';
-    tabsContainer.innerHTML = tabsHtml;
-    container.appendChild(tabsContainer);
+    createGroupTabs(container);
 
     const isNum = getIsNumerator(now);
     const weekTypeBadge = document.createElement('div');
@@ -197,10 +200,12 @@ function renderSchedule() {
       container.appendChild(createDayCard(todayData, true, currentPairNum, currentGroup));
     }
   } else {
-    const data = getScheduleForGroup('AR-26-1');
+    createGroupTabs(container);
+
+    const data = getScheduleForGroup(currentGroup);
     data.forEach((dayData) => {
       const isToday = dayData.dayId === today;
-      container.appendChild(createDayCard(dayData, isToday, isToday ? currentPairNum : null, 'AR-26-1'));
+      container.appendChild(createDayCard(dayData, isToday, isToday ? currentPairNum : null, currentGroup));
     });
   }
 }
