@@ -1,5 +1,6 @@
 let currentUser = null;
 let currentView = 'week';
+let currentGroup = 'AR-26-1';
 let collapsedMonthsState = {};
 
 let cachedShameEntries = [];

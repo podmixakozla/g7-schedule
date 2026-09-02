@@ -1,3 +1,45 @@
+.group-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+  grid-column: 1 / -1;
+}
+
+.group-tab {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  padding: 0.5rem 1.2rem;
+}
+
+.week-type-badge {
+  text-align: center;
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.8rem;
+  background: var(--black);
+  color: var(--white);
+  border-radius: 5px;
+  display: inline-block;
+  margin: 0 auto 0.5rem;
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+
+.inherited-banner {
+  background: #FFF3CD;
+  border: 2px solid #FFC107;
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  margin: 0 1.2rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #856404;
+}
+
 .schedule-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -190,6 +232,19 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+}
+
+.classroom-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: var(--cyan);
+  border: 2px solid var(--black);
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: 0.3rem;
 }
 
 .pair-block.is-window {

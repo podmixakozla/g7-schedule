@@ -246,6 +246,11 @@ function updateAuthUI() {
     userReactionsMap = {};
     renderShameGrid(getFilteredShameEntries(cachedShameEntries));
   }
+
+  if (currentView === 'week' || currentView === 'today') {
+    renderSchedule();
+    requestAnimationFrame(makePairBlocksAdminClickable);
+  }
 }
 
 async function initAuth() {

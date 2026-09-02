@@ -15,6 +15,7 @@ function setViewMode(mode) {
 
   if (mode === 'week' || mode === 'today') {
     renderSchedule();
+    requestAnimationFrame(makePairBlocksAdminClickable);
   } else if (mode === 'calendar') {
     renderCalendar();
   } else if (mode === 'shame') {
@@ -24,7 +25,8 @@ function setViewMode(mode) {
 
 document.addEventListener('DOMContentLoaded', async () => {
   initFloatingBackground();
-  renderSchedule();
+  await initSchedule();
+  requestAnimationFrame(makePairBlocksAdminClickable);
   updateClockAndCountdown();
   setInterval(updateClockAndCountdown, 1000);
   await initAuth();
