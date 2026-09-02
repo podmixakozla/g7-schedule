@@ -22,10 +22,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const admin = await verifyAdmin(req);
-    if (!admin.isAdmin) {
-      throw new HttpError(403, "Admin access required");
-    }
+    const user = await verifyAdmin(req);
 
     const body = await req.json();
     const { day_of_week, pair_number, subject, teacher, classroom, group_code } = body;
@@ -45,6 +42,13 @@ Deno.serve(async (req) => {
     const resolvedGroup = group_code || "AR-26-1";
     if (!VALID_GROUPS.includes(resolvedGroup)) {
       throw new HttpError(400, "group_code must be AR-26-1 or AR-26sk-1");
+    }
+
+    // Permission check:
+    // - AR-26-1: admin only
+    // - AR-26sk-1: any authenticated user
+    if (resolvedGroup === "AR-26-1" && !user.isAdmin) {
+      throw new HttpError(403, "Only admin can modify АР-26-1 schedule");
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

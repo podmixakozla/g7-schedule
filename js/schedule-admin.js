@@ -50,7 +50,7 @@ function openScheduleAdminModal(dayOfWeek, pairNumber, groupCode) {
     ? `<div class="inherited-banner">⚠️ Це пара успадкована з АР-26-1. Збереження створить окремий запис для ${groupLabel}.</div>`
     : '';
 
-  const showDelete = existing && groupCode === 'AR-26sk-1';
+  const showDelete = existing && canEditGroup(groupCode);
 
   modal.innerHTML = `
     <div class="modal-box">
@@ -203,16 +203,23 @@ async function handleScheduleAdminDelete(dayOfWeek, pairNumber, groupCode) {
   }
 }
 
-function makePairBlocksAdminClickable() {
-  if (!currentUser || !currentUser.is_admin) return;
+function canEditGroup(groupCode) {
+  if (!currentUser) return false;
+  if (currentUser.is_admin) return true;
+  if (groupCode === 'AR-26sk-1') return true;
+  return false;
+}
 
+function makePairBlocksAdminClickable() {
   document.querySelectorAll('.pair-block[data-day]').forEach(block => {
-    block.style.cursor = 'pointer';
-    block.addEventListener('click', () => {
-      const dayId = Number(block.dataset.day);
-      const pairNum = Number(block.dataset.pair);
-      const group = block.dataset.group || 'AR-26-1';
-      openScheduleAdminModal(dayId, pairNum, group);
-    });
+    const group = block.dataset.group || 'AR-26-1';
+    if (canEditGroup(group)) {
+      block.style.cursor = 'pointer';
+      block.addEventListener('click', () => {
+        const dayId = Number(block.dataset.day);
+        const pairNum = Number(block.dataset.pair);
+        openScheduleAdminModal(dayId, pairNum, group);
+      });
+    }
   });
 }
