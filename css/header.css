@@ -1,75 +1,268 @@
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  position: relative;
+/* ------------------------------------------------------------------
+   Topbar, Brand Header, Segmented Subgroup Pill & User Profile
+------------------------------------------------------------------ */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
-@media (min-width: 900px) {
-  .header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: flex-end;
-  }
+.topbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--glass-bg);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border-bottom: 1px solid var(--border);
+  z-index: -1;
+  pointer-events: none;
 }
 
-.header-main {
+.topbar-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0.7rem 1rem;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
 }
 
-.tags-row {
+.brand {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
   align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
 }
 
-.badge-pill {
-  background: var(--yellow);
-  border: var(--border-thick);
-  box-shadow: var(--shadow-hard-sm);
-  font-weight: 900;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  padding: 0.3rem 0.75rem;
-  border-radius: 6px;
-  transform: rotate(-2deg);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+.brand-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: -0.02em;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.brand-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
   white-space: nowrap;
 }
 
-.badge-pill.pink {
-  background: var(--pink);
-  color: var(--white);
-  transform: rotate(2deg);
+.brand-sub {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.badge-pill.cyan {
-  background: var(--cyan);
-  color: var(--black);
-  transform: rotate(-1deg);
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
-.main-title {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: clamp(2.4rem, 6vw, 4.2rem);
-  line-height: 0.95;
-  text-transform: uppercase;
-  letter-spacing: -0.04em;
-  color: var(--black);
+/* ── Сегментована "таблетка" підгруп у шапці ── */
+.group-switch {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  gap: 4px;
+}
+
+.group-switch-btn {
+  padding: 0.36rem 0.78rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-2);
+  background: transparent;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease);
+  white-space: nowrap;
+}
+
+.group-switch-btn:hover {
+  color: var(--text);
+}
+
+.group-switch-btn.active {
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-weight: 700;
+}
+
+/* ── Слот профілю ── */
+.user-slot {
+  flex-shrink: 0;
+}
+
+.user-box {
   position: relative;
 }
 
-.main-title span {
-  display: inline-block;
+.user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 38px;
+  padding: 0 0.65rem 0 0.25rem;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: background 0.2s var(--ease);
+}
+
+.user-btn:hover {
+  background: var(--surface-hover);
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   background: var(--lime);
-  border: var(--border-thick);
-  box-shadow: var(--shadow-hard);
-  padding: 0 0.4rem;
-  transform: rotate(-1deg);
-  margin-left: 0.2rem;
+  color: var(--lime-ink);
+  font-weight: 700;
+  font-size: 0.72rem;
+  display: grid;
+  place-items: center;
+}
+
+.user-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.14rem 0.42rem;
+  border-radius: 999px;
+  background: var(--lime);
+  color: var(--lime-ink);
+}
+
+.user-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 196px;
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--blur-heavy);
+  -webkit-backdrop-filter: var(--blur-heavy);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 0.4rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.98);
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
+  z-index: 60;
+}
+
+.user-menu.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.user-menu-head {
+  padding: 0.5rem 0.65rem 0.55rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
+}
+
+.user-menu-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.user-menu-role {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  margin-top: 0.08rem;
+}
+
+.user-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.52rem 0.68rem;
+  border-radius: var(--radius-xs);
+  font-size: 0.84rem;
+  font-weight: 500;
+  transition: background 0.2s var(--ease);
+}
+
+.user-menu-item:hover {
+  background: var(--surface-hover);
+}
+
+.user-menu-item.is-danger {
+  color: var(--danger);
+}
+
+@media (max-width: 480px) {
+  .brand-sub,
+  .user-name {
+    display: none;
+  }
+
+  .brand {
+    gap: 0.5rem;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    font-size: 0.85rem;
+  }
+
+  .brand-title {
+    font-size: 0.94rem;
+  }
+
+  .group-switch-btn {
+    padding: 0.32rem 0.62rem;
+    font-size: 0.74rem;
+  }
+}
+
+@media (min-width: 860px) {
+  .topbar-inner {
+    padding: 0.75rem 1.5rem;
+  }
+
+  .group-switch-btn {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.8125rem;
+  }
 }

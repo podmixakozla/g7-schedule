@@ -1,501 +1,608 @@
-.group-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 0.6rem;
-  margin-bottom: 0.5rem;
-  grid-column: 1 / -1;
-}
+/* ------------------------------------------------------------------
+   Schedule View: #4558E6 Hero Card, Lime Day Strip & "Daily Activities" Timeline
+------------------------------------------------------------------ */
 
-.group-tab {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  padding: 0.5rem 1.2rem;
-}
-
-.week-type-badge {
-  text-align: center;
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0.3rem 0.8rem;
-  background: var(--black);
-  color: var(--white);
-  border-radius: 5px;
-  display: inline-block;
-  margin: 0 auto 0.5rem;
-  grid-column: 1 / -1;
-  justify-self: center;
-}
-
-.inherited-banner {
-  background: #FFF3CD;
-  border: 2px solid #FFC107;
-  border-radius: 6px;
-  padding: 0.6rem 0.8rem;
-  margin: 0 1.2rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #856404;
-}
-
-.schedule-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-}
-
-@media (min-width: 640px) {
-  .schedule-grid {
-    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-  }
-}
-
-@media (min-width: 1250px) {
-  .schedule-grid {
-    grid-template-columns: repeat(5, 1fr);
-  }
-}
-
-.schedule-grid.today-only {
-  display: flex;
-  justify-content: center;
-}
-
-.schedule-grid.today-only .day-card {
-  max-width: 580px;
-  width: 100%;
-  transform: rotate(0deg) !important;
-}
-
-.day-card {
-  background: var(--white);
-  border: var(--border-thick);
-  box-shadow: var(--shadow-hard-lg);
-  border-radius: 14px;
+/* ── Акцент 2 (#4558E6): Головна картка поточної або наступної пари ── */
+.now-card {
+  background: var(--blue);
+  color: #FFFFFF;
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.3rem;
   display: flex;
   flex-direction: column;
-  overflow: visible;
-  transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s ease-out;
-  position: relative;
-  backface-visibility: hidden;
+  gap: 0.9rem;
+  box-shadow: 0 14px 34px -10px rgba(69, 88, 230, 0.48), inset 0 1px 0 0 rgba(255, 255, 255, 0.22);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
 
-.day-card:nth-child(1) { transform: rotate(-0.8deg); }
-.day-card:nth-child(2) { transform: rotate(0.8deg); }
-.day-card:nth-child(3) { transform: rotate(-1.1deg); }
-.day-card:nth-child(4) { transform: rotate(0.6deg); }
-.day-card:nth-child(5) { transform: rotate(-0.7deg); }
-
-.day-card.is-today {
-  box-shadow: 10px 10px 0px var(--pink) !important;
-  border-color: var(--black);
-  outline: 4px solid var(--black);
+.now-card:hover {
+  transform: translateY(-2px);
 }
 
-.day-header {
-  padding: 1.2rem 1.1rem 1rem;
-  border-bottom: var(--border-thick);
+.now-top {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  background: var(--yellow);
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
-  position: relative;
+  gap: 0.75rem;
 }
 
-.day-card:nth-child(1) .day-header { background: var(--yellow); }
-.day-card:nth-child(2) .day-header { background: var(--cyan); }
-.day-card:nth-child(3) .day-header { background: var(--pink); color: #fff; }
-.day-card:nth-child(4) .day-header { background: var(--lime); }
-.day-card:nth-child(5) .day-header { background: var(--orange); color: #fff; }
+.now-head-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  min-width: 0;
+}
 
-.day-title {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 1.35rem;
+.now-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: #FFFFFF;
+}
+
+.now-sub {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.now-corner-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #FFFFFF;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+/* Хвильовий індикатор прогресу (як у картці Physical Activity на референсі) */
+.now-wave {
+  height: 40px;
+  display: grid;
+  grid-template-columns: repeat(28, 1fr);
+  align-items: center;
+  gap: 4px;
+  padding: 0.15rem 0;
+}
+
+.now-wave i {
+  display: block;
+  width: 100%;
+  min-height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: background 0.25s var(--ease), height 0.25s var(--ease);
+}
+
+.now-wave i.is-filled {
+  background: var(--lime);
+}
+
+/* Нижні 3 колонки метрик у синій картці */
+.now-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.now-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.now-stat-label {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.72);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.now-stat-val {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Бейдж "Зараз" (лаймовий) ── */
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
+}
+
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  padding: 0.24rem 0.65rem;
+  border-radius: 999px;
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.live-pill i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lime-ink);
+  animation: livePulse 1.8s ease-in-out infinite;
+}
+
+/* ── Стрічка вибору дня тижня (Пн–Пт у режимі "Сьогодні") ── */
+.day-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.45rem;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg);
+  padding: 0.45rem;
+}
+
+.day-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12rem;
+  padding: 0.55rem 0.25rem 0.48rem;
+  border-radius: 18px;
+  color: var(--text-2);
+  background: transparent;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.day-pill:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.day-pill-dow {
+  font-size: 0.7rem;
+  font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.day-pill-num {
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  color: var(--text);
+}
+
+.day-pill-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: transparent;
+  margin-top: 2px;
+}
+
+.day-pill-dot.has-pairs {
+  background: var(--blue);
+}
+
+.day-pill.is-today:not(.active) {
+  background: var(--surface-2);
+}
+
+.day-pill.is-today:not(.active) .day-pill-dow {
+  color: var(--lime);
+}
+
+/* Вибраний день — залитий лаймом #D4F54A з темним текстом */
+.day-pill.active {
+  background: var(--lime);
+  color: var(--lime-ink);
+}
+
+.day-pill.active .day-pill-dow,
+.day-pill.active .day-pill-num {
+  color: var(--lime-ink);
+}
+
+.day-pill.active .day-pill-dot.has-pairs {
+  background: var(--lime-ink);
+}
+
+/* ── Шапка тижня (режим "Тиждень") ── */
+.week-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.2rem 0.15rem;
+}
+
+.week-bar-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.week-bar-label {
+  font-size: 1.35rem;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-.day-meta-badge {
-  font-size: 0.75rem;
-  font-weight: 900;
-  background: var(--black);
-  color: var(--white);
-  padding: 0.25rem 0.55rem;
-  border-radius: 6px;
-  text-transform: uppercase;
-  white-space: nowrap;
+.week-bar-dates {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
 }
 
-.pairs-body {
-  padding: 1.1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  background: #FAFAFA;
-  flex: 1;
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-}
-
-.pair-block {
-  background: var(--white);
-  border: var(--border-thick);
-  box-shadow: var(--shadow-hard-sm);
-  border-radius: 8px;
-  padding: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  position: relative;
-  transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s ease-out, background-color 0.2s ease;
-  user-select: none;
-}
-
-.pair-block:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0px var(--black);
-}
-
-
-.pair-block.is-current-pair {
-  border-left: 5px solid var(--pink);
-  background: #FFF5F9;
-  box-shadow: 4px 4px 0px var(--pink);
-  z-index: 5;
-}
-
-.pair-top-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.pair-number {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 0.8rem;
-  background: var(--black);
-  color: var(--white);
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-}
-
-.pair-hours {
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--black);
-  background: var(--bg);
-  border: 2px solid var(--black);
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
-}
-
-.live-badge {
-  background: var(--pink);
-  color: var(--white);
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.2rem 0.5rem;
-  border-radius: 3px;
-}
-
-
-.pair-name {
-  font-size: 0.98rem;
-  font-weight: 900;
-  line-height: 1.25;
-  word-break: break-word;
-}
-
-.pair-footer {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  margin-top: 0.2rem;
-  padding-top: 0.4rem;
-  border-top: 2px dashed rgba(0,0,0,0.15);
-}
-
-.teacher-tag {
-  font-size: 0.8rem;
-  font-weight: 800;
-  background: var(--lime);
-  border: 2px solid var(--black);
-  padding: 0.2rem 0.5rem;
-  border-radius: 5px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.classroom-tag {
-  font-size: 0.75rem;
-  font-weight: 800;
-  background: var(--cyan);
-  border: 2px solid var(--black);
-  padding: 0.2rem 0.5rem;
-  border-radius: 5px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-left: 0.3rem;
-}
-
-.pair-block.is-window {
-  background: var(--bg);
-  border: 3px dashed var(--black);
-  box-shadow: none;
-  padding: 0.9rem;
-}
-
-.window-title {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 0.92rem;
-  color: var(--black);
+.schedule-note {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  padding: 0 0.15rem;
   display: flex;
   align-items: center;
   gap: 0.4rem;
 }
 
-.window-subtitle {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #666;
-}
-
-/* ═══════════════════════════════════════════════
-   WEEKEND CARD — asymmetric split composition
-   ═══════════════════════════════════════════════ */
-
-.weekend-card {
-  max-width: min(680px, 88vw);
-  width: 100%;
-  margin: 0 auto;
-  border: var(--border-thick);
-  box-shadow: 14px 14px 0px var(--black);
-  border-radius: 18px;
-  overflow: hidden;
+/* ── Сітка днів ── */
+.days {
   display: grid;
-  grid-template-columns: minmax(120px, 32%) 1fr;
-  transform: rotate(-1deg);
-  transition: transform 0.3s var(--bounce-ease), box-shadow 0.3s ease-out;
-  animation: weekendEntry 0.5s var(--bounce-ease) both;
-  position: relative;
+  gap: 0.9rem;
+  align-items: start;
 }
 
-@keyframes weekendEntry {
-  from {
-    opacity: 0;
-    transform: rotate(-4deg) translateY(30px) scale(0.92);
+.days-single {
+  grid-template-columns: 1fr;
+}
+
+.days-week {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .days-week {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  to {
-    opacity: 1;
-    transform: rotate(-1deg) translateY(0) scale(1);
+}
+
+@media (min-width: 860px) {
+  .now-card,
+  .day-strip,
+  .days-single {
+    max-width: 640px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 
-.weekend-card:hover {
-  transform: rotate(0deg) translateY(-6px) scale(1.02);
-  box-shadow: 20px 20px 0px var(--black);
+@media (min-width: 1120px) {
+  .days-week {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
 }
 
-/* ── LEFT PANEL ── */
-.weekend-left {
-  background: var(--black);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  min-height: 0;
-  padding: clamp(1rem, 3vw, 2rem);
-}
-
-.weekend-left::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-  background-size: 14px 14px;
-  pointer-events: none;
-}
-
-.weekend-left::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 40%;
-  background: var(--cyan);
-  clip-path: polygon(0 60%, 100% 0%, 100% 100%, 0 100%);
-  opacity: 0.7;
-}
-
-.weekend-zzz {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: clamp(2.8rem, 8vw, 5.5rem);
-  color: var(--white);
-  line-height: 0.85;
-  text-align: center;
-  z-index: 1;
-  animation: zzzFloat 3.5s ease-in-out infinite;
-  user-select: none;
-  text-shadow: 4px 4px 0px var(--cyan);
-  letter-spacing: -0.04em;
-}
-
-.weekend-zzz small {
-  font-size: 0.55em;
-  display: block;
-  transform: translateX(10px);
-  opacity: 0.5;
-}
-
-@keyframes zzzFloat {
-  0%, 100% { transform: translateY(0) rotate(-2deg); }
-  50% { transform: translateY(-10px) rotate(1deg); }
-}
-
-/* ── RIGHT PANEL ── */
-.weekend-right {
-  background: var(--white);
-  padding: clamp(1.1rem, 2.5vw, 1.8rem) clamp(1rem, 2.5vw, 1.8rem) clamp(1rem, 2vw, 1.5rem);
+/* ── Картка дня: rgba(255,255,255,0.06), радіус 24px, відступ 18-20px ── */
+.day-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 1.15rem 1.2rem;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 0.85rem;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.day-card:hover {
+  transform: translateY(-2px);
+}
+
+.day-card.is-today {
+  box-shadow: 0 0 0 1.5px rgba(212, 245, 74, 0.55), var(--shadow-card);
+}
+
+.day-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 0.5rem;
-  position: relative;
+}
+
+.day-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.14rem;
   min-width: 0;
 }
 
-.weekend-right::before {
+.day-name {
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.day-date {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.day-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.day-corner-arrow {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-2);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.day-empty {
+  padding: 0.65rem 0;
+  color: var(--text-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+/* ── Список пар за день у стилі "Daily Activities":
+      вертикальна пунктирна лінія зліва з точками, час справа ── */
+.pairs {
+  display: flex;
+  flex-direction: column;
+}
+
+.pair {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.62rem 0;
+  transition: transform 0.2s var(--ease), opacity 0.2s var(--ease);
+}
+
+.pair:first-child {
+  padding-top: 0.15rem;
+}
+
+.pair:last-child {
+  padding-bottom: 0.1rem;
+}
+
+/* Вертикальна пунктирна лінія між точками пар */
+.pair:not(:last-child)::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background-image: radial-gradient(var(--black) 1px, transparent 1px);
-  background-size: 18px 18px;
-  opacity: 0.025;
+  left: 9px;
+  top: 20px;
+  bottom: -10px;
+  border-left: 1.5px dashed rgba(255, 255, 255, 0.18);
   pointer-events: none;
 }
 
-.weekend-top-row {
+html[data-theme="light"] .pair:not(:last-child)::before {
+  border-left-color: rgba(18, 18, 18, 0.18);
+}
+
+.pair:first-child:not(:last-child)::before {
+  top: 13px;
+}
+
+.pair-rail {
+  width: 20px;
+  display: flex;
+  justify-content: center;
+  padding-top: 0.34rem;
+  position: relative;
+  z-index: 1;
+}
+
+.pair-node {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 0 3px rgba(69, 88, 230, 0.18);
+  display: block;
+}
+
+.pair-node.is-live {
+  background: var(--lime);
+  box-shadow: 0 0 0 4px rgba(212, 245, 74, 0.25);
+}
+
+.pair-node.is-hollow {
+  background: var(--surface-solid);
+  border: 1.5px solid var(--text-3);
+  box-shadow: none;
+}
+
+.pair[data-editable] {
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+}
+
+.pair[data-editable]:hover {
+  transform: translateX(2px);
+}
+
+.pair.is-off-week {
+  opacity: 0.45;
+}
+
+.pair.is-window {
+  align-items: center;
+  padding-top: 0.38rem;
+  padding-bottom: 0.38rem;
+}
+
+.pair.is-window .pair-rail {
+  padding-top: 0;
+}
+
+.pair-window-label {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.pair-window-time {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.pair-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+}
+
+.pair-subject-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.42rem;
   flex-wrap: wrap;
 }
 
-.weekend-label {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  background: var(--yellow);
-  color: var(--black);
-  border: 2px solid var(--black);
-  box-shadow: var(--shadow-hard-sm);
-  padding: 0.2rem 0.55rem;
-  border-radius: 5px;
-  white-space: nowrap;
-}
-
-.weekend-tag {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 900;
-  font-size: 0.55rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--black);
-  opacity: 0.25;
-}
-
-.weekend-heading {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: clamp(1.8rem, 5vw, 3rem);
-  text-transform: uppercase;
-  letter-spacing: -0.03em;
-  line-height: 0.9;
-  color: var(--black);
-  position: relative;
+.pair-subject {
+  font-size: 0.94rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--text);
   word-break: break-word;
 }
 
-.weekend-heading::after {
-  content: '';
-  position: absolute;
-  bottom: 1px;
-  left: -3px;
-  right: -3px;
-  height: 10px;
-  background: var(--cyan);
-  opacity: 0.35;
-  border-radius: 2px;
-  z-index: -1;
-  transform: skewX(-3deg);
+.pair.is-live .pair-subject {
+  color: var(--lime);
 }
 
-.weekend-subheading {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: clamp(0.9rem, 2.8vw, 1.5rem);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--black);
-  opacity: 0.35;
-  margin-top: -0.1rem;
-  transform: translateX(6px);
+.pair-parity {
+  font-size: 0.66rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
 }
 
-.weekend-desc {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 800;
-  font-size: clamp(0.75rem, 1.6vw, 0.85rem);
-  color: var(--black);
-  opacity: 0.4;
-  margin-top: 0.15rem;
+.pair-parity.is-num {
+  background: var(--blue-soft);
+  color: #9BA8FF;
 }
 
-/* ── TABLET (≤ 640px): stack vertically ── */
-@media (max-width: 640px) {
-  .weekend-card {
-    grid-template-columns: 1fr;
-    max-width: min(440px, 92vw);
-    box-shadow: 10px 10px 0px var(--black);
-  }
-
-  .weekend-left {
-    padding: clamp(1.2rem, 4vw, 2rem) 1rem;
-  }
-
-  .weekend-right {
-    padding: clamp(1rem, 3vw, 1.4rem) clamp(1rem, 3vw, 1.4rem) clamp(0.9rem, 2.5vw, 1.2rem);
-  }
+html[data-theme="light"] .pair-parity.is-num {
+  color: var(--blue);
 }
 
-/* ── MOBILE (≤ 400px): tighter ── */
-@media (max-width: 400px) {
-  .weekend-card {
-    max-width: 100%;
-    box-shadow: 8px 8px 0px var(--black);
-  }
+.pair-parity.is-den {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
 
-  .weekend-left {
-    padding: 1.2rem 0.8rem;
-  }
+/* Вторинний текст #9A9A9A, 13px (0.8125rem) */
+.pair-meta {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.32;
+}
 
-  .weekend-right {
-    padding: 1rem;
-    gap: 0.35rem;
-  }
+.pair-dot {
+  color: var(--text-3);
+  margin: 0 0.08rem;
+}
 
-  .weekend-top-row {
-    gap: 0.35rem;
-  }
+/* Час пари справа (як у Daily Activities) */
+.pair-right {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.1rem;
+  flex-shrink: 0;
+}
+
+.pair-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.25;
+}
+
+.pair-time .pair-from {
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.pair-time.is-compact .pair-from {
+  font-size: 0.78rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.pair-time.is-compact .pair-to {
+  font-size: 0.7rem;
+  color: var(--text-2);
+}
+
+.pair-edit {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+  background: var(--surface-2);
+  transition: color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.pair[data-editable]:hover .pair-edit {
+  color: var(--lime-ink);
+  background: var(--lime);
+}
+
+.day-add {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.6rem 0.95rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.day-add:hover {
+  background: var(--lime);
+  color: var(--lime-ink);
 }

@@ -59,26 +59,28 @@ All scripts use global scope (no ES modules). Load order matters.
 | File | Role | Depends on |
 |---|---|---|
 | `config.js` | Supabase URL, anon key, Edge Function URL, client init | Supabase CDN |
-| `data.js` | `timeSlots`, `scheduleData`, `monthsData`, demo entries | — |
-| `state.js` | All mutable globals (`currentUser`, `currentView`, caches, etc.) | — |
-| `utils.js` | `escapeHtml`, `initHoverZIndexFix`, `initFloatingBackground` | — |
+| `data.js` | `timeSlots`, `GROUP_LABELS`, `fallbackScheduleRows`, `monthsData` | — |
+| `state.js` | All mutable globals (`currentUser`, `currentView`, caches, etc.) | `data.js` |
+| `utils.js` | `escapeHtml`, SVG icons, toast, confirm, sheet helpers | — |
+| `academic.js` | `getIsNumerator`, `getDayType`, `isTeachingDay`, `parsePairParity` | `data.js` |
 | `confetti.js` | Canvas setup, `spawnConfettiBurst` | `state.js` |
-| `schedule.js` | `renderSchedule`, `createDayCard` | `data.js`, `state.js`, `utils.js` |
-| `calendar.js` | `renderCalendar`, `toggleMonth`, `toggleAllMonths` | `data.js`, `state.js`, `utils.js`, `confetti.js` |
-| `clock.js` | `getCurrentPairNum`, `updateClockAndCountdown` | `data.js` |
-| `reactions.js` | Reaction UI, `upsert_reaction` RPC | `state.js`, `config.js` |
+| `schedule.js` | `initSchedule`, `renderSchedule`, `createDayCard` | `data.js`, `state.js`, `utils.js`, `academic.js` |
+| `schedule-admin.js` | Schedule lesson CRUD modal & Edge Function calls | `config.js`, `state.js`, `utils.js`, `schedule.js`, `auth.js` |
+| `calendar.js` | `renderCalendar`, `toggleMonth`, `toggleAllMonths` | `data.js`, `state.js`, `utils.js`, `academic.js`, `confetti.js` |
+| `clock.js` | `getCurrentPairNum`, `computeScheduleStatus`, `updateClockAndCountdown` | `data.js`, `academic.js`, `schedule.js` |
+| `auth.js` | Telegram auth, session refresh, `callEdgeFunction`, user profile UI | `config.js`, `state.js`, `utils.js` |
+| `reactions.js` | Reaction UI, `upsert_reaction` RPC | `state.js`, `config.js`, `auth.js` |
 | `comments.js` | Comment load/render/submit, admin delete | `state.js`, `config.js`, `utils.js`, `auth.js` |
 | `shame-board.js` | Shame board core, `clearBoard`, admin delete post | `state.js`, `config.js`, `reactions.js`, `utils.js`, `confetti.js`, `auth.js` |
-| `shame-form.js` | Modal, file validation, `handleShameSubmit` | `config.js`, `state.js`, `shame-board.js`, `confetti.js`, `utils.js`, `auth.js` |
-| `auth.js` | Telegram auth, session management, admin UI | `config.js`, `state.js` |
-| `app.js` | `setViewMode`, `DOMContentLoaded` bootstrap | all above |
+| `shame-form.js` | Modal, file validation & preview, `handleShameSubmit` | `config.js`, `state.js`, `shame-board.js`, `confetti.js`, `utils.js`, `auth.js` |
+| `app.js` | Theme sync, `setViewMode`, `DOMContentLoaded` bootstrap | all above |
 
 ## Script load order
 
 ```
-Supabase CDN → config → data → state → utils → confetti →
-schedule → calendar → clock → reactions → comments →
-shame-board → shame-form → auth → app
+Supabase CDN → Telegram SDK → config → data → state → utils → academic →
+confetti → schedule → schedule-admin → calendar → clock → auth →
+reactions → comments → shame-board → shame-form → app
 ```
 
 Changing this order will break the app.

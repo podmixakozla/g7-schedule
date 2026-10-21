@@ -1,59 +1,341 @@
-.controls-wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.85rem;
-}
+/* ------------------------------------------------------------------
+   Buttons, Segmented Pill Switchers, Chips & Circular Bottom Nav
+------------------------------------------------------------------ */
 
-.btn-brutal {
-  background: var(--white);
-  color: var(--black);
-  border: var(--border-thick);
-  box-shadow: var(--shadow-hard);
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 0.92rem;
-  text-transform: uppercase;
-  padding: 0.8rem 1.25rem;
-  border-radius: 8px;
-  cursor: pointer;
+/* ── Кнопки ── */
+.btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s ease-out, background-color 0.15s ease;
+  justify-content: center;
+  gap: 0.42rem;
+  height: 40px;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: transform 0.2s var(--ease), background 0.2s var(--ease), color 0.2s var(--ease), opacity 0.2s var(--ease);
   user-select: none;
+  white-space: nowrap;
 }
 
-.btn-brutal:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 8px 8px 0px var(--black);
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
-.btn-brutal:active {
-  transform: translate(4px, 4px) !important;
-  box-shadow: 1px 1px 0px var(--black) !important;
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.btn-brutal.active {
-  background: var(--cyan);
-  box-shadow: var(--shadow-hard);
+.btn-sm {
+  height: 36px;
+  padding: 0 0.9rem;
+  font-size: 0.8125rem;
 }
 
-.btn-brutal.pink-accent.active {
-  background: var(--pink);
-  color: var(--white);
+.btn-lg {
+  height: 48px;
+  padding: 0 1.35rem;
+  font-size: 0.95rem;
 }
 
-.btn-brutal.yellow-accent.active {
-  background: var(--yellow);
-  color: var(--black);
+.btn-block {
+  width: 100%;
 }
 
-.btn-brutal.red-accent {
-  background: var(--red);
-  color: var(--white);
+/* Круглі кнопки-іконки (як у фітнес-референсі) */
+.btn-icon {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
 }
 
-.btn-brutal.red-accent.active {
-  background: var(--red);
-  color: var(--white);
+.btn-icon.btn-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.btn-primary {
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-weight: 700;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--lime-hover);
+  transform: translateY(-1px);
+}
+
+.btn-secondary,
+.btn-glass {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover:not(:disabled),
+.btn-glass:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.btn-ghost {
+  color: var(--text-2);
+  background: var(--surface);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.btn-danger-ghost {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.btn-danger-ghost:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-telegram {
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-weight: 700;
+}
+
+.btn-telegram:hover:not(:disabled) {
+  background: var(--lime-hover);
+}
+
+/* ── Сегментована "таблетка" (Сьогодні / Тиждень / Календар та підфільтри) ── */
+.mode-pills,
+.segmented {
+  display: inline-flex;
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  gap: 5px;
+}
+
+.mode-pills {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto 0.85rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (min-width: 860px) {
+  .mode-pills {
+    display: none;
+  }
+}
+
+.segmented {
+  align-self: flex-start;
+}
+
+.segmented-sm {
+  width: 100%;
+}
+
+.mode-pill,
+.segmented-item {
+  flex: 1;
+  padding: 0.56rem 1rem;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+  text-align: center;
+  transition: transform 0.2s var(--ease);
+  white-space: nowrap;
+}
+
+html[data-theme="light"] .mode-pill,
+html[data-theme="light"] .segmented-item {
+  background: rgba(18, 18, 18, 0.05);
+}
+
+.mode-pill:hover,
+.segmented-item:hover {
+  background: var(--surface-hover);
+}
+
+.mode-pill.active,
+.segmented-item.active {
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-weight: 700;
+}
+
+/* ── Chips / Badges ── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.26rem 0.68rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.chip-xs {
+  padding: 0.2rem 0.56rem;
+  font-size: 0.7rem;
+}
+
+.chip-lime,
+.chip-accent {
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-weight: 700;
+}
+
+.chip-blue,
+.chip-num,
+.chip-warning,
+.chip-amber {
+  background: var(--blue);
+  color: #FFFFFF;
+}
+
+.chip-den,
+.chip-muted {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+/* ── Нижня навігація на мобільному: круглі кнопки-іконки, активна лаймова ── */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  padding: 0 1rem calc(env(safe-area-inset-bottom, 0px) + 12px);
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+
+.tabbar-dock {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 340px;
+  height: var(--tabbar-h);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--blur-heavy);
+  -webkit-backdrop-filter: var(--blur-heavy);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tab {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s var(--ease);
+}
+
+.tab:hover {
+  background: var(--surface-hover);
+  transform: scale(1.04);
+}
+
+.tab.active {
+  background: var(--lime);
+  color: var(--lime-ink);
+}
+
+.tab-label {
+  display: none;
+}
+
+.tab-icon {
+  display: grid;
+  place-items: center;
+}
+
+.tab-icon .icon {
+  width: 21px;
+  height: 21px;
+}
+
+/* На десктопі навігація перетворюється на сегментовану таблетку в шапці */
+@media (min-width: 860px) {
+  .tabbar {
+    position: static;
+    padding: 0;
+    pointer-events: auto;
+  }
+
+  .tabbar-dock {
+    width: auto;
+    max-width: none;
+    height: auto;
+    padding: 4px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    backdrop-filter: none;
+    box-shadow: none;
+    display: inline-flex;
+    gap: 4px;
+  }
+
+  .tab {
+    width: auto;
+    height: auto;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.42rem;
+    padding: 0.44rem 0.95rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+
+  html[data-theme="light"] .tab {
+    background: rgba(18, 18, 18, 0.04);
+  }
+
+  .tab:hover {
+    color: var(--text);
+    transform: none;
+  }
+
+  .tab.active {
+    background: var(--lime);
+    color: var(--lime-ink);
+    font-weight: 700;
+  }
+
+  .tab-label {
+    display: inline;
+  }
+
+  .tab-icon .icon {
+    width: 16px;
+    height: 16px;
+  }
 }

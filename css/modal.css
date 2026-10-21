@@ -1,160 +1,270 @@
-.modal-backdrop {
+/* ------------------------------------------------------------------
+   Liquid Glass Bottom Sheets / Modals & Forms
+------------------------------------------------------------------ */
+
+.sheet-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(15, 15, 17, 0.75);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
+  inset: 0;
+  z-index: 900;
+  background: rgba(5, 6, 10, 0.58);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
+  align-items: flex-end;
   justify-content: center;
-  align-items: center;
-  padding: 1rem;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.22s var(--ease);
 }
 
-.modal-backdrop.open {
+.sheet-backdrop.open {
   opacity: 1;
   pointer-events: auto;
 }
 
-.modal-box {
-  background: var(--white);
-  border: var(--border-thick);
-  box-shadow: 14px 14px 0px var(--black);
-  border-radius: 16px;
+.sheet {
   width: 100%;
-  max-width: 520px;
-  padding: 1.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  position: relative;
-  transform: scale(0.9) translateY(20px);
-  transition: transform 0.25s var(--bounce-ease);
-  max-height: 90vh;
+  max-width: 500px;
+  max-height: 92dvh;
   overflow-y: auto;
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--blur-heavy);
+  -webkit-backdrop-filter: var(--blur-heavy);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-lg);
+  padding: 0.55rem 1.2rem calc(1.35rem + env(safe-area-inset-bottom, 0px));
+  transform: translateY(28px);
+  transition: transform 0.26s var(--ease);
 }
 
-.modal-backdrop.open .modal-box {
-  transform: scale(1) translateY(0);
+.sheet-backdrop.open .sheet {
+  transform: translateY(0);
 }
 
-.modal-header {
+.sheet-sm {
+  max-width: 420px;
+}
+
+.sheet-handle {
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  margin: 0.3rem auto 0.7rem;
+}
+
+.sheet-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  border-bottom: var(--border-thick);
-  padding-bottom: 0.75rem;
+  gap: 0.5rem;
+  margin-bottom: 0.95rem;
 }
 
-.modal-title {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 1.35rem;
-  text-transform: uppercase;
+.sheet-title {
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-.btn-close {
-  background: var(--red);
-  color: var(--white);
-  border: 2.5px solid var(--black);
-  box-shadow: 3px 3px 0px var(--black);
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.sheet-sub {
+  font-size: 0.78rem;
+  color: var(--text-2);
 }
 
-.btn-close:hover {
-  transform: scale(1.1);
+@media (min-width: 640px) {
+  .sheet-backdrop {
+    align-items: center;
+    padding: 1.25rem;
+  }
+
+  .sheet {
+    border-radius: var(--radius-xl);
+    padding: 1.25rem 1.4rem 1.45rem;
+    transform: translateY(12px) scale(0.97);
+  }
+
+  .sheet-backdrop.open .sheet {
+    transform: translateY(0) scale(1);
+  }
+
+  .sheet-handle {
+    display: none;
+  }
 }
 
-.form-group {
+/* ── Форми та поля ── */
+.form {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.85rem;
 }
 
-.form-label {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 0.85rem;
-  text-transform: uppercase;
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
 }
 
-.form-input, .form-textarea {
-  background: var(--bg);
-  border: var(--border-thick);
-  border-radius: 8px;
-  padding: 0.75rem;
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 800;
-  font-size: 0.95rem;
-  color: var(--black);
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+@media (max-width: 420px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
 }
 
-.form-input:focus, .form-textarea:focus {
-  background: var(--white);
-  box-shadow: var(--shadow-hard-sm);
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.36rem;
 }
 
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
+.field-label {
+  font-size: 0.79rem;
+  font-weight: 600;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.file-input-wrapper {
-  position: relative;
-  border: 3px dashed var(--black);
-  border-radius: 8px;
-  padding: 1rem;
-  text-align: center;
-  background: var(--bg);
-  cursor: pointer;
-  font-weight: 800;
+.field-hint {
+  font-weight: 400;
+  color: var(--text-3);
+  font-size: 0.74rem;
 }
 
-.file-input-wrapper input[type="file"] {
-  position: absolute;
-  top: 0;
-  left: 0;
+.input {
   width: 100%;
-  height: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+  font-size: 0.91rem;
+  color: var(--text);
+  transition: border-color 0.16s, background 0.16s, box-shadow 0.16s;
+}
+
+.input option {
+  background: var(--surface-solid);
+  color: var(--text);
+}
+
+.input::placeholder {
+  color: var(--text-3);
+}
+
+.input:focus {
+  outline: none;
+  background: var(--surface-hover);
+  border-color: rgba(var(--accent-rgb), 0.6);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.form-error {
+  padding: 0.62rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  border: 1px solid rgba(var(--danger-rgb), 0.25);
+  color: var(--danger);
+  font-size: 0.82rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.form-note {
+  padding: 0.62rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--amber-soft);
+  border: 1px solid rgba(var(--amber-rgb), 0.25);
+  color: var(--cal-control-fg);
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.48rem;
+  margin-bottom: 0.75rem;
+}
+
+.form-note .icon {
+  margin-top: 0.1rem;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.3rem;
+}
+
+/* ── Вибір фото з прев'ю ── */
+.file-drop {
+  position: relative;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: border-color 0.16s, background 0.16s;
+  overflow: hidden;
+}
+
+.file-drop:hover {
+  border-color: rgba(var(--accent-rgb), 0.6);
+  background: var(--surface-hover);
+}
+
+.file-drop input[type="file"] {
+  position: absolute;
+  inset: 0;
   opacity: 0;
   cursor: pointer;
 }
 
-.error-banner {
-  background: var(--red);
-  color: var(--white);
-  border: 2.5px solid var(--black);
-  box-shadow: 4px 4px 0px var(--black);
-  padding: 0.65rem;
-  border-radius: 8px;
-  font-weight: 900;
-  font-size: 0.88rem;
-  display: none;
+.file-drop-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-2);
+  max-width: 100%;
+}
+
+.file-drop-text span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-preview {
+  max-height: 160px;
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+/* ── Спінер ── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .spinner {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 3px solid rgba(255,255,255,0.3);
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 0.8s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  display: inline-block;
+  animation: spin 0.65s linear infinite;
 }

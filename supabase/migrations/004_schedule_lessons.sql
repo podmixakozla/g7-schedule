@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS schedule_lessons (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   day_of_week smallint NOT NULL CHECK (day_of_week BETWEEN 1 AND 5),
   pair_number smallint NOT NULL CHECK (pair_number BETWEEN 1 AND 8),
+  group_code text NOT NULL DEFAULT 'AR-26-1',
   subject text NOT NULL DEFAULT '-',
   teacher text NOT NULL DEFAULT '',
   classroom text NOT NULL DEFAULT '',
@@ -14,10 +15,15 @@ CREATE TABLE IF NOT EXISTS schedule_lessons (
   updated_at timestamptz DEFAULT now()
 );
 
--- Unique constraint: one lesson per (day_of_week, pair_number)
+-- Ensure group_code exists on already-created tables
+ALTER TABLE schedule_lessons
+  ADD COLUMN IF NOT EXISTS group_code text NOT NULL DEFAULT 'AR-26-1';
+
+-- Unique constraint: one lesson per (day_of_week, pair_number, group_code)
 -- This prevents duplicate lessons and allows upsert.
-CREATE UNIQUE INDEX IF NOT EXISTS idx_schedule_lessons_day_pair
-  ON schedule_lessons (day_of_week, pair_number);
+DROP INDEX IF EXISTS idx_schedule_lessons_day_pair;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_schedule_lessons_day_pair_group
+  ON schedule_lessons (day_of_week, pair_number, group_code);
 
 -- =====================================================
 -- RLS Policies
@@ -74,4 +80,4 @@ INSERT INTO schedule_lessons (day_of_week, pair_number, subject, teacher, classr
   (5, 2, '-', '', ''),
   (5, 3, '-', '', ''),
   (5, 4, 'Цивілізаційні процеси в укр. суспільстві', 'Первий', '')
-ON CONFLICT (day_of_week, pair_number) DO NOTHING;
+ON CONFLICT (day_of_week, pair_number, group_code) DO NOTHING;

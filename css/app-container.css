@@ -1,11 +1,70 @@
-.app-container {
-  width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 2.5rem 1.25rem 4rem;
+/* ------------------------------------------------------------------
+   App Shell & View Containers
+------------------------------------------------------------------ */
+
+.app {
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
-  position: relative;
-  z-index: 10;
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 20px);
+}
+
+.content {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0.75rem 0.9rem 1.5rem;
+  flex: 1;
+}
+
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.section-sub {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  margin-top: 0.14rem;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+@media (min-width: 860px) {
+  .app {
+    padding-bottom: 0;
+  }
+
+  .content {
+    padding: 1.25rem 1.5rem 2.25rem;
+  }
+
+  .view {
+    gap: 0.95rem;
+  }
+
+  .section-title {
+    font-size: 1.4rem;
+  }
 }

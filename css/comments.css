@@ -1,167 +1,140 @@
-.comments-toggle-btn {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 800;
-  font-size: 0.85rem;
-  background: var(--white);
-  border: 2px solid var(--black);
-  border-radius: 8px;
-  padding: 0.45rem 0.7rem;
-  box-shadow: 3px 3px 0px var(--black);
-  cursor: pointer;
-  align-self: flex-start;
-  transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s ease-out;
-}
-.comments-toggle-btn:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0px var(--black);
-}
-.comments-toggle-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: 0px 0px 0px var(--black);
+/* ------------------------------------------------------------------
+   Comments Preview & Expandable Section
+------------------------------------------------------------------ */
+
+.comment-preview {
+  width: 100%;
+  padding: 0.56rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  text-align: left;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  transition: background 0.14s, border-color 0.14s;
 }
 
+.comment-preview:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+
+.comment-preview.is-empty {
+  justify-content: flex-start;
+  color: var(--text-3);
+  gap: 0.42rem;
+}
+
+.comment-preview-line {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comment-preview-author {
+  font-weight: 600;
+  color: var(--text);
+  margin-right: 0.25rem;
+}
+
+.comment-preview-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+/* ── Розгорнутий блок коментарів ── */
 .comments-section {
   display: none;
   flex-direction: column;
-  gap: 0.6rem;
-  border-top: 2px dashed var(--black);
-  padding-top: 0.75rem;
-  margin-top: 0.25rem;
+  gap: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border);
 }
-.comments-section.open { display: flex; }
+
+.comments-section.open {
+  display: flex;
+}
 
 .comments-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.45rem;
   max-height: 220px;
   overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
+.comment-empty {
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-3);
 }
 
 .comment-item {
-  background: var(--white);
-  border: 2px solid var(--black);
-  border-radius: 8px;
-  padding: 0.5rem 0.6rem;
-  box-shadow: 2px 2px 0px var(--black);
-  font-size: 0.82rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.52rem 0.7rem;
 }
-.comment-author {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  color: var(--black);
+
+.comment-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
   margin-bottom: 0.15rem;
 }
-.comment-text {
+
+.comment-author {
+  font-size: 0.76rem;
   font-weight: 700;
-  line-height: 1.3;
-  word-break: break-word;
+  color: var(--accent-text);
 }
-.comment-empty {
-  font-weight: 700;
-  font-size: 0.8rem;
-  opacity: 0.6;
-  text-align: center;
-  padding: 0.4rem 0;
+
+.comment-delete {
+  color: var(--text-3);
+  padding: 0.15rem;
+  border-radius: 6px;
+}
+
+.comment-delete:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.comment-text {
+  font-size: 0.83rem;
+  color: var(--text);
+  line-height: 1.38;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .comment-form {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.comment-form-author {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 800;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: var(--black);
-  opacity: 0.6;
-  padding: 0 0.1rem;
-}
-.comment-form input,
-.comment-form textarea {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 700;
-  font-size: 0.82rem;
-  border: 2px solid var(--black);
-  border-radius: 6px;
-  padding: 0.45rem 0.55rem;
-  background: var(--bg);
-}
-.comment-form textarea {
-  resize: vertical;
-  min-height: 44px;
-}
-.comment-submit-btn {
-  align-self: flex-end;
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 800;
-  font-size: 0.82rem;
-  background: var(--yellow);
-  border: 2px solid var(--black);
-  border-radius: 6px;
-  padding: 0.4rem 0.7rem;
-  box-shadow: 2px 2px 0px var(--black);
-  cursor: pointer;
-  transition: transform 0.15s var(--bounce-ease);
-}
-.comment-submit-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: 0px 0px 0px var(--black);
-}
-.comment-submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  align-items: center;
+  gap: 0.45rem;
 }
 
-.comment-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.55rem 0.7rem;
-  background: var(--white);
-  border: 2px solid var(--black);
-  border-radius: 8px;
-  box-shadow: 2px 2px 0px var(--black);
-  cursor: pointer;
-  transition: transform 0.15s var(--bounce-ease), box-shadow 0.15s ease-out;
-  font-size: 0.82rem;
-}
-.comment-preview:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0px var(--black);
-}
-.comment-preview:active {
-  transform: translate(2px, 2px);
-  box-shadow: 0px 0px 0px var(--black);
+.comment-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.8rem !important;
+  font-size: 0.84rem !important;
+  border-radius: 999px !important;
 }
 
-.comment-preview-author {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  color: var(--black);
-}
-
-.comment-preview-text {
-  font-weight: 700;
-  line-height: 1.3;
-  color: #444;
-  word-break: break-word;
-}
-
-.comment-preview-count {
-  font-weight: 800;
-  font-size: 0.75rem;
-  color: #666;
-  margin-top: 0.1rem;
-}
-
-.comment-preview-empty {
-  font-weight: 700;
-  font-size: 0.8rem;
-  color: #888;
-  text-align: center;
+.comment-send {
+  flex-shrink: 0;
 }

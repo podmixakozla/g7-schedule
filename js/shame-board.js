@@ -1,7 +1,12 @@
+// ------------------------------------------------------------------
+// Shame Board Module — дошка ганьби
+// ------------------------------------------------------------------
+
 function setShameSubView(mode) {
   currentShameSubView = mode;
   document.getElementById('btnShameNew').classList.toggle('active', mode === 'new');
   document.getElementById('btnShameTop').classList.toggle('active', mode === 'top');
+  haptic('light');
   renderShameGrid(getFilteredShameEntries(cachedShameEntries));
 }
 
@@ -12,7 +17,12 @@ function getTotalReactions(entry) {
 
 function getFilteredShameEntries(entries) {
   if (currentShameSubView === 'top') {
-    return entries.filter(e => e.is_week_champion || e.is_month_champion);
+    const champs = entries.filter(e => e.is_week_champion || e.is_month_champion);
+    if (champs.length > 0) return champs;
+    // Якщо чемпіони ще не визначені — показуємо записи з найбільшою кількістю реакцій.
+    return [...entries]
+      .filter(e => getTotalReactions(e) > 0)
+      .sort((a, b) => getTotalReactions(b) - getTotalReactions(a));
   }
   return entries;
 }
@@ -21,7 +31,12 @@ async function loadShameEntries() {
   const grid = document.getElementById('shameGrid');
   if (!grid) return;
 
-  grid.innerHTML = '<div style="font-weight: 900; font-size: 1.2rem;">⏳ Завантажуємо героїв...</div>';
+  if (!shameLoaded) {
+    grid.innerHTML = `
+      <div class="shame-card"><div class="skeleton skeleton-photo"></div><div class="shame-body"><div class="skeleton skeleton-line w60"></div><div class="skeleton skeleton-line w80"></div></div></div>
+      <div class="shame-card"><div class="skeleton skeleton-photo"></div><div class="shame-body"><div class="skeleton skeleton-line w60"></div><div class="skeleton skeleton-line w80"></div></div></div>
+    `;
+  }
 
   if (supabaseClient) {
     try {
@@ -32,7 +47,6 @@ async function loadShameEntries() {
 
       if (error) throw error;
 
-      // Load reaction counts from the new reaction_counts view
       let reactionCounts = {};
       try {
         const { data: rcData } = await supabaseClient
@@ -44,126 +58,120 @@ async function loadShameEntries() {
             reactionCounts[rc.entry_id][rc.emoji] = rc.count;
           });
         }
-      } catch {
-        // reaction_counts view may not exist yet — fall back to legacy
-      }
+      } catch {}
 
-      // Merge: new reaction_counts takes priority over legacy JSONB
-      const entries = (data || []).map(entry => {
-        const merged = { ...entry };
-        if (reactionCounts[entry.id]) {
-          merged.reactions = reactionCounts[entry.id];
-        } else if (!merged.reactions) {
-          merged.reactions = {};
-        }
-        return merged;
-      });
+      cachedShameEntries = (data || []).map(entry => ({
+        ...entry,
+        reactions: reactionCounts[entry.id] || entry.reactions || {}
+      }));
 
-      if (entries.length > 0) {
-        cachedShameEntries = entries;
-      } else {
-        cachedShameEntries = initialDemoShameEntries;
-      }
-
-      // Eagerly load comments for preview
-      if (supabaseClient && cachedShameEntries.length > 0) {
+      if (cachedShameEntries.length > 0) {
         const entryIds = cachedShameEntries.map(e => e.id);
         try {
-          const { data: allComments, error: commentsErr } = await supabaseClient
+          const { data: allComments } = await supabaseClient
             .from('comments')
             .select('*')
             .in('entry_id', entryIds)
             .order('created_at', { ascending: true });
-          if (commentsErr) {
-            console.warn("Eager comments load error:", commentsErr);
-          } else if (allComments) {
+          if (allComments) {
             entryIds.forEach(id => { commentsCache[id] = []; loadedComments[id] = true; });
             allComments.forEach(c => {
               if (!commentsCache[c.entry_id]) commentsCache[c.entry_id] = [];
               commentsCache[c.entry_id].push(c);
             });
           }
-        } catch (e) {
-          console.warn("Eager comments load exception:", e);
-        }
+        } catch {}
       }
     } catch (err) {
-      console.warn("Supabase load error (using fallback):", err);
-      cachedShameEntries = initialDemoShameEntries;
+      console.warn('Supabase load error:', err);
+      cachedShameEntries = [];
     }
   } else {
-    cachedShameEntries = initialDemoShameEntries;
+    cachedShameEntries = [];
   }
 
+  shameLoaded = true;
   renderShameGrid(getFilteredShameEntries(cachedShameEntries));
 }
 
 function renderShameGrid(entries) {
   const grid = document.getElementById('shameGrid');
+  if (!grid) return;
   grid.innerHTML = '';
 
   if (entries.length === 0) {
-    const isTopView = currentShameSubView === 'top';
+    const isTop = currentShameSubView === 'top';
     grid.innerHTML = `
-      <div style="grid-column: 1/-1; text-align: center; padding: 3rem; background: var(--white); border: var(--border-thick); border-radius: 12px; box-shadow: var(--shadow-hard);">
-        <h3 style="font-family: 'Archivo Black', sans-serif; font-size: 1.5rem;">${isTopView ? 'ТОП ЩЕ НЕ СФОРМОВАНО 🤷' : 'ПОКИ ЩО ТИША 😇'}</h3>
-        <p style="font-weight: 800; margin-top: 0.5rem;">${isTopView ? 'Постів з реакціями поки немає.' : 'Ніхто ще не потрапив на дошку. Будь першим, хто додасть героя!'}</p>
+      <div class="shame-empty">
+        ${emptyState(
+          isTop ? 'trophy' : 'board',
+          isTop ? 'Топ поки не сформовано' : 'На дошці поки порожньо',
+          isTop ? 'Постів з реакціями ще немає.' : 'Ще ніхто сюди не потрапив — можете додати перший запис.'
+        )}
       </div>
     `;
     return;
   }
 
+  const isAdmin = currentUser && currentUser.is_admin;
+
   entries.forEach(item => {
-    const card = document.createElement('div');
+    const card = document.createElement('article');
     const isChampion = item.is_week_champion || item.is_month_champion;
     card.className = `shame-card ${isChampion ? 'is-champion' : ''}`;
 
-    const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' }) : 'Сьогодні';
+    const dateStr = item.created_at
+      ? new Date(item.created_at).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
+      : 'Сьогодні';
 
-    let ribbonHtml = '';
-    if (item.is_month_champion && item.is_week_champion) {
-      ribbonHtml = `<div class="champion-ribbon is-month">🏆 ХІТ МІСЯЦЯ</div><div class="champion-ribbon">👑 ХІТ ТИЖНЯ</div>`;
-    } else if (item.is_month_champion) {
-      ribbonHtml = `<div class="champion-ribbon is-month">🏆 ХІТ МІСЯЦЯ</div>`;
-    } else if (item.is_week_champion) {
-      ribbonHtml = `<div class="champion-ribbon">👑 ХІТ ТИЖНЯ</div>`;
-    }
+    const badges = [];
+    if (item.is_month_champion) badges.push(`<span class="chip chip-amber chip-xs">${icon('trophy', 12)} Топ місяця</span>`);
+    if (item.is_week_champion) badges.push(`<span class="chip chip-accent chip-xs">${icon('trophy', 12)} Топ тижня</span>`);
 
-    const reactionsHtml = buildReactionsHtml(item);
-
-    const isAdmin = currentUser && currentUser.is_admin;
     const adminDeleteHtml = isAdmin
-      ? `<button class="btn-brutal" onclick="adminDeletePost(${item.id})" style="background: var(--red); color: var(--white); font-size: 0.75rem; padding: 0.3rem 0.6rem; align-self: flex-end;">🗑️ ВИДАЛИТИ</button>`
+      ? `<button type="button" class="btn btn-icon btn-ghost btn-sm shame-delete" onclick="adminDeletePost(${Number(item.id)})" title="Видалити запис" aria-label="Видалити запис">${icon('trash', 16)}</button>`
       : '';
 
-    const commentPreviewHtml = buildCommentPreviewHtml(item.id);
-
     card.innerHTML = `
-      ${ribbonHtml}
-      <div class="shame-card-badge">💀 ГАНЬБА</div>
-      <div class="shame-img-box" onclick="openLightbox('${escapeHtml(item.photo_url)}', '${escapeHtml(item.name)}')" style="cursor: pointer;">
-        <img class="shame-img" src="${escapeHtml(item.photo_url)}" alt="${escapeHtml(item.name)}" onerror="this.src='https://placehold.co/600x400/0F0F11/FF4FD8?text=ФОТО+ВТРАЧЕНО'" />
+      <div class="shame-media" data-lightbox-src="${escapeHtml(item.photo_url)}" data-lightbox-alt="${escapeHtml(item.name)}">
+        <img class="shame-img" loading="lazy" src="${escapeHtml(item.photo_url)}" alt="${escapeHtml(item.name)}" />
+        ${badges.length ? `<div class="shame-badges">${badges.join('')}</div>` : ''}
       </div>
-      <div class="shame-name">${escapeHtml(item.name)}</div>
-      <div class="shame-reason">${escapeHtml(item.reason)}</div>
-      <div class="shame-date">🗓️ ${dateStr}</div>
-
-      <div class="reactions-bar" id="reactions-bar-${item.id}">${reactionsHtml}</div>
-
-      ${commentPreviewHtml}
-
-      <div class="comments-section" id="comments-section-${item.id}">
-        <div class="comments-list" id="comments-list-${item.id}">
-          <div class="comment-empty">⏳ Завантаження...</div>
+      <div class="shame-body">
+        <div class="shame-head">
+          <h3 class="shame-name">${escapeHtml(item.name)}</h3>
+          <div class="shame-meta">
+            <span class="shame-date">${escapeHtml(dateStr)}</span>
+            ${adminDeleteHtml}
+          </div>
         </div>
-        <form class="comment-form" onsubmit="handleCommentSubmit(event, ${item.id})">
-          <div class="comment-form-author" id="comment-author-${item.id}"></div>
-          <textarea class="comment-text-input" placeholder="Написати коментар..." required maxlength="300"></textarea>
-          <button type="submit" class="comment-submit-btn">Надіслати</button>
-        </form>
+        <p class="shame-reason">${escapeHtml(item.reason)}</p>
+
+        <div class="reactions-bar" id="reactions-bar-${item.id}">${buildReactionsHtml(item)}</div>
+
+        ${buildCommentPreviewHtml(item.id)}
+
+        <div class="comments-section" id="comments-section-${item.id}">
+          <div class="comments-list" id="comments-list-${item.id}"></div>
+          <form class="comment-form" onsubmit="handleCommentSubmit(event, ${Number(item.id)})">
+            <input type="text" class="input comment-input" placeholder="Написати коментар…" required maxlength="300" autocomplete="off" />
+            <button type="submit" class="btn btn-primary btn-icon comment-send" aria-label="Надіслати">${icon('send', 16)}</button>
+          </form>
+        </div>
       </div>
-      ${adminDeleteHtml}
     `;
+
+    const img = card.querySelector('.shame-img');
+    img.addEventListener('error', () => {
+      img.closest('.shame-media').classList.add('is-broken');
+    }, { once: true });
+
+    const media = card.querySelector('.shame-media');
+    media.addEventListener('click', () => {
+      if (!media.classList.contains('is-broken')) {
+        openLightbox(media.dataset.lightboxSrc, media.dataset.lightboxAlt);
+      }
+    });
 
     grid.appendChild(card);
   });
@@ -171,81 +179,62 @@ function renderShameGrid(entries) {
 
 async function clearBoard() {
   if (!currentUser || !currentUser.is_admin) return;
-  if (!confirm("Видалити ВСІ записи з дошки ганьби? Це незворотно!")) return;
+  if (!(await uiConfirm('Видалити всі записи з дошки ганьби? Це незворотна дія.'))) return;
 
   try {
-    const token = localStorage.getItem('g7_auth_token');
-    const response = await fetch(`${EDGE_FUNCTION_URL}/admin-clear-board`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error || 'Failed to clear board');
-    }
-
+    await callEdgeFunction('admin-clear-board');
     cachedShameEntries = [];
     renderShameGrid(cachedShameEntries);
-    spawnConfettiBurst(20);
+    toast('Дошку очищено');
   } catch (err) {
-    console.error("Clear board error:", err);
-    alert("Не вдалося очистити дошку: " + err.message);
+    console.error('Clear board error:', err);
+    toast(err.message || 'Не вдалося очистити дошку', 'error');
   }
 }
 
 async function adminDeletePost(postId) {
   if (!currentUser || !currentUser.is_admin) return;
-  if (!confirm("Видалити цей запис з дошки ганьби?")) return;
+  if (!(await uiConfirm('Видалити цей запис з дошки?'))) return;
 
   try {
-    const token = localStorage.getItem('g7_auth_token');
-    const response = await fetch(`${EDGE_FUNCTION_URL}/admin-delete-post`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ post_id: postId }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error || 'Failed to delete post');
-    }
-
+    await callEdgeFunction('admin-delete-post', { post_id: postId });
     cachedShameEntries = cachedShameEntries.filter(e => e.id !== postId);
     renderShameGrid(getFilteredShameEntries(cachedShameEntries));
+    toast('Запис видалено');
   } catch (err) {
-    console.error("Delete post error:", err);
-    alert("Не вдалося видалити запис: " + err.message);
+    console.error('Delete post error:', err);
+    toast(err.message || 'Не вдалося видалити запис', 'error');
   }
 }
 
 function buildCommentPreviewHtml(entryId) {
   const comments = commentsCache[entryId] || [];
   const count = comments.length;
+  const id = Number(entryId);
 
   if (count === 0) {
-    return `<div class="comment-preview" onclick="toggleComments(${entryId}, this)">
-      <span class="comment-preview-empty">Будь першим, хто прокоментує 👀</span>
-    </div>`;
+    return `
+      <button type="button" class="comment-preview is-empty" onclick="toggleComments(${id})">
+        ${icon('message', 15)}<span>Прокоментувати</span>
+      </button>
+    `;
   }
 
   const last = comments[comments.length - 1];
   const author = escapeHtml(last.author || 'Анонім');
-  const text = escapeHtml(last.text);
-  const truncated = text.length > 80 ? text.slice(0, 80) + '…' : text;
-  const label = count === 1 ? '1 коментар' : (count < 5 ? `${count} коментарі` : `${count} коментарів`);
+  const raw = String(last.text || '');
+  const truncated = escapeHtml(raw.length > 70 ? raw.slice(0, 70) + '…' : raw);
+  const countLabel = `${count} ${plural(count, ['коментар', 'коментарі', 'коментарів'])}`;
 
-  return `<div class="comment-preview" onclick="toggleComments(${entryId}, this)">
-    <span class="comment-preview-author">${author}</span>
-    <span class="comment-preview-text">${truncated}</span>
-    <span class="comment-preview-count">💬 ${label}</span>
-  </div>`;
+  return `
+    <button type="button" class="comment-preview" onclick="toggleComments(${id})">
+      <div class="comment-preview-line">
+        <span class="comment-preview-author">${author}:</span>
+        <span class="comment-preview-text">${truncated}</span>
+      </div>
+      <span class="comment-preview-count">${icon('message', 14)}${countLabel}</span>
+    </button>
+  `;
 }
 
 function openLightbox(src, alt) {
@@ -255,25 +244,34 @@ function openLightbox(src, alt) {
   const overlay = document.createElement('div');
   overlay.id = 'photoLightbox';
   overlay.className = 'lightbox-overlay';
-  overlay.innerHTML = `
-    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
-    <img class="lightbox-img" src="${src}" alt="${alt || ''}" />
-  `;
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'lightbox-close';
+  closeBtn.setAttribute('aria-label', 'Закрити');
+  closeBtn.innerHTML = icon('close', 20);
+  closeBtn.onclick = closeLightbox;
+
+  const img = document.createElement('img');
+  img.className = 'lightbox-img';
+  img.src = src;
+  img.alt = alt || '';
+
+  overlay.append(closeBtn, img);
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) closeLightbox();
   });
   document.body.appendChild(overlay);
   requestAnimationFrame(() => overlay.classList.add('open'));
+  syncTelegramBackButton();
 }
 
 function closeLightbox() {
   const overlay = document.getElementById('photoLightbox');
   if (overlay) {
     overlay.classList.remove('open');
-    setTimeout(() => overlay.remove(), 250);
+    setTimeout(() => {
+      overlay.remove();
+      syncTelegramBackButton();
+    }, 200);
   }
 }
-
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeLightbox();
-});

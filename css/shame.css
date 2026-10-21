@@ -1,147 +1,70 @@
-.shame-subtabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-top: -0.5rem;
-}
-
-.shame-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
-  width: 100%;
-}
-
-.shame-header-box {
-  background: var(--white);
-  border: var(--border-thick);
-  box-shadow: var(--shadow-hard-lg);
-  border-radius: 16px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  position: relative;
-}
-
-@media (min-width: 768px) {
-  .shame-header-box {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-}
-
-.shame-title-area {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.shame-title {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
-  text-transform: uppercase;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.shame-subtitle {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: #555;
-}
+/* ------------------------------------------------------------------
+   Shame Board Cards & Lightbox (Liquid Glass)
+------------------------------------------------------------------ */
 
 .shame-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.75rem;
+  gap: 0.95rem;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 680px) {
   .shame-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
+    align-items: start;
   }
 }
 
-.shame-card {
-  background: #F7F5F0;
-  border: 2.5px solid var(--black);
-  box-shadow: 5px 5px 0px var(--black);
-  border-radius: 14px;
-  padding: 1.1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  position: relative;
-  transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s ease-out;
-  z-index: 1;
+@media (min-width: 1024px) {
+  .shame-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-.shame-card:nth-child(odd) { transform: rotate(-1deg); }
-.shame-card:nth-child(even) { transform: rotate(1.2deg); }
+.shame-empty {
+  grid-column: 1 / -1;
+}
+
+.shame-card {
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
 
 .shame-card:hover {
-  transform: translateY(-6px) rotate(0deg) scale(1.02) !important;
-  box-shadow: 12px 12px 0px var(--black);
-  z-index: 20;
-  transition: transform 0.2s var(--bounce-ease), box-shadow 0.2s ease-out;
+  transform: translateY(-2px);
 }
 
 .shame-card.is-champion {
-  background: linear-gradient(135deg, #FFFBF0 0%, #FFF8E1 100%);
-  border: 3.5px solid var(--black);
-  box-shadow: 6px 6px 0px var(--black), 0 0 0 2px var(--yellow);
-  transform: scale(1.03) !important;
-  z-index: 10;
+  box-shadow: 0 0 0 1.5px var(--lime), var(--shadow-card);
 }
 
-.shame-card.is-champion:hover {
-  transform: translateY(-6px) scale(1.05) !important;
-  box-shadow: 12px 12px 0px var(--black), 0 0 0 3px var(--yellow);
-}
-
-.shame-card.is-champion .shame-card-badge {
-  background: var(--yellow);
-  color: var(--black);
-}
-
-.champion-ribbon {
-  position: absolute;
-  top: -14px;
-  left: 50%;
-  transform: translateX(-50%) rotate(-2deg);
-  background: var(--yellow);
-  color: var(--black);
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 0.78rem;
-  padding: 0.3rem 0.8rem;
-  border: 2.5px solid var(--black);
-  box-shadow: var(--shadow-hard-sm);
-  border-radius: 8px;
-  z-index: 6;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-.champion-ribbon + .champion-ribbon {
-  top: 14px;
-  transform: translateX(-50%) rotate(2deg);
-}
-
-.champion-ribbon.is-month {
-  background: var(--pink);
-  color: var(--white);
-}
-
-.shame-img-box {
-  width: 100%;
-  height: 220px;
-  border: var(--border-thick);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--black);
+.shame-media {
   position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--surface-2);
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.shame-media.is-broken {
+  cursor: default;
+  display: grid;
+  place-items: center;
+}
+
+.shame-media.is-broken .shame-img {
+  display: none;
+}
+
+.shame-media.is-broken::after {
+  content: 'Зображення недоступне';
+  font-size: 0.8rem;
+  color: var(--text-3);
 }
 
 .shame-img {
@@ -149,102 +72,124 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.35s var(--ease);
 }
 
-.shame-card-badge {
+.shame-media:hover .shame-img {
+  transform: scale(1.03);
+}
+
+.shame-badges {
   position: absolute;
-  top: -10px;
-  left: 10px;
-  background: var(--red);
-  color: var(--white);
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 0.75rem;
-  padding: 0.2rem 0.6rem;
-  border: 2px solid var(--black);
-  box-shadow: var(--shadow-hard-sm);
-  border-radius: 6px;
-  transform: rotate(-3deg);
-  z-index: 5;
-  pointer-events: none;
+  top: 0.65rem;
+  left: 0.65rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.shame-badges .chip {
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--blur-heavy);
+  -webkit-backdrop-filter: var(--blur-heavy);
+  box-shadow: var(--shadow-sm);
+}
+
+.shame-body {
+  padding: 0.95rem 1.05rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.shame-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .shame-name {
-  font-family: 'Archivo Black', sans-serif;
-  font-size: 1.25rem;
-  text-transform: uppercase;
-  line-height: 1.1;
-  color: var(--black);
-  background: var(--yellow);
-  padding: 0.25rem 0.5rem;
-  border: 2px solid var(--black);
-  border-radius: 6px;
-  box-shadow: 2px 2px 0px var(--black);
-  display: inline-block;
-  align-self: flex-start;
-}
-
-.shame-reason {
-  font-size: 0.92rem;
-  font-weight: 800;
-  line-height: 1.35;
-  color: var(--black);
-  background: var(--bg);
-  border: 2px solid var(--black);
-  padding: 0.65rem;
-  border-radius: 6px;
-  flex: 1;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
   word-break: break-word;
 }
 
-.shame-date {
-  font-size: 0.75rem;
-  font-weight: 900;
-  color: #666;
-  text-align: right;
+.shame-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
 }
 
+.shame-date {
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+  color: var(--text-3);
+}
+
+.shame-delete {
+  color: var(--text-3);
+}
+
+.shame-delete:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.shame-reason {
+  font-size: 0.88rem;
+  color: var(--text-2);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Lightbox ── */
 .lightbox-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  z-index: 1100;
+  background: rgba(6, 7, 11, 0.85);
+  backdrop-filter: var(--blur-heavy);
+  -webkit-backdrop-filter: var(--blur-heavy);
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
   opacity: 0;
-  transition: opacity 0.25s ease;
-  cursor: pointer;
+  transition: opacity 0.22s var(--ease);
 }
+
 .lightbox-overlay.open {
   opacity: 1;
 }
+
 .lightbox-img {
-  max-width: 92vw;
-  max-height: 90vh;
+  max-width: min(92vw, 960px);
+  max-height: 86vh;
+  border-radius: var(--radius-md);
   object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  cursor: default;
+  box-shadow: var(--shadow-lg);
 }
+
 .lightbox-close {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 44px;
-  height: 44px;
+  top: calc(env(safe-area-inset-top, 0px) + 16px);
+  right: 16px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  border: 2px solid var(--white);
-  background: rgba(0,0,0,0.6);
-  color: var(--white);
-  font-size: 1.3rem;
-  font-weight: 900;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-  z-index: 10;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFF;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s, transform 0.15s;
 }
+
 .lightbox-close:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.05);
 }

@@ -1,14 +1,9 @@
 // ------------------------------------------------------------------
-// Comments — auth required, admin can delete any comment
-// Author name is always derived from the authenticated Telegram profile.
+// Comments — коментарі до постів на дошці (потрібна авторизація)
 // ------------------------------------------------------------------
 
 function getCommentAuthorName() {
-  if (!currentUser) return 'Анонім';
-  const first = currentUser.first_name || '';
-  const last = currentUser.last_name || '';
-  if (first && last) return first + ' ' + last;
-  return first || currentUser.username || 'Анонім';
+  return getUserDisplayName(currentUser) || 'Анонім';
 }
 
 async function loadComments(entryId) {
@@ -22,28 +17,17 @@ async function loadComments(entryId) {
     if (error) throw error;
     return data || [];
   } catch (err) {
-    console.warn("Load comments error:", err);
+    console.warn('Load comments error:', err);
     return [];
   }
 }
 
-async function toggleComments(entryId, btn) {
+async function toggleComments(entryId) {
   const section = document.getElementById(`comments-section-${entryId}`);
   if (!section) return;
 
   const isOpen = section.classList.contains('open');
   section.classList.toggle('open');
-
-  // Show who the comment will be posted as
-  const authorEl = document.getElementById(`comment-author-${entryId}`);
-  if (authorEl) {
-    if (currentUser) {
-      authorEl.textContent = 'Коментує: ' + getCommentAuthorName();
-      authorEl.style.display = '';
-    } else {
-      authorEl.style.display = 'none';
-    }
-  }
 
   if (!isOpen) {
     const cached = commentsCache[entryId];
@@ -51,7 +35,7 @@ async function toggleComments(entryId, btn) {
 
     if (!alreadyLoaded) {
       const listEl = document.getElementById(`comments-list-${entryId}`);
-      if (listEl) listEl.innerHTML = '<div class="comment-empty">⏳ Завантаження...</div>';
+      if (listEl) listEl.innerHTML = '<div class="comment-empty">Завантаження…</div>';
 
       try {
         const comments = await loadComments(entryId);
@@ -75,19 +59,21 @@ function renderComments(entryId) {
   const comments = commentsCache[entryId] || [];
 
   if (comments.length === 0) {
-    listEl.innerHTML = `<div class="comment-empty">${escapeHtml(demoCommentsFallback.text)}</div>`;
+    listEl.innerHTML = '<div class="comment-empty">Коментарів поки немає</div>';
     return;
   }
 
+  const isAdmin = currentUser && currentUser.is_admin;
   listEl.innerHTML = comments.map(c => {
-    const isAdmin = currentUser && currentUser.is_admin;
-    const adminDeleteHtml = isAdmin
-      ? `<button class="btn-clear-tiny" onclick="adminDeleteComment(${c.id}, ${entryId})" title="Видалити коментар" style="float: right; opacity: 0.5;">🗑️</button>`
+    const delBtn = (isAdmin && c.id)
+      ? `<button type="button" class="comment-delete" onclick="adminDeleteComment(${Number(c.id)}, ${Number(entryId)})" title="Видалити коментар" aria-label="Видалити">${icon('trash', 14)}</button>`
       : '';
     return `
       <div class="comment-item">
-        ${adminDeleteHtml}
-        <div class="comment-author">${escapeHtml(c.author || c.user_id || 'Анонім')}</div>
+        <div class="comment-head">
+          <span class="comment-author">${escapeHtml(c.author || 'Анонім')}</span>
+          ${delBtn}
+        </div>
         <div class="comment-text">${escapeHtml(c.text)}</div>
       </div>
     `;
@@ -113,73 +99,62 @@ async function handleCommentSubmit(e, entryId) {
   }
 
   const form = e.target;
-  const textInput = form.querySelector('.comment-text-input');
-  const submitBtn = form.querySelector('.comment-submit-btn');
+  const textInput = form.querySelector('.comment-input');
+  const submitBtn = form.querySelector('.comment-send');
 
   const text = textInput.value.trim();
   if (!text) return;
 
   submitBtn.disabled = true;
-  submitBtn.textContent = '...';
-
   const authorName = getCommentAuthorName();
 
   try {
+    await getFreshAccessToken();
+    let inserted = null;
     if (supabaseClient) {
-      const { error } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from('comments')
-        .insert([{ entry_id: entryId, user_id: currentUser.id, author: authorName, text }]);
-
+        .insert([{ entry_id: entryId, user_id: currentUser.id, author: authorName, text }])
+        .select()
+        .single();
       if (error) throw error;
+      inserted = data;
     }
 
     if (!commentsCache[entryId]) commentsCache[entryId] = [];
-    commentsCache[entryId].push({
+    commentsCache[entryId].push(inserted || {
       author: authorName,
       text,
       user_id: currentUser.id,
       created_at: new Date().toISOString(),
     });
+
     renderComments(entryId);
     refreshCommentPreview(entryId);
-
     form.reset();
+    haptic('light');
   } catch (err) {
-    console.warn("Comment submit error:", err);
-    alert("Не вдалося надіслати коментар 😢 Спробуй ще раз.");
+    console.warn('Comment submit error:', err);
+    toast('Не вдалося надіслати коментар', 'error');
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Надіслати';
   }
 }
 
 async function adminDeleteComment(commentId, entryId) {
   if (!currentUser || !currentUser.is_admin) return;
-  if (!confirm("Видалити цей коментар?")) return;
+  if (!(await uiConfirm('Видалити цей коментар?'))) return;
 
   try {
-    const token = localStorage.getItem('g7_auth_token');
-    const response = await fetch(`${EDGE_FUNCTION_URL}/admin-delete-comment`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ comment_id: commentId }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error || 'Failed to delete comment');
-    }
-
+    await callEdgeFunction('admin-delete-comment', { comment_id: commentId });
     if (commentsCache[entryId]) {
       commentsCache[entryId] = commentsCache[entryId].filter(c => c.id !== commentId);
     }
     renderComments(entryId);
     refreshCommentPreview(entryId);
+    toast('Коментар видалено');
   } catch (err) {
-    console.error("Delete comment error:", err);
-    alert("Не вдалося видалити коментар: " + err.message);
+    console.error('Delete comment error:', err);
+    toast(err.message || 'Не вдалося видалити коментар', 'error');
   }
 }

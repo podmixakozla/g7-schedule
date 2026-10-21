@@ -1,8 +1,6 @@
 // ------------------------------------------------------------------
-// Reactions — server-side via upsert_reaction RPC (auth required)
-// One reaction per user per post. Toggle: same emoji removes, different replaces.
-// After every RPC call, re-fetch ALL state from DB. No optimistic counter manipulation.
-// Picker is portaled to <body> so card transforms/animations don't affect its position.
+// Reactions — серверні реакції через RPC upsert_reaction
+// Одна реакція на користувача на пост. Повторний клік знімає, інший — замінює.
 // ------------------------------------------------------------------
 
 async function getUserReactionsFromDB() {
@@ -20,8 +18,6 @@ async function getUserReactionsFromDB() {
     return {};
   }
 }
-
-let userReactionsMap = {};
 
 async function refreshUserReactions() {
   userReactionsMap = await getUserReactionsFromDB();
@@ -61,7 +57,7 @@ function buildReactionsHtml(item) {
       const count = reactions[emoji] || 0;
       const isMine = userReactionKey === emoji;
       return `
-        <button class="reaction-btn ${isMine ? 'is-mine' : ''}" onclick="handleReaction(${item.id}, '${emoji}')">
+        <button type="button" class="reaction-pill ${isMine ? 'is-mine' : ''}" data-react-entry="${item.id}" data-react-emoji="${escapeHtml(emoji)}">
           <span>${emoji}</span>
           <span class="reaction-count">${count}</span>
         </button>
@@ -70,7 +66,9 @@ function buildReactionsHtml(item) {
 
   return `
     ${usedPillsHtml}
-    <button class="reaction-add-btn" onclick="toggleReactionPicker(event, ${item.id})">+</button>
+    <button type="button" class="reaction-add" onclick="toggleReactionPicker(event, ${Number(item.id)})" aria-label="Додати реакцію">
+      ${icon('smilePlus', 16)}
+    </button>
   `;
 }
 
@@ -81,13 +79,11 @@ let activePickerEl = null;
 function toggleReactionPicker(e, entryId) {
   e.stopPropagation();
 
-  // If clicking + on the same post that's already open, close it
   if (activePickerEntryId === entryId && activePickerEl) {
     closeReactionPicker();
     return;
   }
 
-  // Close any existing picker
   closeReactionPicker();
 
   if (!currentUser) {
@@ -95,16 +91,14 @@ function toggleReactionPicker(e, entryId) {
     return;
   }
 
-  // Build picker element
   const userReactionKey = getUserReaction(entryId);
   const picker = document.createElement('div');
   picker.className = 'reaction-picker open';
   picker.innerHTML = POPULAR_EMOJIS.map(emoji => {
     const isMine = userReactionKey === emoji;
-    return `<button class="reaction-picker-emoji ${isMine ? 'is-mine' : ''}" data-emoji="${emoji}">${emoji}</button>`;
+    return `<button type="button" class="reaction-picker-emoji ${isMine ? 'is-mine' : ''}" data-emoji="${emoji}">${emoji}</button>`;
   }).join('');
 
-  // Wire up click handlers
   picker.querySelectorAll('.reaction-picker-emoji').forEach(btn => {
     btn.addEventListener('click', (ev) => {
       ev.stopPropagation();
@@ -112,18 +106,13 @@ function toggleReactionPicker(e, entryId) {
     });
   });
 
-  // Append to body (portal)
   document.body.appendChild(picker);
   activePickerEntryId = entryId;
   activePickerEl = picker;
 
-  // Position after render
   const btn = e.currentTarget;
-  requestAnimationFrame(() => {
-    positionPortalPicker(picker, btn);
-  });
+  requestAnimationFrame(() => positionPortalPicker(picker, btn));
 
-  // Recalculate on scroll/resize while open
   const reposition = () => {
     if (activePickerEl) positionPortalPicker(picker, btn);
   };
@@ -141,19 +130,16 @@ function positionPortalPicker(picker, btn) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
-  // Center on the + button, below it
   let left = btnRect.left + btnRect.width / 2 - pickerRect.width / 2;
-  let top = btnRect.bottom + 6;
+  let top = btnRect.bottom + 8;
 
-  // Clamp within viewport
-  if (left + pickerRect.width > vw - 8) left = vw - pickerRect.width - 8;
-  if (left < 8) left = 8;
+  if (left + pickerRect.width > vw - 12) left = vw - pickerRect.width - 12;
+  if (left < 12) left = 12;
 
-  // If below viewport, show above the button
-  if (top + pickerRect.height > vh - 8) {
-    top = btnRect.top - pickerRect.height - 6;
+  if (top + pickerRect.height > vh - 12) {
+    top = btnRect.top - pickerRect.height - 8;
   }
-  if (top < 8) top = btnRect.bottom + 6;
+  if (top < 12) top = btnRect.bottom + 8;
 
   picker.style.left = left + 'px';
   picker.style.top = top + 'px';
@@ -168,8 +154,16 @@ function closeReactionPicker() {
   activePickerEntryId = null;
 }
 
-document.addEventListener('click', closeReactionPicker);
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeReactionPicker(); });
+document.addEventListener('click', (e) => {
+  const pill = e.target.closest('[data-react-entry]');
+  if (pill) {
+    handleReaction(Number(pill.dataset.reactEntry), pill.dataset.reactEmoji);
+    return;
+  }
+  if (activePickerEl && !e.target.closest('.reaction-picker')) {
+    closeReactionPicker();
+  }
+});
 
 async function handleReaction(entryId, emoji) {
   if (!currentUser) {
@@ -178,37 +172,39 @@ async function handleReaction(entryId, emoji) {
   }
 
   closeReactionPicker();
+  haptic('light');
 
   const previousEmoji = getUserReaction(entryId);
   const togglingOff = previousEmoji === emoji;
 
-  if (supabaseClient) {
-    try {
-      const { data, error } = await supabaseClient.rpc('upsert_reaction', {
-        p_entry_id: entryId,
-        p_emoji: togglingOff ? previousEmoji : emoji,
-      });
-      if (error) throw error;
+  if (!supabaseClient) return;
 
-      await refreshUserReactions();
-      await refreshReactionCounts();
+  try {
+    await getFreshAccessToken();
+    const { error } = await supabaseClient.rpc('upsert_reaction', {
+      p_entry_id: entryId,
+      p_emoji: togglingOff ? previousEmoji : emoji,
+    });
+    if (error) throw error;
 
-      const entry = cachedShameEntries.find(e => e.id === entryId);
-      if (entry) {
-        const bar = document.getElementById(`reactions-bar-${entryId}`);
-        if (bar) {
-          bar.innerHTML = buildReactionsHtml(entry);
-          if (!togglingOff) {
-            const pill = bar.querySelector('.reaction-btn.is-mine');
-            if (pill) {
-              pill.classList.add('just-reacted');
-              setTimeout(() => pill.classList.remove('just-reacted'), 300);
-            }
+    await Promise.all([refreshUserReactions(), refreshReactionCounts()]);
+
+    const entry = cachedShameEntries.find(e => e.id === entryId);
+    if (entry) {
+      const bar = document.getElementById(`reactions-bar-${entryId}`);
+      if (bar) {
+        bar.innerHTML = buildReactionsHtml(entry);
+        if (!togglingOff) {
+          const pill = bar.querySelector('.reaction-pill.is-mine');
+          if (pill) {
+            pill.classList.add('just-reacted');
+            setTimeout(() => pill.classList.remove('just-reacted'), 300);
           }
         }
       }
-    } catch (err) {
-      console.warn("Reaction error:", err);
     }
+  } catch (err) {
+    console.warn('Reaction error:', err);
+    toast('Не вдалося зберегти реакцію', 'error');
   }
 }

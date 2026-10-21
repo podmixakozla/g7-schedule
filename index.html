@@ -2,20 +2,34 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>РОЗКЛАД НТУ ДП // G7 + ДОШКА ГАНЬБИ</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23E8B93E'/><text y='.9em' x='50' text-anchor='middle' font-size='72'>📅</text></svg>">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#121212" id="metaThemeColor">
+  <title>Розклад G7 · НТУ «ДП»</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='50' fill='%23D4F54A'/><text x='50' y='65' text-anchor='middle' font-family='Poppins,sans-serif' font-weight='700' font-size='44' fill='%23121212'>G7</text></svg>">
 
-  <!-- Жирні шрифти з сильним характером -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@600;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=Urbanist:wght@500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Supabase JS Client CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Telegram WebApp SDK — must load before auth.js -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Миттєва ініціалізація теми до першого рендеру -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('g7_theme');
+        var scheme = (saved === 'light' || saved === 'dark') ? saved : 'dark';
+        document.documentElement.dataset.theme = scheme;
+      } catch (e) {
+        document.documentElement.dataset.theme = 'dark';
+      }
+    })();
+  </script>
 
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/app-container.css">
@@ -33,151 +47,175 @@
 </head>
 <body>
 
-  <!-- Плаваючі фонові елементи -->
-  <div class="bg-floating-container" id="floatingBg"></div>
-
   <!-- Конфетті canvas -->
-  <canvas id="confettiCanvas"></canvas>
+  <canvas id="confettiCanvas" aria-hidden="true"></canvas>
 
-  <!-- Auth Overlay -->
-  <div class="auth-overlay" id="authOverlay"></div>
+  <div class="app">
 
-  <div class="app-container">
-    
-    <header class="header">
-      <div class="header-main">
-        <div class="tags-row">
-          <div class="badge-pill">🔥 НТУ ДП · 1899</div>
-          <div class="badge-pill cyan">🎓 СПЕЦІАЛЬНІСТЬ G7</div>
-        </div>
-        <h1 class="main-title">РОЗКЛАД <span>G7</span> </h1>
-      </div>
-
-      <!-- Кнопки-перемикачі -->
-      <div class="controls-wrapper">
-        <button class="btn-brutal active" id="btnWeek" onclick="setViewMode('week')">
-          📅 ВЕСЬ ТИЖДЕНЬ
-        </button>
-        <button class="btn-brutal pink-accent" id="btnToday" onclick="setViewMode('today')">
-          ⚡ СЬОГОДНІ
-        </button>
-        <button class="btn-brutal yellow-accent" id="btnCalendar" onclick="setViewMode('calendar')">
-          📆 КАЛЕНДАР 2026/27
-        </button>
-        <button class="btn-brutal red-accent" id="btnShame" onclick="setViewMode('shame')">
-          💀 ДОШКА ГАНЬБИ
-        </button>
-      </div>
-    </header>
-
-    <!-- Основні секції -->
-    <main class="schedule-grid" id="scheduleContainer"></main>
-
-    <!-- Секція календаря -->
-    <div class="calendar-wrapper" id="calendarContainer" style="display: none;">
-      <div class="calendar-box">
-        
-        <!-- Sticky Legend -->
-        <div class="legend-container sticky-legend">
-          <span class="legend-title">📌 Позначення:</span>
-          <div class="legend-item"><div class="legend-color-box theory"></div> Теоретичне</div>
-          <div class="legend-item"><div class="legend-color-box control"></div> Контроль</div>
-          <div class="legend-item"><div class="legend-color-box session"></div> Сесія 💀</div>
-          <div class="legend-item"><div class="legend-color-box vacation"></div> Канікули ✨</div>
-          <div class="legend-item"><div class="legend-color-box practice"></div> Практика</div>
-          <div class="legend-item"><span class="legend-text-num">1</span> Чисельник</div>
-          <div class="legend-item"><span class="legend-text-den">8</span> Знаменник</div>
-        </div>
-
-        <div class="calendar-actions">
-          <button class="btn-brutal" id="btnToggleAllMonths" onclick="toggleAllMonths()">
-            📂 ЗГОРНУТИ ВСІ / РОЗГОРНУТИ
-          </button>
-        </div>
-
-        <!-- Сітка місяців -->
-        <div class="months-grid" id="monthsGrid"></div>
-
-      </div>
-    </div>
-
-    <div class="shame-wrapper" id="shameContainer" style="display: none;">
-      <div class="shame-header-box">
-        <div class="shame-title-area">
-          <h2 class="shame-title">💀 ДОШКА ГАНЬБИ G7</h2>
-          <p class="shame-subtitle">Ганьба.</p>
-        </div>
-        <button class="btn-brutal red-accent" onclick="openShameModal()">
-          ➕ ДОДАТИ ГАНЕБНИКА
-        </button>
-      </div>
-
-      <div class="shame-subtabs">
-        <button class="btn-brutal active" id="btnShameNew" onclick="setShameSubView('new')">🆕 НОВІ</button>
-        <button class="btn-brutal" id="btnShameTop" onclick="setShameSubView('top')">🏆 ТОП ТИЖНЯ/МІСЯЦЯ</button>
-      </div>
-
-      <div class="shame-grid" id="shameGrid"></div>
-    </div>
-
-    <!-- Футер -->
-    <footer class="footer">
-      <div class="footer-info">
-        <span class="footer-tag">🏛️ НТУ «ДНІПРОВСЬКА ПОЛІТЕХНІКА»</span>
-        <span class="footer-tag">🎓 СПЕЦІАЛЬНІСТЬ G7</span>
-      </div>
-      <div style="display: flex; align-items: center; gap: 0.4rem;">
-        <div class="clock-badge" id="liveClock">⏰ Завантаження...</div>
-        <button class="btn-clear-tiny" id="btnClearBoard" onclick="clearBoard()" title="Адмін-очищення" style="display: none;">🗑️</button>
-      </div>
-    </footer>
-  </div>
-
-  <!-- Модальне вікно "Розклад: Адмін" -->
-  <div class="modal-backdrop" id="scheduleAdminModal"></div>
-
-  <!-- Модальне вікно "Додати на Дошку Ганьби" -->
-  <div class="modal-backdrop" id="shameModal">
-    <div class="modal-box">
-      <div class="modal-header">
-        <span class="modal-title">💀 ДОДАТИ НА ДОШКУ</span>
-        <button class="btn-close" onclick="closeShameModal()">✕</button>
-      </div>
-
-      <div class="error-banner" id="modalError"></div>
-
-      <form id="shameForm" onsubmit="handleShameSubmit(event)">
-        <div class="form-group">
-          <label class="form-label">Ім'я / Нікнейм героя 🤡</label>
-          <input type="text" id="shameName" class="form-input" placeholder="Хто потрапив на дошку?" required maxlength="100" />
-        </div>
-
-        <div class="form-group" style="margin-top: 0.8rem;">
-          <label class="form-label">За що потрапив? 📝</label>
-          <textarea id="shameReason" class="form-textarea" placeholder="Проспав першу пару, не здав лабу з кодингу..." required></textarea>
-        </div>
-
-        <div class="form-group" style="margin-top: 0.8rem;">
-          <label class="form-label">Доказ (Фото, макс 15 МБ) 📸</label>
-          <div class="file-input-wrapper">
-            <span id="fileLabel">📁 Тисни сюди для вибору фото</span>
-            <input type="file" id="shamePhoto" accept="image/*" onchange="handleFileSelect(event)" required />
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">G7</div>
+          <div class="brand-text">
+            <div class="brand-title">Розклад G7</div>
+            <div class="brand-sub">НТУ «Дніпровська політехніка»</div>
           </div>
         </div>
 
-        <div style="margin-top: 1.25rem;">
-          <button type="submit" class="btn-brutal red-accent" id="btnSubmitShame" style="width: 100%; justify-content: center;">
-            <span id="submitBtnText">🔥 ОПУБЛІКУВАТИ</span>
+        <!-- Десктопна навігація — сегментована таблетка, мобільна — круглі кнопки-іконки знизу -->
+        <nav class="tabbar" id="tabbar" aria-label="Розділи">
+          <div class="tabbar-dock">
+            <button class="tab" id="btnToday" data-view="today" onclick="setViewMode('today')" aria-label="Сьогодні" title="Сьогодні">
+              <span class="tab-icon" data-icon="home"></span>
+              <span class="tab-label">Сьогодні</span>
+            </button>
+            <button class="tab" id="btnWeek" data-view="week" onclick="setViewMode('week')" aria-label="Тиждень" title="Тиждень">
+              <span class="tab-icon" data-icon="barChart"></span>
+              <span class="tab-label">Тиждень</span>
+            </button>
+            <button class="tab" id="btnCalendar" data-view="calendar" onclick="setViewMode('calendar')" aria-label="Календар" title="Календар">
+              <span class="tab-icon" data-icon="calendar"></span>
+              <span class="tab-label">Календар</span>
+            </button>
+            <button class="tab" id="btnShame" data-view="shame" onclick="setViewMode('shame')" aria-label="Дошка" title="Дошка">
+              <span class="tab-icon" data-icon="board"></span>
+              <span class="tab-label">Дошка</span>
+            </button>
+          </div>
+        </nav>
+
+        <div class="topbar-actions">
+          <div class="group-switch" id="headerGroupSwitch" role="tablist" aria-label="Група"></div>
+          <button class="btn btn-icon btn-glass" id="btnThemeToggle" onclick="toggleTheme()" title="Змінити тему" aria-label="Змінити тему">
+            <span data-icon="moon"></span>
           </button>
+          <div class="user-slot" id="userSlot"></div>
         </div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- Сегментована "таблетка" перемикання режимів (Сьогодні / Тиждень / Календар) -->
+      <div class="mode-pills" role="tablist" aria-label="Режим перегляду">
+        <button type="button" class="mode-pill" data-view="today" onclick="setViewMode('today')">Сьогодні</button>
+        <button type="button" class="mode-pill" data-view="week" onclick="setViewMode('week')">Тиждень</button>
+        <button type="button" class="mode-pill" data-view="calendar" onclick="setViewMode('calendar')">Календар</button>
+      </div>
+
+      <!-- Розклад (Сьогодні / Тиждень) -->
+      <section class="view" id="scheduleContainer" aria-live="polite"></section>
+
+      <!-- Календар -->
+      <section class="view" id="calendarContainer" hidden>
+        <div class="section-head">
+          <div>
+            <h1 class="section-title">Навчальний календар</h1>
+            <p class="section-sub">2026 / 2027 навчальний рік</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnToggleAllMonths" onclick="toggleAllMonths()">Розгорнути всі</button>
+        </div>
+
+        <div class="legend" id="calendarLegend">
+          <span class="legend-item"><i class="legend-dot type-theory"></i>Теорія</span>
+          <span class="legend-item"><i class="legend-dot type-control"></i>Контроль</span>
+          <span class="legend-item"><i class="legend-dot type-session"></i>Сесія</span>
+          <span class="legend-item"><i class="legend-dot type-vacation"></i>Канікули</span>
+          <span class="legend-item"><i class="legend-dot type-practice"></i>Практика</span>
+          <span class="legend-item"><b class="legend-week">Ч</b>Чисельник</span>
+          <span class="legend-item"><b class="legend-week is-den">З</b>Знаменник</span>
+        </div>
+
+        <div class="months" id="monthsGrid"></div>
+      </section>
+
+      <!-- Дошка ганьби -->
+      <section class="view" id="shameContainer" hidden>
+        <div class="section-head">
+          <div>
+            <h1 class="section-title">Дошка ганьби</h1>
+            <p class="section-sub">Публікації та реакції групи</p>
+          </div>
+          <div class="section-actions">
+            <button class="btn btn-icon btn-danger-ghost" id="btnClearBoard" onclick="clearBoard()" title="Очистити дошку" hidden>
+              <span data-icon="trash"></span>
+            </button>
+            <button class="btn btn-primary btn-sm" id="btnAddShame" onclick="openShameModal()">
+              <span data-icon="plus"></span><span>Додати</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="segmented" role="tablist">
+          <button class="segmented-item active" id="btnShameNew" onclick="setShameSubView('new')">Нові</button>
+          <button class="segmented-item" id="btnShameTop" onclick="setShameSubView('top')">Топ тижня / місяця</button>
+        </div>
+
+        <div class="shame-grid" id="shameGrid"></div>
+      </section>
+
+    </main>
+
+    <footer class="footer">
+      <span>НТУ «Дніпровська політехніка» · Спеціальність G7</span>
+    </footer>
+  </div>
+
+  <!-- Модальне вікно: редагування пари -->
+  <div class="sheet-backdrop" id="scheduleAdminModal"></div>
+
+  <!-- Модальне вікно: авторизація -->
+  <div class="sheet-backdrop" id="authOverlay"></div>
+
+  <!-- Модальне вікно: додати на дошку -->
+  <div class="sheet-backdrop" id="shameModal">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shameModalTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h2 class="sheet-title" id="shameModalTitle">Новий запис</h2>
+        <button class="btn btn-icon btn-ghost" onclick="closeShameModal()" aria-label="Закрити"><span data-icon="close"></span></button>
+      </div>
+
+      <div class="form-error" id="modalError" hidden></div>
+
+      <form id="shameForm" class="form" onsubmit="handleShameSubmit(event)">
+        <label class="field">
+          <span class="field-label">Ім'я або нікнейм</span>
+          <input type="text" id="shameName" class="input" placeholder="Хто потрапив на дошку?" required maxlength="100" autocomplete="off" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Опис</span>
+          <textarea id="shameReason" class="input textarea" placeholder="Що трапилося…" required maxlength="500"></textarea>
+        </label>
+
+        <div class="field">
+          <span class="field-label">Фото <span class="field-hint">до 15 МБ</span></span>
+          <label class="file-drop" id="fileDrop">
+            <input type="file" id="shamePhoto" accept="image/*" onchange="handleFileSelect(event)" required />
+            <img class="file-preview" id="filePreview" alt="" hidden />
+            <span class="file-drop-text" id="fileLabel">
+              <span data-icon="image"></span>
+              <span>Обрати фото</span>
+            </span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnSubmitShame">
+          <span id="submitBtnText">Опублікувати</span>
+        </button>
       </form>
     </div>
   </div>
+
+  <!-- Сповіщення -->
+  <div class="toast-root" id="toastRoot" aria-live="assertive"></div>
 
   <script src="js/config.js"></script>
   <script src="js/data.js"></script>
   <script src="js/state.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/academic.js"></script>
   <script src="js/confetti.js"></script>
   <script src="js/schedule.js"></script>
   <script src="js/schedule-admin.js"></script>

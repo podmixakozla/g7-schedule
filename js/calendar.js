@@ -1,130 +1,141 @@
+// ------------------------------------------------------------------
+// Calendar Module
+// Відображає навчальний календар 2026/2027.
+// ------------------------------------------------------------------
+
+function ensureMonthsInitialized(now) {
+  const currentYear = now.getFullYear();
+  const currentMonthIdx = now.getMonth();
+  monthsData.forEach((m, idx) => {
+    if (m.id in collapsedMonthsState) return;
+    const isCurrent = m.year === currentYear && m.monthIdx === currentMonthIdx;
+    const isNext = idx > 0 && monthsData[idx - 1].year === currentYear && monthsData[idx - 1].monthIdx === currentMonthIdx;
+    collapsedMonthsState[m.id] = !(isCurrent || isNext);
+  });
+}
+
+function updateToggleAllLabel() {
+  const btn = document.getElementById('btnToggleAllMonths');
+  if (!btn) return;
+  const allCollapsed = monthsData.every(m => collapsedMonthsState[m.id]);
+  btn.textContent = allCollapsed ? 'Розгорнути всі' : 'Згорнути всі';
+}
+
+function summarizeMonth(m) {
+  const parts = [];
+  if (m.controlDays.length) parts.push('Контроль');
+  if (m.sessionDays.length) parts.push('Сесія');
+  if (m.vacationDays.length) parts.push('Канікули');
+  if (m.practiceDays.length) parts.push('Практика');
+  return parts.join(' · ');
+}
+
 function renderCalendar() {
   const grid = document.getElementById('monthsGrid');
   if (!grid) return;
 
-  grid.innerHTML = '';
-
   const now = getNow();
+  ensureMonthsInitialized(now);
+  updateToggleAllLabel();
+
   const currentYear = now.getFullYear();
   const currentMonthIdx = now.getMonth();
   const currentDayDate = now.getDate();
 
-  monthsData.forEach((m, idx) => {
-    // Dynamic ISO day-of-week calculation (0 = Mon, 6 = Sun)
+  grid.innerHTML = '';
+
+  monthsData.forEach((m) => {
     const startDayOfWeek = (new Date(m.year, m.monthIdx, 1).getDay() + 6) % 7;
     const daysInMonth = new Date(m.year, m.monthIdx + 1, 0).getDate();
-
-    const isCurrentMonth = (m.year === currentYear && m.monthIdx === currentMonthIdx);
-    const isNextMonth = (idx > 0 && monthsData[idx - 1].year === currentYear && monthsData[idx - 1].monthIdx === currentMonthIdx);
-
-    if (!(m.id in collapsedMonthsState)) {
-      collapsedMonthsState[m.id] = !(isCurrentMonth || isNextMonth);
-    }
-
+    const isCurrentMonth = m.year === currentYear && m.monthIdx === currentMonthIdx;
     const isCollapsed = collapsedMonthsState[m.id];
+    const summary = summarizeMonth(m);
 
     if (isCollapsed) {
-      const strip = document.createElement('div');
-      strip.className = 'month-strip';
+      const strip = document.createElement('button');
+      strip.type = 'button';
+      strip.className = `month-strip ${isCurrentMonth ? 'is-current' : ''}`;
       strip.onclick = () => toggleMonth(m.id);
       strip.innerHTML = `
-        <span style="font-family: 'Archivo Black', sans-serif; text-transform: uppercase;">
-          ${m.name} ${isCurrentMonth ? '🔥 [ПОТОЧНИЙ]' : ''}
-        </span>
-        <span class="btn-brutal" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">РОЗГОРНУТИ ➕</span>
+        <div class="month-strip-main">
+          <span class="month-strip-name">${escapeHtml(m.name)}</span>
+          ${isCurrentMonth ? '<span class="chip chip-accent chip-xs">Зараз</span>' : ''}
+          ${summary ? `<span class="month-strip-meta">${escapeHtml(summary)}</span>` : ''}
+        </div>
+        <span class="month-strip-chevron">${icon('chevronRight', 18)}</span>
       `;
       grid.appendChild(strip);
       return;
     }
 
     const card = document.createElement('div');
-    card.className = `month-card ${isCurrentMonth ? 'is-current-month' : 'is-other-month'}`;
+    card.className = `month-card ${isCurrentMonth ? 'is-current' : ''}`;
 
-    let stickerHtml = isCurrentMonth ? `<div class="current-month-sticker">🔥 ЗАРАЗ 👈</div>` : '';
-
-    let tableHtml = `
-      <table class="cal-table">
-        <thead>
-          <tr>
-            <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th>Сб</th><th>Нд</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
+    let rowsHtml = '';
     let cellCounter = 0;
     let dayCounter = 1;
     let isNumerator = m.isNumeratorStart;
 
     for (let row = 0; row < 6; row++) {
-      let rowHtml = '<tr>';
+      let cells = `<td class="cal-week ${isNumerator ? 'is-num' : 'is-den'}" title="${isNumerator ? 'Чисельник' : 'Знаменник'}">${isNumerator ? 'Ч' : 'З'}</td>`;
       let hasDaysInRow = false;
 
       for (let col = 0; col < 7; col++) {
         if (cellCounter < startDayOfWeek || dayCounter > daysInMonth) {
-          rowHtml += `<td class="cal-cell empty"></td>`;
+          cells += '<td class="cal-cell is-empty"></td>';
         } else {
           hasDaysInRow = true;
           const dNum = dayCounter;
-          const isTodayCell = (isCurrentMonth && dNum === currentDayDate);
+          const isTodayCell = isCurrentMonth && dNum === currentDayDate;
 
-          let cellClass = 'cal-cell';
-          let emojiIcon = '';
+          let type = 'theory';
+          if (m.sessionDays.includes(dNum)) type = 'session';
+          else if (m.controlDays.includes(dNum)) type = 'control';
+          else if (m.vacationDays.includes(dNum)) type = 'vacation';
+          else if (m.practiceDays.includes(dNum)) type = 'practice';
 
-          if (m.sessionDays.includes(dNum)) {
-            cellClass += ' type-session';
-            emojiIcon = '<span class="cell-sticker-icon">💀</span>';
-          } else if (m.controlDays.includes(dNum)) {
-            cellClass += ' type-control';
-          } else if (m.vacationDays.includes(dNum)) {
-            cellClass += ' type-vacation';
-          } else if (m.practiceDays.includes(dNum)) {
-            cellClass += ' type-practice';
-          } else {
-            cellClass += ' type-theory';
-          }
+          let cls = `cal-cell type-${type}`;
+          if (col >= 5) cls += ' is-weekend';
+          if (isTodayCell) cls += ' is-today';
 
-          if (isNumerator) cellClass += ' is-numerator';
-          if (isTodayCell) cellClass += ' is-today-cell';
-
-          let onClickAttr = '';
+          let attrs = `title="${dNum} ${MONTH_GENITIVE[m.monthIdx]} · ${DAY_TYPE_LABELS[type]} · ${isNumerator ? 'Чисельник' : 'Знаменник'}"`;
           if (m.studentDay === dNum) {
-            cellClass += ' student-day-ring';
-            emojiIcon = '<span class="cell-sticker-icon">🎉</span>';
-            onClickAttr = `onclick="triggerStudentDayEasterEgg(event)" title="День студента! Натисни для салюту"`;
+            cls += ' is-student-day';
+            attrs = `onclick="triggerStudentDayEasterEgg(event)" title="17 листопада — День студента"`;
           }
 
-          rowHtml += `
-            <td class="${cellClass}" ${onClickAttr}>
-              ${dNum}
-              ${emojiIcon}
-            </td>
-          `;
+          cells += `<td class="${cls}" ${attrs}><span>${dNum}</span></td>`;
           dayCounter++;
         }
 
         cellCounter++;
-
         if (col === 6 && dayCounter <= daysInMonth) {
           isNumerator = !isNumerator;
         }
       }
 
-      rowHtml += '</tr>';
-      if (hasDaysInRow) tableHtml += rowHtml;
+      if (hasDaysInRow) rowsHtml += `<tr>${cells}</tr>`;
     }
 
-    tableHtml += `</tbody></table>`;
-
     card.innerHTML = `
-      ${stickerHtml}
-      <div class="month-name">
-        <span>${m.name}</span>
-        <button class="btn-brutal" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" onclick="toggleMonth('${m.id}')">
-          ЗГОРНУТИ ✕
-        </button>
+      <button type="button" class="month-head" onclick="toggleMonth('${m.id}')">
+        <div class="month-head-title">
+          <span>${escapeHtml(m.name)}</span>
+          ${isCurrentMonth ? '<span class="chip chip-accent chip-xs">Зараз</span>' : ''}
+        </div>
+        <span class="month-head-action">${icon('chevronDown', 18)}</span>
+      </button>
+      <div class="cal-table-wrap">
+        <table class="cal-table">
+          <thead>
+            <tr>
+              <th class="cal-week-head" title="Чисельник / Знаменник">Т</th>
+              <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th class="is-weekend">Сб</th><th class="is-weekend">Нд</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
       </div>
-      ${tableHtml}
     `;
 
     grid.appendChild(card);
@@ -132,20 +143,26 @@ function renderCalendar() {
 }
 
 function toggleMonth(monthId) {
+  ensureMonthsInitialized(getNow());
   collapsedMonthsState[monthId] = !collapsedMonthsState[monthId];
+  haptic('light');
   renderCalendar();
 }
 
 function toggleAllMonths() {
-  const allCollapsed = Object.values(collapsedMonthsState).every(val => val);
+  ensureMonthsInitialized(getNow());
+  const allCollapsed = monthsData.every(m => collapsedMonthsState[m.id]);
   monthsData.forEach(m => {
     collapsedMonthsState[m.id] = !allCollapsed;
   });
+  haptic('light');
   renderCalendar();
 }
 
 function triggerStudentDayEasterEgg(e) {
   e.stopPropagation();
-  spawnConfettiBurst(50);
-  alert("🎉 ДЕНЬ СТУДЕНТА (17 Листопада)! Відривайся на повну! 🥳");
+  const rect = e.currentTarget.getBoundingClientRect();
+  spawnConfettiBurst(45, rect.left + rect.width / 2, rect.top + rect.height / 2);
+  haptic('success');
+  toast('17 листопада — День студента!', 'success');
 }

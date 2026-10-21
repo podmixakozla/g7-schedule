@@ -1,25 +1,37 @@
+// ------------------------------------------------------------------
+// Конфетті (canvas)
+// ------------------------------------------------------------------
 const canvas = document.getElementById('confettiCanvas');
 const ctx = canvas.getContext('2d');
 
 function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-function spawnConfettiBurst(amount = 35) {
-  const colors = ['#C6FF3D', '#FF4FD8', '#FFD400', '#00F5D4', '#FF3366'];
+const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function spawnConfettiBurst(amount = 35, originX, originY) {
+  if (prefersReducedMotion) return;
+  const colors = ['#D4F54A', '#4558E6', '#FFFFFF', '#B8E028', '#6072F5'];
+  const x = originX ?? window.innerWidth / 2;
+  const y = originY ?? window.innerHeight / 2;
   for (let i = 0; i < amount; i++) {
     particles.push({
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
-      vx: (Math.random() - 0.5) * 18,
-      vy: (Math.random() - 0.8) * 16,
+      x, y,
+      vx: (Math.random() - 0.5) * 14,
+      vy: (Math.random() - 0.85) * 14,
       rot: Math.random() * 360,
       vRot: (Math.random() - 0.5) * 12,
       color: colors[Math.floor(Math.random() * colors.length)],
-      size: 8 + Math.random() * 8,
+      w: 6 + Math.random() * 6,
+      h: 4 + Math.random() * 4,
       alpha: 1
     });
   }
@@ -27,24 +39,22 @@ function spawnConfettiBurst(amount = 35) {
 }
 
 function confettiLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx;
     p.y += p.vy;
-    p.vy += 0.35;
+    p.vx *= 0.99;
+    p.vy += 0.3;
     p.rot += p.vRot;
-    p.alpha -= 0.016;
+    p.alpha -= 0.014;
 
     ctx.save();
     ctx.globalAlpha = Math.max(0, p.alpha);
     ctx.translate(p.x, p.y);
     ctx.rotate((p.rot * Math.PI) / 180);
     ctx.fillStyle = p.color;
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1.5;
-    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-    ctx.strokeRect(-p.size / 2, -p.size / 2, p.size, p.size);
+    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
     ctx.restore();
 
     if (p.alpha <= 0) particles.splice(i, 1);
@@ -54,7 +64,7 @@ function confettiLoop() {
     requestAnimationFrame(confettiLoop);
   } else {
     confettiLoopRunning = false;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
   }
 }
 
