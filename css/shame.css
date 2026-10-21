@@ -32,11 +32,6 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
-}
-
-.shame-card:hover {
-  transform: translateY(-2px);
 }
 
 .shame-card.is-champion {

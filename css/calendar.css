@@ -89,12 +89,11 @@ html[data-theme="light"] .legend-week {
   justify-content: space-between;
   gap: 0.6rem;
   text-align: left;
-  transition: transform 0.2s var(--ease), background 0.2s var(--ease);
+  transition: background 0.2s var(--ease);
 }
 
 .month-strip:hover {
   background: var(--surface-hover);
-  transform: translateY(-2px);
 }
 
 .month-strip-main {
@@ -133,11 +132,6 @@ html[data-theme="light"] .legend-week {
   box-shadow: var(--shadow-card);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: transform 0.2s var(--ease);
-}
-
-.month-card:hover {
-  transform: translateY(-2px);
 }
 
 /* Поточний місяць — акцентний синій блок #4558E6 (як екран November у референсі) */
