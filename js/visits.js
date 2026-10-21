@@ -93,16 +93,10 @@ async function logCurrentVisit() {
 }
 
 function setVisitsSubView(sub) {
-  if (sub === 'users' || sub === 'starostas') {
-    currentVisitsSubView = sub;
-  } else {
-    currentVisitsSubView = 'timeline';
-  }
+  currentVisitsSubView = sub === 'starostas' ? 'starostas' : 'timeline';
   const btnTimeline = document.getElementById('btnVisitsTimeline');
-  const btnUsers = document.getElementById('btnVisitsUsers');
   const btnStarostas = document.getElementById('btnVisitsStarostas');
   if (btnTimeline) btnTimeline.classList.toggle('active', currentVisitsSubView === 'timeline');
-  if (btnUsers) btnUsers.classList.toggle('active', currentVisitsSubView === 'users');
   if (btnStarostas) btnStarostas.classList.toggle('active', currentVisitsSubView === 'starostas');
   renderAdminVisits();
 }
@@ -303,58 +297,6 @@ function renderAdminVisits() {
     return;
   }
 
-  if (currentVisitsSubView === 'users') {
-    const byUser = new Map();
-    for (const v of cachedVisits) {
-      const key = v.telegram_id || v.id;
-      if (!byUser.has(key)) {
-        byUser.set(key, {
-          latest: v,
-          count: 0
-        });
-      }
-      byUser.get(key).count++;
-    }
-
-    const rows = Array.from(byUser.values()).map(({ latest, count }) => {
-      const name = formatVisitDisplayName(latest);
-      const initials = formatVisitInitials(latest);
-      const dt = new Date(latest.visited_at);
-      const dayLabel = isSameDay(dt, now) ? 'Сьогодні' : formatDayMonth(dt);
-      const timeStr = `${dayLabel}, ${formatVisitTime(latest.visited_at)}`;
-      const usernameHtml = formatVisitMetaId(latest);
-      const groupLabel = GROUP_LABELS[latest.group_code] || latest.group_code || '';
-      const tgId = Number(latest.telegram_id);
-      const isAdminUser = isTelegramIdAdmin(tgId);
-      const isStarostaUser = isAdminUser || isTelegramIdStarosta(tgId);
-
-      return `
-        <div class="visit-row">
-          <div class="visit-avatar">${escapeHtml(initials)}</div>
-          <div class="visit-info">
-            <div class="visit-name-row">
-              <span class="visit-name">${escapeHtml(name)}</span>
-              ${groupLabel ? `<span class="chip chip-muted chip-xs">${escapeHtml(groupLabel)}</span>` : ''}
-              ${isStarostaUser ? `<span class="chip chip-lime chip-xs">${isAdminUser ? 'Адмін' : 'Староста'}</span>` : ''}
-            </div>
-            <div class="visit-meta">
-              ${usernameHtml}
-              ${latest.device ? `<span class="pair-dot">·</span><span>${escapeHtml(latest.device)}</span>` : ''}
-            </div>
-          </div>
-          <div class="visit-right">
-            <span class="chip chip-lime chip-xs mono">${count} ${plural(count, ['вхід', 'входи', 'входів'])}</span>
-            <span class="visit-time mono">${escapeHtml(timeStr)}</span>
-            ${tgId > 0 ? buildStarostaToggleButton(tgId, isAdminUser, isStarostaUser) : ''}
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    listEl.innerHTML = `<div class="visits-card"><div class="visits-rows">${rows}</div></div>`;
-    return;
-  }
-
   // Режим "timeline" — хронологія за днями
   const groups = [];
   for (const v of cachedVisits) {
@@ -375,7 +317,6 @@ function renderAdminVisits() {
       const name = formatVisitDisplayName(v);
       const initials = formatVisitInitials(v);
       const usernameHtml = formatVisitMetaId(v);
-      const groupLabel = GROUP_LABELS[v.group_code] || v.group_code || '';
       const tgId = Number(v.telegram_id);
       const isStarostaUser = isTelegramIdStarosta(tgId);
 
@@ -385,7 +326,6 @@ function renderAdminVisits() {
           <div class="visit-info">
             <div class="visit-name-row">
               <span class="visit-name">${escapeHtml(name)}</span>
-              ${groupLabel ? `<span class="chip chip-muted chip-xs">${escapeHtml(groupLabel)}</span>` : ''}
               ${isStarostaUser ? '<span class="chip chip-lime chip-xs">Староста</span>' : ''}
             </div>
             <div class="visit-meta">
