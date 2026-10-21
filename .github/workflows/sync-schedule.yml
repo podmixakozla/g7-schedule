@@ -2,8 +2,8 @@ name: Auto-Sync Schedule from NMU (ЕТФ)
 
 on:
   schedule:
-    # Кожні 2 години
-    - cron: '0 */2 * * *'
+    # Кожну годину
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:

@@ -129,7 +129,7 @@ function renderHeaderGroupSwitch() {
   ).join('');
 }
 
-const SCHEDULE_SYNC_INTERVAL_MS = 2 * 60 * 60 * 1000; // 2 години
+const SCHEDULE_SYNC_INTERVAL_MS = 60 * 60 * 1000; // 1 година
 let scheduleSyncInFlight = false;
 
 async function maybeAutoSyncSchedule(force = false) {
@@ -192,9 +192,9 @@ async function initSchedule() {
   await reloadSchedule();
   renderSchedule();
 
-  // Автоматична перевірка та синхронізація розкладу з nmu.org.ua кожні 2 години
+  // Автоматична перевірка та синхронізація розкладу з nmu.org.ua кожну годину
   maybeAutoSyncSchedule(false);
-  setInterval(() => maybeAutoSyncSchedule(false), 30 * 60 * 1000);
+  setInterval(() => maybeAutoSyncSchedule(false), 15 * 60 * 1000);
 }
 
 function handleScheduleClick(e) {

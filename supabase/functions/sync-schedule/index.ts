@@ -8,8 +8,21 @@ const corsHeaders = {
 
 const SCHEDULE_PAGE_URL = 'https://nmu.org.ua/main/students/schedule/'
 const SCHEDULE_WP_JSON_URL = 'https://nmu.org.ua/main/wp-json/wp/v2/pages/6834'
-const SYNC_COOLDOWN_MS = 2 * 60 * 60 * 1000 // 2 hours
+const SYNC_COOLDOWN_MS = 60 * 60 * 1000 // 1 hour
 const UNKNOWN_TEACHER = 'Викладач невідомий'
+
+const DAY_NAMES: Record<number, string> = {
+  1: 'Понеділок',
+  2: 'Вівторок',
+  3: 'Середа',
+  4: 'Четвер',
+  5: "П'ятниця",
+}
+
+const GROUP_LABELS: Record<string, string> = {
+  'AR-26-1': 'АР-26-1',
+  'AR-26sk-1': 'АР-26ск-1',
+}
 
 const SUBJECT_EXPANSIONS: Record<string, string> = {
   'ІКГ': "Інженерна та комп'ютерна графіка",
@@ -303,7 +316,7 @@ function parseLessonText(raw: string, quarter: 1 | 2): ParsedLessonCell | null {
 
 function parseRomanPair(raw: string): number | null {
   const norm = raw.replace(/\s+/g, '').toUpperCase()
-    .replace(/І/g, 'I') // Ukrainian І -> Latin I
+    .replace(/І/g, 'I')
   const map: Record<string, number> = {
     'I': 1,
     'II': 2,
@@ -363,7 +376,6 @@ function extractScheduleRowsFromWorkbook(xlsxBytes: Uint8Array, quarter: 1 | 2):
 
   const { cells, merges } = targetSheet
 
-  // Map every cell coordinate "COL+ROW" to its master top-left cell and merge bounds
   interface MergeBounds {
     masterRef: string
     c1: number
@@ -409,7 +421,6 @@ function extractScheduleRowsFromWorkbook(xlsxBytes: Uint8Array, quarter: 1 | 2):
     throw new Error('Column for АР-26-1 not found in worksheet header')
   }
 
-  // Group rows (3..40) into (day_of_week, pair_number) slots with sub-row ranges
   interface PairSlotRows {
     day: number
     pair: number
@@ -451,7 +462,6 @@ function extractScheduleRowsFromWorkbook(xlsxBytes: Uint8Array, quarter: 1 | 2):
       const parsed = parseLessonText(rawText, quarter)
       if (!parsed || !parsed.activeInQuarter || !parsed.subject) continue
 
-      // Determine parity from sub-row position if pair has 2 sub-rows and cell doesn't span both
       let parity = parsed.parity
       if (!parity && totalSubRows === 2) {
         const spansAllSubRows = mb && mb.r1 <= slot.rows[0] && mb.r2 >= slot.rows[totalSubRows - 1]
@@ -492,8 +502,6 @@ function extractScheduleRowsFromWorkbook(xlsxBytes: Uint8Array, quarter: 1 | 2):
       outRows.push(row)
     }
 
-    // If AR-26-1 has a pair that AR-26sk-1 does NOT have in that pair number,
-    // insert a "-" window override for AR-26sk-1 so it doesn't inherit AR-26-1's pair.
     if (colSk) {
       for (const pairNum of primaryMap.keys()) {
         if (!skMap.has(pairNum)) {
@@ -513,6 +521,163 @@ function extractScheduleRowsFromWorkbook(xlsxBytes: Uint8Array, quarter: 1 | 2):
   return outRows
 }
 
+function isWindowSubject(s: string): boolean {
+  const t = (s || '').trim()
+  return !t || /^[-–—]+$/.test(t) || /^(вікно|нічого)/i.test(t)
+}
+
+function formatLessonSummary(row: ScheduleRow): string {
+  const parts = [row.subject]
+  if (row.teacher) parts.push(row.teacher)
+  if (row.classroom) parts.push(`ауд. ${row.classroom}`)
+  return parts.join(', ')
+}
+
+function computeScheduleChanges(oldRows: ScheduleRow[], newRows: ScheduleRow[]): string[] {
+  // Resolve effective lessons per (group_code, day_of_week, pair_number)
+  const resolveGroupMap = (rows: ScheduleRow[], groupCode: string): Map<string, ScheduleRow> => {
+    const primary = new Map<string, ScheduleRow>()
+    const overrides = new Map<string, ScheduleRow>()
+    for (const r of rows) {
+      const key = `${r.day_of_week}:${r.pair_number}`
+      if ((r.group_code || 'AR-26-1') === 'AR-26-1') {
+        primary.set(key, r)
+      }
+      if (r.group_code === groupCode) {
+        overrides.set(key, r)
+      }
+    }
+    const effective = new Map<string, ScheduleRow>()
+    for (let d = 1; d <= 5; d++) {
+      for (let p = 1; p <= 8; p++) {
+        const key = `${d}:${p}`
+        const row = overrides.get(key) || primary.get(key)
+        if (row && !isWindowSubject(row.subject)) {
+          effective.set(key, {
+            group_code: groupCode,
+            day_of_week: d,
+            pair_number: p,
+            subject: (row.subject || '').trim(),
+            teacher: (row.teacher || '').trim() || UNKNOWN_TEACHER,
+            classroom: (row.classroom || '').trim(),
+          })
+        }
+      }
+    }
+    return effective
+  }
+
+  const changes: string[] = []
+  for (const groupCode of ['AR-26-1', 'AR-26sk-1']) {
+    const oldMap = resolveGroupMap(oldRows, groupCode)
+    const newMap = resolveGroupMap(newRows, groupCode)
+    const groupLabel = GROUP_LABELS[groupCode] || groupCode
+
+    for (let d = 1; d <= 5; d++) {
+      const dayLabel = DAY_NAMES[d] || `День ${d}`
+      for (let p = 1; p <= 8; p++) {
+        const key = `${d}:${p}`
+        const o = oldMap.get(key)
+        const n = newMap.get(key)
+        if (!o && !n) continue
+        if (!o && n) {
+          changes.push(`➕ [${groupLabel}] ${dayLabel}, ${p} пара: додано «${formatLessonSummary(n)}»`)
+        } else if (o && !n) {
+          changes.push(`➖ [${groupLabel}] ${dayLabel}, ${p} пара: скасовано «${formatLessonSummary(o)}»`)
+        } else if (o && n) {
+          if (
+            o.subject !== n.subject ||
+            o.teacher !== n.teacher ||
+            o.classroom !== n.classroom
+          ) {
+            changes.push(
+              `🔄 [${groupLabel}] ${dayLabel}, ${p} пара:\n   було: ${formatLessonSummary(o)}\n   стало: ${formatLessonSummary(n)}`
+            )
+          }
+        }
+      }
+    }
+  }
+
+  return changes
+}
+
+async function broadcastTelegramNotification(
+  supabase: any,
+  text: string
+): Promise<{ sent: number; failed: number; recipients: number[] }> {
+  const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN')
+  if (!botToken) {
+    console.warn('TELEGRAM_BOT_TOKEN not configured, skipping notification')
+    return { sent: 0, failed: 0, recipients: [] }
+  }
+
+  const chatIds = new Set<number>()
+
+  const adminId = Number(Deno.env.get('ADMIN_TELEGRAM_ID'))
+  if (adminId && !Number.isNaN(adminId)) {
+    chatIds.add(adminId)
+  }
+
+  try {
+    const { data: tgUsers } = await supabase
+      .from('telegram_users')
+      .select('telegram_id')
+    if (Array.isArray(tgUsers)) {
+      for (const u of tgUsers) {
+        const id = Number(u.telegram_id)
+        if (id && !Number.isNaN(id)) chatIds.add(id)
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to query telegram_users:', e)
+  }
+
+  try {
+    const { data: visitUsers } = await supabase
+      .from('user_visits')
+      .select('telegram_id')
+    if (Array.isArray(visitUsers)) {
+      for (const u of visitUsers) {
+        const id = Number(u.telegram_id)
+        if (id && !Number.isNaN(id)) chatIds.add(id)
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to query user_visits:', e)
+  }
+
+  let sent = 0
+  let failed = 0
+  const recipients = Array.from(chatIds)
+
+  for (const chatId of recipients) {
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text,
+          disable_web_page_preview: true,
+        }),
+      })
+      if (res.ok) {
+        sent++
+      } else {
+        failed++
+        const errBody = await res.text()
+        console.warn(`Telegram sendMessage failed for ${chatId}:`, errBody)
+      }
+    } catch (e) {
+      failed++
+      console.warn(`Telegram sendMessage threw for ${chatId}:`, e)
+    }
+  }
+
+  return { sent, failed, recipients }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -525,14 +690,32 @@ Deno.serve(async (req) => {
 
     let force = false
     let quarterOverride: 1 | 2 | null = null
+    let testMessage: string | null = null
+
     if (req.method === 'POST') {
       try {
         const body = await req.json()
         if (body?.force === true) force = true
         if (body?.quarter === 1 || body?.quarter === 2) quarterOverride = body.quarter
+        if (typeof body?.test_message === 'string' && body.test_message.trim()) {
+          testMessage = body.test_message.trim()
+        }
       } catch {
         // Empty or non-JSON body is fine
       }
+    }
+
+    // Immediate test notification mode if requested
+    if (testMessage) {
+      const notifyStats = await broadcastTelegramNotification(supabase, testMessage)
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          test_message: testMessage,
+          notify: notifyStats,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     // Check cooldown in schedule_sync_meta
@@ -582,7 +765,16 @@ Deno.serve(async (req) => {
       throw new Error('Parsed 0 schedule rows from Excel — aborting DB update for safety')
     }
 
-    // 4. Replace rows in schedule_lessons for AR-26-1 and AR-26sk-1
+    // 4. Load existing schedule rows to detect changes
+    const { data: existingRows } = await supabase
+      .from('schedule_lessons')
+      .select('group_code, day_of_week, pair_number, subject, teacher, classroom')
+      .in('group_code', ['AR-26-1', 'AR-26sk-1'])
+
+    const oldRows: ScheduleRow[] = Array.isArray(existingRows) ? existingRows : []
+    const changes = oldRows.length > 0 ? computeScheduleChanges(oldRows, rows) : []
+
+    // 5. Replace rows in schedule_lessons for AR-26-1 and AR-26sk-1
     const { error: delErr } = await supabase
       .from('schedule_lessons')
       .delete()
@@ -600,7 +792,7 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to insert synced schedule_lessons: ${insErr.message}`)
     }
 
-    // 5. Update sync metadata
+    // 6. Update sync metadata
     const syncedAt = now.toISOString()
     await supabase
       .from('schedule_sync_meta')
@@ -614,6 +806,16 @@ Deno.serve(async (req) => {
         last_error: null,
       })
 
+    // 7. If schedule changed, notify users via Telegram bot!
+    let notifyStats = null
+    if (changes.length > 0) {
+      const maxLines = 15
+      const shown = changes.slice(0, maxLines).join('\n')
+      const extra = changes.length > maxLines ? `\n…та ще ${changes.length - maxLines} змін(и).` : ''
+      const messageText = `🔔 Оновлено розклад на сайті НТУ «ДП» (ЕТФ):\n\n${shown}${extra}`
+      notifyStats = await broadcastTelegramNotification(supabase, messageText)
+    }
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -622,7 +824,9 @@ Deno.serve(async (req) => {
         source_file_url: excelUrl,
         quarter,
         lessons_count: rows.length,
-        rows,
+        changes_count: changes.length,
+        changes,
+        notify: notifyStats,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
