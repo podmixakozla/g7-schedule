@@ -98,11 +98,15 @@ function updateClockAndCountdown(forceRender = false) {
   if (!card) return;
 
   const status = computeScheduleStatus(now, currentGroup);
-  const signature = `${status.kind}:${status.pair ? status.pair.num : 0}:${currentGroup}`;
+  const newsObj = (typeof activeAnnouncement !== 'undefined' && activeAnnouncement && activeAnnouncement.is_active && typeof isAnnouncementDismissed === 'function' && !isAnnouncementDismissed(activeAnnouncement.id))
+    ? activeAnnouncement
+    : null;
+  const newsSig = newsObj ? `${newsObj.id}:${announcementExpanded ? '1' : '0'}` : 'none';
+  const signature = `${status.kind}:${status.pair ? status.pair.num : 0}:${currentGroup}:${newsSig}`;
 
   if (forceRender || card.dataset.sig !== signature) {
     card.dataset.sig = signature;
-    card.className = `now-card is-${status.kind}`;
+    card.className = `now-card is-${status.kind} ${newsObj ? 'has-news' : ''}`;
     card.innerHTML = buildNowCardHtml(status, now);
   } else {
     const timerEl = card.querySelector('[data-now-timer]');
@@ -137,11 +141,15 @@ function buildWaveBars(progressPct = 40, count = 28) {
 
 function buildNowCardHtml(status, now) {
   const dateHeader = `${DAY_NAMES[now.getDay()]}, ${formatDayMonth(now)}`;
+  const newsHtml = (typeof buildNowCardAnnouncementHtml === 'function')
+    ? buildNowCardAnnouncementHtml()
+    : '';
 
   if (status.kind === 'live') {
     const p = status.pair;
     const meta = [p.teacher, p.classroom ? `ауд. ${p.classroom}` : ''].filter(Boolean).join(' · ') || `${DAY_NAMES[now.getDay()]}, ${formatDayMonth(now)}`;
     return `
+      ${newsHtml}
       <div class="now-top">
         <div class="now-head-left">
           <div class="now-title">${escapeHtml(p.subject)}</div>
@@ -171,6 +179,7 @@ function buildNowCardHtml(status, now) {
     const p = status.pair;
     const meta = [p.teacher, p.classroom ? `ауд. ${p.classroom}` : ''].filter(Boolean).join(' · ') || `${DAY_NAMES[now.getDay()]}, ${formatDayMonth(now)}`;
     return `
+      ${newsHtml}
       <div class="now-top">
         <div class="now-head-left">
           <div class="now-title">${escapeHtml(p.subject)}</div>
@@ -206,6 +215,7 @@ function buildNowCardHtml(status, now) {
       ? `Усі заняття (${status.todayCount} ${plural(status.todayCount, ['пара', 'пари', 'пар'])}) завершено · Далі: ${p.subject}`
       : `${reason || 'Вільний від занять день'} · Далі: ${p.subject}`;
     return `
+      ${newsHtml}
       <div class="now-top">
         <div class="now-head-left">
           <div class="now-title">${escapeHtml(mainTitle)}</div>
@@ -231,6 +241,7 @@ function buildNowCardHtml(status, now) {
   }
 
   return `
+    ${newsHtml}
     <div class="now-top">
       <div class="now-head-left">
         <div class="now-title">${status.todayFinished ? 'На сьогодні пари закінчилися' : 'Сьогодні занять немає'}</div>

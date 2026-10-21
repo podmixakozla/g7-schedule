@@ -269,8 +269,35 @@ Deno.serve(async (req) => {
 
     const session = otpData.session;
 
-    // Step 4: Compute admin flag server-side
+    // Step 4: Compute admin & starosta flags server-side
     const isAdmin = String(telegramId) === ADMIN_TELEGRAM_ID;
+    let isStarosta = isAdmin;
+
+    if (!isStarosta) {
+      const { data: roleRow } = await supabase
+        .from("starosta_roles")
+        .select("telegram_id")
+        .eq("telegram_id", telegramId)
+        .maybeSingle();
+
+      if (roleRow) {
+        isStarosta = true;
+      } else {
+        const { data: tgRow } = await supabase
+          .from("telegram_users")
+          .select("is_starosta")
+          .eq("telegram_id", telegramId)
+          .maybeSingle();
+        if (tgRow?.is_starosta) isStarosta = true;
+      }
+    }
+
+    if (isStarosta) {
+      await supabase
+        .from("telegram_users")
+        .update({ is_starosta: true })
+        .eq("id", authUserId);
+    }
 
     // Step 5: Record visit & prune visits older than 7 days
     try {
@@ -325,6 +352,7 @@ Deno.serve(async (req) => {
         first_name: firstName,
         last_name: lastName,
         is_admin: isAdmin,
+        is_starosta: isStarosta,
       },
     });
   } catch (err) {

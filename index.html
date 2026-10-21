@@ -31,20 +31,20 @@
     })();
   </script>
 
-  <link rel="stylesheet" href="css/base.css?v=20261021-7">
-  <link rel="stylesheet" href="css/app-container.css?v=20261021-7">
-  <link rel="stylesheet" href="css/header.css?v=20261021-7">
-  <link rel="stylesheet" href="css/controls.css?v=20261021-7">
-  <link rel="stylesheet" href="css/schedule.css?v=20261021-7">
-  <link rel="stylesheet" href="css/calendar.css?v=20261021-7">
-  <link rel="stylesheet" href="css/shame.css?v=20261021-7">
-  <link rel="stylesheet" href="css/visits.css?v=20261021-7">
-  <link rel="stylesheet" href="css/reactions.css?v=20261021-7">
-  <link rel="stylesheet" href="css/comments.css?v=20261021-7">
-  <link rel="stylesheet" href="css/modal.css?v=20261021-7">
-  <link rel="stylesheet" href="css/confetti.css?v=20261021-7">
-  <link rel="stylesheet" href="css/footer.css?v=20261021-7">
-  <link rel="stylesheet" href="css/auth.css?v=20261021-7">
+  <link rel="stylesheet" href="css/base.css?v=20261021-8">
+  <link rel="stylesheet" href="css/app-container.css?v=20261021-8">
+  <link rel="stylesheet" href="css/header.css?v=20261021-8">
+  <link rel="stylesheet" href="css/controls.css?v=20261021-8">
+  <link rel="stylesheet" href="css/schedule.css?v=20261021-8">
+  <link rel="stylesheet" href="css/calendar.css?v=20261021-8">
+  <link rel="stylesheet" href="css/shame.css?v=20261021-8">
+  <link rel="stylesheet" href="css/visits.css?v=20261021-8">
+  <link rel="stylesheet" href="css/reactions.css?v=20261021-8">
+  <link rel="stylesheet" href="css/comments.css?v=20261021-8">
+  <link rel="stylesheet" href="css/modal.css?v=20261021-8">
+  <link rel="stylesheet" href="css/confetti.css?v=20261021-8">
+  <link rel="stylesheet" href="css/footer.css?v=20261021-8">
+  <link rel="stylesheet" href="css/auth.css?v=20261021-8">
 </head>
 <body>
 
@@ -81,9 +81,13 @@
               <span class="tab-icon" data-icon="board"></span>
               <span class="tab-label">Дошка</span>
             </button>
-            <button class="tab" id="btnVisits" data-view="visits" onclick="setViewMode('visits')" aria-label="Візити" title="Відвідування (Адмін)" hidden>
+            <button class="tab" id="btnVisits" data-view="visits" onclick="setViewMode('visits')" aria-label="Адмін" title="Візити та старости (Адмін)" hidden>
               <span class="tab-icon" data-icon="users"></span>
-              <span class="tab-label">Візити</span>
+              <span class="tab-label">Адмін</span>
+            </button>
+            <button class="tab" id="btnStarosta" data-view="starosta" onclick="setViewMode('starosta')" aria-label="Староста" title="Важливі новини (Староста)" hidden>
+              <span class="tab-icon" data-icon="megaphone"></span>
+              <span class="tab-label">Новини</span>
             </button>
           </div>
         </nav>
@@ -151,12 +155,12 @@
         <div class="shame-grid" id="shameGrid"></div>
       </section>
 
-      <!-- Відвідування (ТІЛЬКИ і ТІЛЬКИ для адміна) -->
+      <!-- Відвідування та керування старостами (ТІЛЬКИ і ТІЛЬКИ для адміна — 5 вкладка) -->
       <section class="view" id="visitsContainer" hidden>
         <div class="section-head">
           <div>
-            <h1 class="section-title">Відвідування</h1>
-            <p class="section-sub">Журнал заходів за останні 7 днів</p>
+            <h1 class="section-title">Візити та старости</h1>
+            <p class="section-sub">Журнал заходів за 7 днів та керування старостами</p>
           </div>
           <div class="section-actions">
             <button class="btn btn-secondary btn-sm" onclick="loadAdminVisits(true)">
@@ -170,10 +174,40 @@
         <div class="segmented" role="tablist">
           <button class="segmented-item active" id="btnVisitsTimeline" onclick="setVisitsSubView('timeline')">Хронологія</button>
           <button class="segmented-item" id="btnVisitsUsers" onclick="setVisitsSubView('users')">За студентами</button>
+          <button class="segmented-item" id="btnVisitsStarostas" onclick="setVisitsSubView('starostas')">Старости</button>
         </div>
 
         <div class="visits-list" id="visitsList"></div>
-        <p class="visits-retention-note">Дані зберігаються рівно 1 тиждень: заходи, яким більше 7 днів, автоматично зникають.</p>
+        <p class="visits-retention-note">Дані про візити зберігаються 1 тиждень: заходи, яким більше 7 днів, автоматично зникають.</p>
+      </section>
+
+      <!-- Панель старости: публікація важливих новин (5 вкладка для старост, 6 вкладка для адміна) -->
+      <section class="view" id="starostaContainer" hidden>
+        <div class="section-head">
+          <div>
+            <h1 class="section-title">Важливі новини</h1>
+            <p class="section-sub">Зʼявляються у синьому блоці на головній та дублюються ботом у Telegram</p>
+          </div>
+          <div class="section-actions">
+            <button class="btn btn-secondary btn-sm" onclick="loadStarostaAnnouncements()">
+              <span data-icon="refresh"></span><span>Оновити</span>
+            </button>
+          </div>
+        </div>
+
+        <article class="visits-card starosta-form-card">
+          <form class="form" onsubmit="handleAnnouncementSubmit(event)">
+            <label class="field">
+              <span class="field-label">Нове повідомлення від старости</span>
+              <textarea id="starostaNewsText" class="input textarea" placeholder="Напишіть важливу новину для групи…" rows="4" required maxlength="3500"></textarea>
+            </label>
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnSubmitStarostaNews">
+              <span data-icon="send"></span><span>Опублікувати новину</span>
+            </button>
+          </form>
+        </article>
+
+        <div class="visits-list" id="starostaNewsList"></div>
       </section>
 
     </main>
@@ -182,9 +216,6 @@
       <span>НТУ «Дніпровська політехніка» · Спеціальність G7</span>
     </footer>
   </div>
-
-  <!-- Модальне вікно: редагування пари -->
-  <div class="sheet-backdrop" id="scheduleAdminModal"></div>
 
   <!-- Модальне вікно: авторизація -->
   <div class="sheet-backdrop" id="authOverlay"></div>
@@ -233,22 +264,22 @@
   <!-- Сповіщення -->
   <div class="toast-root" id="toastRoot" aria-live="assertive"></div>
 
-  <script src="js/config.js?v=20261021-7"></script>
-  <script src="js/data.js?v=20261021-7"></script>
-  <script src="js/state.js?v=20261021-7"></script>
-  <script src="js/utils.js?v=20261021-7"></script>
-  <script src="js/academic.js?v=20261021-7"></script>
-  <script src="js/confetti.js?v=20261021-7"></script>
-  <script src="js/schedule.js?v=20261021-7"></script>
-  <script src="js/schedule-admin.js?v=20261021-7"></script>
-  <script src="js/calendar.js?v=20261021-7"></script>
-  <script src="js/clock.js?v=20261021-7"></script>
-  <script src="js/auth.js?v=20261021-7"></script>
-  <script src="js/reactions.js?v=20261021-7"></script>
-  <script src="js/comments.js?v=20261021-7"></script>
-  <script src="js/shame-board.js?v=20261021-7"></script>
-  <script src="js/shame-form.js?v=20261021-7"></script>
-  <script src="js/visits.js?v=20261021-7"></script>
-  <script src="js/app.js?v=20261021-7"></script>
+  <script src="js/config.js?v=20261021-8"></script>
+  <script src="js/data.js?v=20261021-8"></script>
+  <script src="js/state.js?v=20261021-8"></script>
+  <script src="js/utils.js?v=20261021-8"></script>
+  <script src="js/academic.js?v=20261021-8"></script>
+  <script src="js/confetti.js?v=20261021-8"></script>
+  <script src="js/schedule.js?v=20261021-8"></script>
+  <script src="js/schedule-admin.js?v=20261021-8"></script>
+  <script src="js/calendar.js?v=20261021-8"></script>
+  <script src="js/clock.js?v=20261021-8"></script>
+  <script src="js/auth.js?v=20261021-8"></script>
+  <script src="js/reactions.js?v=20261021-8"></script>
+  <script src="js/comments.js?v=20261021-8"></script>
+  <script src="js/shame-board.js?v=20261021-8"></script>
+  <script src="js/shame-form.js?v=20261021-8"></script>
+  <script src="js/visits.js?v=20261021-8"></script>
+  <script src="js/app.js?v=20261021-8"></script>
 </body>
 </html>

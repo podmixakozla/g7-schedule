@@ -192,32 +192,19 @@ async function initSchedule() {
   await reloadSchedule();
   renderSchedule();
 
-  // Автоматична перевірка та синхронізація розкладу з nmu.org.ua кожну годину
+  // Автоматична перевірка та синхронізація розкладу з nmu.org.ua кожну годину + оновлення новин
+  if (typeof loadActiveAnnouncement === 'function') loadActiveAnnouncement();
   maybeAutoSyncSchedule(false);
-  setInterval(() => maybeAutoSyncSchedule(false), 15 * 60 * 1000);
+  setInterval(() => {
+    maybeAutoSyncSchedule(false);
+    if (typeof loadActiveAnnouncement === 'function') loadActiveAnnouncement();
+  }, 15 * 60 * 1000);
 }
 
 function handleScheduleClick(e) {
   const tab = e.target.closest('[data-group-tab]');
   if (tab) {
     setGroup(tab.dataset.groupTab);
-    return;
-  }
-
-  const add = e.target.closest('[data-action="add-pair"]');
-  if (add) {
-    const dayId = Number(add.dataset.day);
-    const day = getScheduleForGroup(currentGroup).find(d => d.dayId === dayId);
-    const taken = new Set((day ? day.pairs : []).filter(p => !p.isWindow).map(p => p.num));
-    let free = 1;
-    while (taken.has(free) && taken.size < 8 && free < 8) free++;
-    openScheduleAdminModal(dayId, free, currentGroup);
-    return;
-  }
-
-  const pair = e.target.closest('.pair[data-editable]');
-  if (pair) {
-    openScheduleAdminModal(Number(pair.dataset.day), Number(pair.dataset.pair), pair.dataset.group);
   }
 }
 
@@ -419,10 +406,6 @@ function createDayCard(dayData, date, opts = {}) {
     })).join('');
   }
 
-  const addBtn = editable && !isOff && dayData
-    ? `<button class="day-add" data-action="add-pair" data-day="${dayData.dayId}">${icon('plus', 15)} Додати пару</button>`
-    : '';
-
   return `
     <article class="day-card ${isToday ? 'is-today' : ''} ${isOff || activePairs.length === 0 ? 'is-empty-day' : ''}">
       <header class="day-head">
@@ -434,15 +417,13 @@ function createDayCard(dayData, date, opts = {}) {
       </header>
       ${finishedNotice}
       <div class="pairs">${body}</div>
-      ${addBtn}
     </article>
   `;
 }
 
-function createPairRow(pair, dayId, date, { isLive, editable, groupCode, compact }) {
+function createPairRow(pair, dayId, date, { isLive, groupCode, compact }) {
   const slot = timeSlots[pair.num] || { from: '', to: '', text: '' };
-  const editAttrs = editable ? `data-editable="1" tabindex="0" role="button" aria-label="Редагувати ${pair.num} пару"` : '';
-  const baseAttrs = `data-day="${dayId}" data-pair="${pair.num}" data-group="${groupCode}" ${editAttrs}`;
+  const baseAttrs = `data-day="${dayId}" data-pair="${pair.num}" data-group="${groupCode}"`;
 
   if (pair.isWindow) {
     return `
@@ -455,7 +436,6 @@ function createPairRow(pair, dayId, date, { isLive, editable, groupCode, compact
         </div>
         <div class="pair-right">
           <span class="pair-window-time mono">${slot.from}</span>
-          ${editable ? `<span class="pair-edit">${icon('plus', 14)}</span>` : ''}
         </div>
       </div>
     `;
@@ -495,7 +475,6 @@ function createPairRow(pair, dayId, date, { isLive, editable, groupCode, compact
       </div>
       <div class="pair-right">
         ${timeHtml}
-        ${editable ? `<span class="pair-edit">${icon('pencil', 14)}</span>` : ''}
       </div>
     </div>
   `;

@@ -15,7 +15,7 @@ function writeStored(key, value) {
   try { localStorage.setItem(key, value); } catch {}
 }
 
-const VALID_VIEWS = ['today', 'week', 'calendar', 'shame', 'visits'];
+const VALID_VIEWS = ['today', 'week', 'calendar', 'shame', 'visits', 'starosta'];
 
 const URL_PARAMS = (() => {
   try { return new URLSearchParams(window.location.search); }
@@ -42,9 +42,14 @@ let shameLoaded = false;
 let currentShameSubView = 'new';
 
 let cachedVisits = [];
+let cachedAdminUsers = [];
 let visitsLoaded = false;
 let currentVisitsSubView = 'timeline';
 let visitLoggedThisSession = false;
+
+let activeAnnouncement = null;
+let cachedAnnouncements = [];
+let announcementExpanded = false;
 
 const POPULAR_EMOJIS = ['🐳', '❤️', '😍', '😡', '😱', '🔥', '🥶', '💀', '👍', '👎'];
 let userReactionsMap = {};     // entryId -> emoji

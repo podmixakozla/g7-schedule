@@ -181,6 +181,29 @@ html[data-theme="light"] .visit-username {
   padding: 0.25rem 0;
 }
 
+.starosta-toggle-btn {
+  font-size: 0.76rem;
+  padding: 0.36rem 0.72rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.starosta-form-card {
+  gap: 0.85rem;
+}
+
+.starosta-news-card.is-active-news {
+  border: 1px solid rgba(212, 245, 74, 0.38);
+}
+
+.starosta-news-content {
+  font-size: 0.94rem;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 @media (max-width: 460px) {
   .visits-stat-card {
     padding: 0.85rem 0.75rem;

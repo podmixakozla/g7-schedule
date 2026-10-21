@@ -233,6 +233,28 @@ html[data-theme="light"] .segmented-item {
   transition: transform 0.2s var(--ease);
 }
 
+@media (max-width: 859px) {
+  .tabbar.has-5-tabs .tabbar-dock {
+    max-width: 376px;
+  }
+
+  .tabbar.has-5-tabs .tab {
+    width: 46px;
+    height: 46px;
+  }
+
+  .tabbar.has-6-tabs .tabbar-dock {
+    max-width: 396px;
+    padding: 7px 10px;
+    gap: 0.28rem;
+  }
+
+  .tabbar.has-6-tabs .tab {
+    width: 43px;
+    height: 43px;
+  }
+}
+
 .tab:hover {
   background: var(--surface-hover);
   transform: scale(1.04);

@@ -1,7 +1,7 @@
 // ------------------------------------------------------------------
-// Admin Visits Module (ТІЛЬКИ для адміністратора)
-// Логує заходи користувачів та відображає відвідування за останні 7 днів.
-// Записи, яким більше 7 днів, автоматично видаляються на сервері.
+// Admin Visits & Starosta Management Module (ТІЛЬКИ для адміністратора)
+// Логує заходи користувачів, відображає відвідування за останні 7 днів
+// та дозволяє адміну призначати або знімати старост.
 // ------------------------------------------------------------------
 
 function detectDeviceLabel() {
@@ -61,7 +61,7 @@ async function logCurrentVisit() {
       'Authorization': `Bearer ${token || SUPABASE_ANON_KEY}`
     };
 
-    await fetch(`${EDGE_FUNCTION_URL}/admin-visits`, {
+    const res = await fetch(`${EDGE_FUNCTION_URL}/admin-visits`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -71,17 +71,39 @@ async function logCurrentVisit() {
         telegram_user: visitor
       })
     });
+
+    if (res.ok && currentUser) {
+      const data = await res.json().catch(() => ({}));
+      if (typeof data.is_starosta === 'boolean' || typeof data.is_admin === 'boolean') {
+        const nextAdmin = typeof data.is_admin === 'boolean' ? data.is_admin : Boolean(currentUser.is_admin);
+        const nextStarosta = nextAdmin || (typeof data.is_starosta === 'boolean' ? data.is_starosta : Boolean(currentUser.is_starosta));
+        if (nextAdmin !== Boolean(currentUser.is_admin) || nextStarosta !== Boolean(currentUser.is_starosta)) {
+          currentUser.is_admin = nextAdmin;
+          currentUser.is_starosta = nextStarosta;
+          try {
+            localStorage.setItem('g7_user', JSON.stringify(currentUser));
+          } catch {}
+          updateAuthUI();
+        }
+      }
+    }
   } catch (err) {
     console.warn('Visit log skipped:', err);
   }
 }
 
 function setVisitsSubView(sub) {
-  currentVisitsSubView = sub === 'users' ? 'users' : 'timeline';
+  if (sub === 'users' || sub === 'starostas') {
+    currentVisitsSubView = sub;
+  } else {
+    currentVisitsSubView = 'timeline';
+  }
   const btnTimeline = document.getElementById('btnVisitsTimeline');
   const btnUsers = document.getElementById('btnVisitsUsers');
+  const btnStarostas = document.getElementById('btnVisitsStarostas');
   if (btnTimeline) btnTimeline.classList.toggle('active', currentVisitsSubView === 'timeline');
   if (btnUsers) btnUsers.classList.toggle('active', currentVisitsSubView === 'users');
+  if (btnStarostas) btnStarostas.classList.toggle('active', currentVisitsSubView === 'starostas');
   renderAdminVisits();
 }
 
@@ -103,11 +125,51 @@ async function loadAdminVisits(force = false) {
   try {
     const data = await callEdgeFunction('admin-visits', { action: 'list' });
     cachedVisits = Array.isArray(data.visits) ? data.visits : [];
+    cachedAdminUsers = Array.isArray(data.users) ? data.users : [];
     visitsLoaded = true;
     renderAdminVisits();
   } catch (err) {
-    listEl.innerHTML = emptyState('alert', 'Не вдалося завантажити візити', err.message || 'Помилка сервера');
+    listEl.innerHTML = emptyState('alert', 'Не вдалося завантажити дані', err.message || 'Помилка сервера');
   }
+}
+
+async function toggleUserStarosta(telegramId, makeStarosta) {
+  if (!currentUser || !currentUser.is_admin) return;
+  const tgId = Number(telegramId);
+  if (!tgId || Number.isNaN(tgId) || tgId <= 0) return;
+
+  haptic('light');
+  try {
+    await callEdgeFunction('admin-visits', {
+      action: 'set_starosta',
+      telegram_id: tgId,
+      is_starosta: Boolean(makeStarosta)
+    });
+
+    for (const u of cachedAdminUsers) {
+      if (Number(u.telegram_id) === tgId) {
+        u.is_starosta = Boolean(makeStarosta);
+      }
+    }
+    renderAdminVisits();
+    toast(makeStarosta ? 'Старосту призначено' : 'Старосту знято', 'success');
+  } catch (err) {
+    toast(err.message || 'Не вдалося змінити роль', 'error');
+  }
+}
+
+function isTelegramIdStarosta(telegramId) {
+  const tgId = Number(telegramId);
+  if (!tgId || Number.isNaN(tgId) || tgId <= 0) return false;
+  const found = cachedAdminUsers.find(u => Number(u.telegram_id) === tgId);
+  return Boolean(found && (found.is_admin || found.is_starosta));
+}
+
+function isTelegramIdAdmin(telegramId) {
+  const tgId = Number(telegramId);
+  if (!tgId || Number.isNaN(tgId) || tgId <= 0) return false;
+  const found = cachedAdminUsers.find(u => Number(u.telegram_id) === tgId);
+  return Boolean(found && found.is_admin);
 }
 
 function formatVisitDisplayName(v) {
@@ -146,6 +208,26 @@ function formatVisitDayHeading(date, now) {
   return `${DAY_NAMES[date.getDay()]} · ${formatDayMonth(date)}`;
 }
 
+function buildStarostaToggleButton(tgId, isAdminUser, isStarostaUser) {
+  const numId = Number(tgId);
+  if (!numId || Number.isNaN(numId) || numId <= 0) return '';
+  if (isAdminUser) {
+    return `<span class="chip chip-lime chip-xs">Адмін · Староста</span>`;
+  }
+  if (isStarostaUser) {
+    return `
+      <button type="button" class="btn btn-secondary btn-sm starosta-toggle-btn is-active" onclick="toggleUserStarosta(${numId}, false)">
+        <span>Зняти старосту</span>
+      </button>
+    `;
+  }
+  return `
+    <button type="button" class="btn btn-primary btn-sm starosta-toggle-btn" onclick="toggleUserStarosta(${numId}, true)">
+      <span>Призначити старостою</span>
+    </button>
+  `;
+}
+
 function renderAdminVisits() {
   const statsEl = document.getElementById('visitsStats');
   const listEl = document.getElementById('visitsList');
@@ -154,7 +236,7 @@ function renderAdminVisits() {
   const now = new Date();
   const totalCount = cachedVisits.length;
   const uniqueIds = new Set(cachedVisits.map(v => v.telegram_id || v.id)).size;
-  const todayCount = cachedVisits.filter(v => isSameDay(new Date(v.visited_at), now)).length;
+  const starostaCount = cachedAdminUsers.filter(u => u.is_admin || u.is_starosta).length || 1;
 
   statsEl.innerHTML = `
     <div class="visits-stat-card is-featured">
@@ -166,10 +248,55 @@ function renderAdminVisits() {
       <strong class="visits-stat-value mono">${uniqueIds}</strong>
     </div>
     <div class="visits-stat-card">
-      <span class="visits-stat-label">Сьогодні</span>
-      <strong class="visits-stat-value mono">${todayCount}</strong>
+      <span class="visits-stat-label">Старост</span>
+      <strong class="visits-stat-value mono">${starostaCount}</strong>
     </div>
   `;
+
+  // Режим "starostas" — призначення та зняття старост
+  if (currentVisitsSubView === 'starostas') {
+    if (cachedAdminUsers.length === 0) {
+      listEl.innerHTML = emptyState('users', 'Користувачів Telegram ще немає', 'Коли студенти відкриють бота в Telegram, тут можна буде призначити старосту.');
+      return;
+    }
+
+    const rows = cachedAdminUsers.map(u => {
+      const name = formatVisitDisplayName(u);
+      const initials = formatVisitInitials(u);
+      const usernameHtml = formatVisitMetaId(u);
+      const isAdminUser = Boolean(u.is_admin);
+      const isStarostaUser = isAdminUser || Boolean(u.is_starosta);
+
+      return `
+        <div class="visit-row">
+          <div class="visit-avatar">${escapeHtml(initials)}</div>
+          <div class="visit-info">
+            <div class="visit-name-row">
+              <span class="visit-name">${escapeHtml(name)}</span>
+              ${isStarostaUser && !isAdminUser ? '<span class="chip chip-lime chip-xs">Староста</span>' : ''}
+            </div>
+            <div class="visit-meta">
+              ${usernameHtml}
+            </div>
+          </div>
+          <div class="visit-right">
+            ${buildStarostaToggleButton(u.telegram_id, isAdminUser, isStarostaUser)}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    listEl.innerHTML = `
+      <article class="visits-card">
+        <header class="visits-card-head">
+          <h2 class="visits-card-title">Керування старостами</h2>
+          <span class="chip chip-blue chip-xs">${cachedAdminUsers.length} корист.</span>
+        </header>
+        <div class="visits-rows">${rows}</div>
+      </article>
+    `;
+    return;
+  }
 
   if (cachedVisits.length === 0) {
     listEl.innerHTML = emptyState('users', 'За останні 7 днів візитів ще немає', 'Коли хтось відкриє застосунок, запис одразу зʼявиться тут.');
@@ -197,6 +324,9 @@ function renderAdminVisits() {
       const timeStr = `${dayLabel}, ${formatVisitTime(latest.visited_at)}`;
       const usernameHtml = formatVisitMetaId(latest);
       const groupLabel = GROUP_LABELS[latest.group_code] || latest.group_code || '';
+      const tgId = Number(latest.telegram_id);
+      const isAdminUser = isTelegramIdAdmin(tgId);
+      const isStarostaUser = isAdminUser || isTelegramIdStarosta(tgId);
 
       return `
         <div class="visit-row">
@@ -205,6 +335,7 @@ function renderAdminVisits() {
             <div class="visit-name-row">
               <span class="visit-name">${escapeHtml(name)}</span>
               ${groupLabel ? `<span class="chip chip-muted chip-xs">${escapeHtml(groupLabel)}</span>` : ''}
+              ${isStarostaUser ? `<span class="chip chip-lime chip-xs">${isAdminUser ? 'Адмін' : 'Староста'}</span>` : ''}
             </div>
             <div class="visit-meta">
               ${usernameHtml}
@@ -214,6 +345,7 @@ function renderAdminVisits() {
           <div class="visit-right">
             <span class="chip chip-lime chip-xs mono">${count} ${plural(count, ['вхід', 'входи', 'входів'])}</span>
             <span class="visit-time mono">${escapeHtml(timeStr)}</span>
+            ${tgId > 0 ? buildStarostaToggleButton(tgId, isAdminUser, isStarostaUser) : ''}
           </div>
         </div>
       `;
@@ -244,6 +376,8 @@ function renderAdminVisits() {
       const initials = formatVisitInitials(v);
       const usernameHtml = formatVisitMetaId(v);
       const groupLabel = GROUP_LABELS[v.group_code] || v.group_code || '';
+      const tgId = Number(v.telegram_id);
+      const isStarostaUser = isTelegramIdStarosta(tgId);
 
       return `
         <div class="visit-row">
@@ -252,6 +386,7 @@ function renderAdminVisits() {
             <div class="visit-name-row">
               <span class="visit-name">${escapeHtml(name)}</span>
               ${groupLabel ? `<span class="chip chip-muted chip-xs">${escapeHtml(groupLabel)}</span>` : ''}
+              ${isStarostaUser ? '<span class="chip chip-lime chip-xs">Староста</span>' : ''}
             </div>
             <div class="visit-meta">
               ${usernameHtml}

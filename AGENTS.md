@@ -30,15 +30,14 @@ js/                     17 JS files, one per functional module
 supabase/
   functions/            Edge Functions (Deno)
     _shared/            Shared utilities (verify-admin)
-    validate-telegram/  Telegram auth → JWT (+ visit logging)
-    admin-visits/       Log visits (7-day rolling retention) & list visits (admin only)
+    validate-telegram/  Telegram auth → JWT (+ visit logging & starosta status)
+    admin-visits/       Log visits (7-day rolling retention), list visits & assign/remove starostas (admin only)
+    starosta-announcements/ Publish/delete important news from starostas (+ Telegram bot broadcast)
     sync-schedule/      Auto-sync schedule every 1h from nmu.org.ua ЕТФ Excel (.xlsx) + Telegram bot diff notifications
-    admin-upsert-lesson/ Upsert schedule lesson (admin for AR-26-1, auth user for AR-26sk-1)
-    admin-delete-lesson/ Delete/reset schedule lesson
     admin-delete-post/  Admin: delete single post
     admin-delete-comment/ Admin: delete single comment
     admin-clear-board/  Admin: clear all posts
-  migrations/           SQL migration scripts (001..008)
+  migrations/           SQL migration scripts (001..009)
   config.toml           Supabase project config
 .github/workflows/      GitHub Pages deployment + 1-hour schedule auto-sync cron
 ```
@@ -120,9 +119,10 @@ Changing this order will break the app.
 
 | Role | Capabilities |
 |---|---|
-| Unauthenticated | View schedule (`АР-26-1` & `АР-26ск-1`), calendar, shame board (read-only) |
-| Authenticated user | + React, comment, submit shame posts, edit `АР-26ск-1` subgroup schedule overrides |
-| Administrator | + Edit `АР-26-1` primary schedule, view 5th tab "Відвідування" (7-day rolling visit log), delete any post/comment, clear entire board |
+| Unauthenticated | View schedule (`АР-26-1` & `АР-26ск-1`), calendar, shame board (read-only), read/expand/dismiss starosta announcements in `#nowCard` |
+| Authenticated user | + React, comment, submit shame posts |
+| Starosta (`is_starosta`) | + 5th tab "Важливі новини": publish/remove important news shown in `#nowCard` and broadcast via Telegram bot |
+| Administrator | + Starosta by default (6th tab "Важливі новини"), 5th tab "Візити та старости" (7-day rolling visit log + appoint/remove starostas), delete any post/comment, clear entire board |
 
 ### Security model
 

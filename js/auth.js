@@ -25,7 +25,7 @@ function showAuthOverlay() {
       <div class="auth-sheet-body">
         <div class="auth-emblem">${TELEGRAM_SVG}</div>
         <h3 class="auth-heading">Увійдіть через Telegram</h3>
-        <p class="auth-desc">Щоб залишати реакції, коментарі, додавати пости на дошку та редагувати розклад підгрупи.</p>
+        <p class="auth-desc">Щоб залишати реакції, коментарі та додавати пости на дошку.</p>
         ${notice}
         <div class="form-error" id="authError" hidden></div>
         <button class="btn btn-telegram btn-block btn-lg" id="btnTelegramAuth" onclick="authenticateWithTelegram()">
@@ -216,18 +216,22 @@ function renderUserSlot() {
   const name = getUserDisplayName();
   const initials = getUserInitials();
   const isAdmin = !!currentUser.is_admin;
+  const isStarosta = isAdmin || !!currentUser.is_starosta;
+  const roleLabel = isAdmin ? 'Адміністратор · Староста' : (isStarosta ? 'Староста' : 'Студент');
 
   slot.innerHTML = `
     <div class="user-box">
       <button class="user-btn" type="button" onclick="toggleUserMenu(event)" aria-label="Профіль">
         <span class="user-avatar">${escapeHtml(initials)}</span>
         <span class="user-name">${escapeHtml(name)}</span>
-        ${isAdmin ? '<span class="user-badge" title="Адміністратор">Admin</span>' : ''}
+        ${isAdmin
+          ? '<span class="user-badge" title="Адміністратор">Admin</span>'
+          : (isStarosta ? '<span class="user-badge" title="Староста">Староста</span>' : '')}
       </button>
       <div class="user-menu" id="userMenu">
         <div class="user-menu-head">
           <div class="user-menu-name">${escapeHtml(name)}</div>
-          <div class="user-menu-role">${isAdmin ? 'Адміністратор' : 'Студент'}</div>
+          <div class="user-menu-role">${escapeHtml(roleLabel)}</div>
         </div>
         <button type="button" class="user-menu-item is-danger" onclick="logout()">
           ${icon('logout', 16)}<span>Вийти</span>
@@ -252,6 +256,8 @@ function updateAuthUI() {
   renderUserSlot();
 
   const isAdmin = !!(currentUser && currentUser.is_admin);
+  const isStarosta = isAdmin || !!(currentUser && currentUser.is_starosta);
+
   const btnClearBoard = document.getElementById('btnClearBoard');
   if (btnClearBoard) {
     btnClearBoard.hidden = !isAdmin;
@@ -262,7 +268,21 @@ function updateAuthUI() {
     btnVisits.hidden = !isAdmin;
   }
 
+  const btnStarosta = document.getElementById('btnStarosta');
+  if (btnStarosta) {
+    btnStarosta.hidden = !isStarosta;
+  }
+
+  const tabbar = document.getElementById('tabbar');
+  if (tabbar) {
+    tabbar.classList.toggle('has-6-tabs', isAdmin);
+    tabbar.classList.toggle('has-5-tabs', !isAdmin && isStarosta);
+  }
+
   if (!isAdmin && currentView === 'visits') {
+    setViewMode('today', { silent: true });
+  }
+  if (!isStarosta && currentView === 'starosta') {
     setViewMode('today', { silent: true });
   }
 

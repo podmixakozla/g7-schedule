@@ -46,6 +46,124 @@
   color: rgba(255, 255, 255, 0.76);
 }
 
+/* ── Важлива новина від старости всередині синього блоку (#nowCard) ── */
+.now-news {
+  background: rgba(18, 18, 18, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 18px;
+  padding: 0.85rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.now-news-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.now-news-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.now-news-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.58rem;
+  border-radius: 999px;
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.now-news-author {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.now-news-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #FFFFFF;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.now-news-close:hover {
+  background: rgba(255, 255, 255, 0.26);
+  transform: scale(1.06);
+}
+
+.now-news-body {
+  font-size: 0.9rem;
+  line-height: 1.48;
+  color: #FFFFFF;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.now-news-body.is-clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.now-news-body.is-scrollable {
+  max-height: 210px;
+  overflow-y: auto;
+  padding-right: 0.3rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.now-news-body.is-scrollable::-webkit-scrollbar {
+  width: 5px;
+}
+
+.now-news-body.is-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+}
+
+.now-news-toggle {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  font-size: 0.76rem;
+  font-weight: 600;
+  transition: background 0.2s var(--ease);
+}
+
+.now-news-toggle:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.now-news-toggle .icon.is-rotated {
+  transform: rotate(180deg);
+}
+
 /* Хвильовий індикатор прогресу (як у картці Physical Activity на референсі) */
 .now-wave {
   height: 40px;

@@ -65,7 +65,12 @@ function toggleTheme() {
 
 function setViewMode(mode, { silent = false } = {}) {
   if (!VALID_VIEWS.includes(mode)) mode = 'today';
-  if (mode === 'visits' && !(currentUser && currentUser.is_admin)) {
+  const isAdmin = !!(currentUser && currentUser.is_admin);
+  const isStarosta = isAdmin || !!(currentUser && currentUser.is_starosta);
+  if (mode === 'visits' && !isAdmin) {
+    mode = 'today';
+  }
+  if (mode === 'starosta' && !isStarosta) {
     mode = 'today';
   }
   currentView = mode;
@@ -79,11 +84,13 @@ function setViewMode(mode, { silent = false } = {}) {
   const calEl = document.getElementById('calendarContainer');
   const shameEl = document.getElementById('shameContainer');
   const visitsEl = document.getElementById('visitsContainer');
+  const starostaEl = document.getElementById('starostaContainer');
 
   schedEl.hidden = !(mode === 'week' || mode === 'today');
   calEl.hidden = mode !== 'calendar';
   shameEl.hidden = mode !== 'shame';
   if (visitsEl) visitsEl.hidden = mode !== 'visits';
+  if (starostaEl) starostaEl.hidden = mode !== 'starosta';
 
   if (mode === 'week' || mode === 'today') {
     renderSchedule();
@@ -93,6 +100,8 @@ function setViewMode(mode, { silent = false } = {}) {
     loadShameEntries();
   } else if (mode === 'visits') {
     loadAdminVisits();
+  } else if (mode === 'starosta') {
+    loadStarostaAnnouncements();
   }
 }
 
