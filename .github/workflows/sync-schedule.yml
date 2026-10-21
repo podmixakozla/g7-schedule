@@ -1,0 +1,25 @@
+name: Auto-Sync Schedule from NMU (ЕТФ)
+
+on:
+  schedule:
+    # Кожні 2 години
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-schedule:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Supabase sync-schedule Edge Function
+        run: |
+          response=$(curl -sS -w "\n%{http_code}" -X POST \
+            "https://fvbnnjghfiuiuulgoktn.supabase.co/functions/v1/sync-schedule" \
+            -H "Content-Type: application/json" \
+            -d '{"force": true}')
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "HTTP status: $status"
+          echo "Response: $body"
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            exit 1
+          fi

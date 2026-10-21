@@ -32,14 +32,15 @@ supabase/
     _shared/            Shared utilities (verify-admin)
     validate-telegram/  Telegram auth → JWT (+ visit logging)
     admin-visits/       Log visits (7-day rolling retention) & list visits (admin only)
+    sync-schedule/      Auto-sync schedule every 2h from nmu.org.ua ЕТФ Excel (.xlsx)
     admin-upsert-lesson/ Upsert schedule lesson (admin for AR-26-1, auth user for AR-26sk-1)
     admin-delete-lesson/ Delete/reset schedule lesson
     admin-delete-post/  Admin: delete single post
     admin-delete-comment/ Admin: delete single comment
     admin-clear-board/  Admin: clear all posts
-  migrations/           SQL migration scripts (001..007)
+  migrations/           SQL migration scripts (001..008)
   config.toml           Supabase project config
-.github/workflows/      GitHub Pages deployment
+.github/workflows/      GitHub Pages deployment + 2-hour schedule auto-sync cron
 ```
 
 ## Design system

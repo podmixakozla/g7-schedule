@@ -10,9 +10,12 @@ function isWindowSubject(subject) {
   return !t || /^[-–—]+$/.test(t) || /^(вікно|нічого)/i.test(t);
 }
 
-function normalizeTeacher(teacher) {
+function normalizeTeacher(teacher, isWindow = false) {
+  if (isWindow) return '';
   const t = String(teacher || '').replace(/[🤷‍♂️🤷]/gu, '').trim();
-  if (!t || /^поки\s+невідомо/i.test(t)) return '';
+  if (!t || /^(поки\s+невідомо|невідом|вак\.?\s*\d*|вакансія|-+)$/i.test(t)) {
+    return 'Викладач невідомий';
+  }
   return t;
 }
 
@@ -40,13 +43,14 @@ function buildScheduleForGroup(rows, groupCode) {
       const row = own || (primary[d] && primary[d][p]);
       if (!row) continue;
       const { subject, parity } = parsePairParity(row.subject);
+      const isWin = isWindowSubject(subject);
       pairs.push({
         num: row.pair_number,
         subject,
         parity,
-        teacher: normalizeTeacher(row.teacher),
+        teacher: normalizeTeacher(row.teacher, isWin),
         classroom: (row.classroom || '').trim(),
-        isWindow: isWindowSubject(subject),
+        isWindow: isWin,
         inherited: !own && groupCode !== PRIMARY_GROUP
       });
     }
@@ -125,6 +129,52 @@ function renderHeaderGroupSwitch() {
   ).join('');
 }
 
+const SCHEDULE_SYNC_INTERVAL_MS = 2 * 60 * 60 * 1000; // 2 години
+let scheduleSyncInFlight = false;
+
+async function maybeAutoSyncSchedule(force = false) {
+  if (!supabaseClient || scheduleSyncInFlight) return false;
+  scheduleSyncInFlight = true;
+  try {
+    if (!force) {
+      const { data: meta } = await supabaseClient
+        .from('schedule_sync_meta')
+        .select('last_synced_at')
+        .eq('id', 1)
+        .maybeSingle();
+
+      if (meta && meta.last_synced_at) {
+        const elapsed = Date.now() - new Date(meta.last_synced_at).getTime();
+        if (elapsed < SCHEDULE_SYNC_INTERVAL_MS) {
+          return false;
+        }
+      }
+    }
+
+    const res = await fetch(`${EDGE_FUNCTION_URL}/sync-schedule`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ force: Boolean(force) })
+    });
+    if (!res.ok) return false;
+    const payload = await res.json();
+    if (payload && payload.ok && !payload.skipped) {
+      await reloadSchedule();
+      renderSchedule();
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.warn('Auto schedule sync check failed:', e);
+    return false;
+  } finally {
+    scheduleSyncInFlight = false;
+  }
+}
+
 async function initSchedule() {
   const cached = readStored('g7_schedule_cache', '');
   if (cached) {
@@ -141,6 +191,10 @@ async function initSchedule() {
   renderSchedule();
   await reloadSchedule();
   renderSchedule();
+
+  // Автоматична перевірка та синхронізація розкладу з nmu.org.ua кожні 2 години
+  maybeAutoSyncSchedule(false);
+  setInterval(() => maybeAutoSyncSchedule(false), 30 * 60 * 1000);
 }
 
 function handleScheduleClick(e) {
