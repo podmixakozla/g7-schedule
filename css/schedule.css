@@ -46,17 +46,6 @@
   color: rgba(255, 255, 255, 0.76);
 }
 
-.now-corner-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  color: #FFFFFF;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-
 /* Хвильовий індикатор прогресу (як у картці Physical Activity на референсі) */
 .now-wave {
   height: 40px;
@@ -346,17 +335,6 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  flex-shrink: 0;
-}
-
-.day-corner-arrow {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--text-2);
-  display: grid;
-  place-items: center;
   flex-shrink: 0;
 }
 

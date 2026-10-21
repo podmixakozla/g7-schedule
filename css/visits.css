@@ -1,0 +1,192 @@
+/* ------------------------------------------------------------------
+   Admin-Only Visits View (Відвідування за останні 7 днів)
+------------------------------------------------------------------ */
+
+.visits-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.visits-stat-card {
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.visits-stat-card.is-featured {
+  background: var(--blue);
+  color: #FFFFFF;
+  box-shadow: 0 12px 28px -8px rgba(69, 88, 230, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+}
+
+.visits-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.visits-stat-card.is-featured .visits-stat-label {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.visits-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.visits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.visits-card {
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.visits-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.visits-card-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.visits-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.visit-row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.58rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.visit-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0.1rem;
+}
+
+.visit-row:first-child {
+  padding-top: 0.15rem;
+}
+
+.visit-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--lime);
+  font-weight: 700;
+  font-size: 0.82rem;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+html[data-theme="light"] .visit-avatar {
+  background: var(--lime-soft);
+  color: var(--lime-ink);
+}
+
+.visit-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.visit-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  flex-wrap: wrap;
+}
+
+.visit-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.visit-meta {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.visit-username {
+  color: var(--lime);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+html[data-theme="light"] .visit-username {
+  color: var(--blue);
+}
+
+.visit-username:hover {
+  text-decoration: underline;
+}
+
+.visit-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.22rem;
+  flex-shrink: 0;
+}
+
+.visit-time {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.visits-retention-note {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  text-align: center;
+  padding: 0.25rem 0;
+}
+
+@media (max-width: 460px) {
+  .visits-stat-card {
+    padding: 0.85rem 0.75rem;
+  }
+
+  .visits-stat-value {
+    font-size: 1.25rem;
+  }
+}

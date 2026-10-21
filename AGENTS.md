@@ -25,18 +25,19 @@ No `npm install`, no build commands.
 
 ```
 index.html              HTML shell (structure + link/script tags with ?v= cache-busting)
-css/                    13 CSS files, one per UI section
-js/                     16 JS files, one per functional module
+css/                    14 CSS files, one per UI section
+js/                     17 JS files, one per functional module
 supabase/
   functions/            Edge Functions (Deno)
     _shared/            Shared utilities (verify-admin)
-    validate-telegram/  Telegram auth → JWT
+    validate-telegram/  Telegram auth → JWT (+ visit logging)
+    admin-visits/       Log visits (7-day rolling retention) & list visits (admin only)
     admin-upsert-lesson/ Upsert schedule lesson (admin for AR-26-1, auth user for AR-26sk-1)
     admin-delete-lesson/ Delete/reset schedule lesson
     admin-delete-post/  Admin: delete single post
     admin-delete-comment/ Admin: delete single comment
     admin-clear-board/  Admin: clear all posts
-  migrations/           SQL migration scripts (001..004)
+  migrations/           SQL migration scripts (001..007)
   config.toml           Supabase project config
 .github/workflows/      GitHub Pages deployment
 ```
@@ -63,6 +64,7 @@ Each CSS file maps to a UI section. Load order in `index.html`:
 | `schedule.css` | `#nowCard` (`#4558E6` hero + `.now-wave`), `.day-strip`, `.day-card`, "Daily Activities" `.pair` timeline |
 | `calendar.css` | `.legend`, `.months` grid, `#4558E6` current month card, circular `.cal-cell` dates, `#D4F54A` today |
 | `shame.css` | `.shame-grid`, `.shame-card`, champion highlight, `.lightbox-overlay` |
+| `visits.css` | Admin-only 5th tab: `.visits-stats`, `.visits-card`, `.visit-row` |
 | `reactions.css` | `.reactions-bar`, `.reaction-pill`, portal `.reaction-picker` |
 | `comments.css` | `.comment-preview`, expandable `.comments-section`, `.comment-item`, `.comment-form` |
 | `modal.css` | `.sheet-backdrop`, `.sheet` bottom-sheet/modal, `.form`, `.input`, `.file-drop`, `.spinner` |
@@ -91,6 +93,7 @@ All scripts use global scope (no ES modules). Load order matters.
 | `comments.js` | Comment load/render/submit, admin delete | `state.js`, `config.js`, `utils.js`, `auth.js` |
 | `shame-board.js` | Shame board core, `clearBoard`, admin delete post, photo lightbox | `state.js`, `config.js`, `reactions.js`, `utils.js`, `confetti.js`, `auth.js` |
 | `shame-form.js` | Modal, file validation & preview, `handleShameSubmit` | `config.js`, `state.js`, `shame-board.js`, `confetti.js`, `utils.js`, `auth.js` |
+| `visits.js` | Visit logging (`logCurrentVisit`) & admin-only 7-day visits viewer (`loadAdminVisits`) | `config.js`, `state.js`, `utils.js`, `auth.js` |
 | `app.js` | Theme sync, `setViewMode`, `DOMContentLoaded` bootstrap | all above |
 
 ## Script load order
@@ -118,7 +121,7 @@ Changing this order will break the app.
 |---|---|
 | Unauthenticated | View schedule (`АР-26-1` & `АР-26ск-1`), calendar, shame board (read-only) |
 | Authenticated user | + React, comment, submit shame posts, edit `АР-26ск-1` subgroup schedule overrides |
-| Administrator | + Edit `АР-26-1` primary schedule, delete any post/comment, clear entire board |
+| Administrator | + Edit `АР-26-1` primary schedule, view 5th tab "Відвідування" (7-day rolling visit log), delete any post/comment, clear entire board |
 
 ### Security model
 

@@ -65,6 +65,9 @@ function toggleTheme() {
 
 function setViewMode(mode, { silent = false } = {}) {
   if (!VALID_VIEWS.includes(mode)) mode = 'today';
+  if (mode === 'visits' && !(currentUser && currentUser.is_admin)) {
+    mode = 'today';
+  }
   currentView = mode;
   if (!silent) haptic('light');
 
@@ -75,10 +78,12 @@ function setViewMode(mode, { silent = false } = {}) {
   const schedEl = document.getElementById('scheduleContainer');
   const calEl = document.getElementById('calendarContainer');
   const shameEl = document.getElementById('shameContainer');
+  const visitsEl = document.getElementById('visitsContainer');
 
   schedEl.hidden = !(mode === 'week' || mode === 'today');
   calEl.hidden = mode !== 'calendar';
   shameEl.hidden = mode !== 'shame';
+  if (visitsEl) visitsEl.hidden = mode !== 'visits';
 
   if (mode === 'week' || mode === 'today') {
     renderSchedule();
@@ -86,6 +91,8 @@ function setViewMode(mode, { silent = false } = {}) {
     renderCalendar();
   } else if (mode === 'shame') {
     loadShameEntries();
+  } else if (mode === 'visits') {
+    loadAdminVisits();
   }
 }
 
@@ -120,4 +127,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateClockAndCountdown(true);
   setInterval(updateClockAndCountdown, 1000);
   await initAuth();
+  logCurrentVisit();
 });

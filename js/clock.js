@@ -176,7 +176,6 @@ function buildNowCardHtml(status, now) {
           <div class="now-title">${escapeHtml(p.subject)}</div>
           <div class="now-sub">${escapeHtml(meta)}</div>
         </div>
-        <span class="now-corner-icon">${icon('arrowUpRight', 18)}</span>
       </div>
       ${buildWaveBars(22)}
       <div class="now-stats">
@@ -212,7 +211,6 @@ function buildNowCardHtml(status, now) {
           <div class="now-title">${escapeHtml(mainTitle)}</div>
           <div class="now-sub">${escapeHtml(subtitle)}</div>
         </div>
-        <span class="now-corner-icon">${icon('arrowUpRight', 18)}</span>
       </div>
       ${buildWaveBars(status.todayFinished ? 100 : 12)}
       <div class="now-stats">

@@ -272,6 +272,46 @@ Deno.serve(async (req) => {
     // Step 4: Compute admin flag server-side
     const isAdmin = String(telegramId) === ADMIN_TELEGRAM_ID;
 
+    // Step 5: Record visit & prune visits older than 7 days
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      await supabase.from("user_visits").delete().lt("visited_at", sevenDaysAgo);
+
+      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: recentVisit } = await supabase
+        .from("user_visits")
+        .select("id")
+        .eq("telegram_id", telegramId)
+        .gte("visited_at", tenMinAgo)
+        .order("visited_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (recentVisit) {
+        await supabase
+          .from("user_visits")
+          .update({
+            visited_at: new Date().toISOString(),
+            username,
+            first_name: firstName,
+            last_name: lastName,
+            photo_url: photoUrl,
+          })
+          .eq("id", recentVisit.id);
+      } else {
+        await supabase.from("user_visits").insert({
+          user_id: authUserId,
+          telegram_id: telegramId,
+          username,
+          first_name: firstName,
+          last_name: lastName,
+          photo_url: photoUrl,
+        });
+      }
+    } catch (visitErr) {
+      console.warn("Visit logging failed (non-fatal):", visitErr);
+    }
+
     return jsonResponse(200, {
       session: {
         access_token: session.access_token,

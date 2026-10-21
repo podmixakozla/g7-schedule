@@ -251,9 +251,19 @@ document.addEventListener('click', (e) => {
 function updateAuthUI() {
   renderUserSlot();
 
+  const isAdmin = !!(currentUser && currentUser.is_admin);
   const btnClearBoard = document.getElementById('btnClearBoard');
   if (btnClearBoard) {
-    btnClearBoard.hidden = !(currentUser && currentUser.is_admin);
+    btnClearBoard.hidden = !isAdmin;
+  }
+
+  const btnVisits = document.getElementById('btnVisits');
+  if (btnVisits) {
+    btnVisits.hidden = !isAdmin;
+  }
+
+  if (!isAdmin && currentView === 'visits') {
+    setViewMode('today', { silent: true });
   }
 
   if (currentUser) {

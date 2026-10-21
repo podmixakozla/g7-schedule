@@ -376,10 +376,7 @@ function createDayCard(dayData, date, opts = {}) {
           <h2 class="day-name">${escapeHtml(DAY_NAMES[date.getDay()])}</h2>
           <span class="day-date">${escapeHtml(subParts.join(' · '))}</span>
         </div>
-        <div class="day-tags">
-          ${tags.join('')}
-          <span class="day-corner-arrow" aria-hidden="true">${icon('arrowUpRight', 16)}</span>
-        </div>
+        ${tags.length ? `<div class="day-tags">${tags.join('')}</div>` : ''}
       </header>
       ${finishedNotice}
       <div class="pairs">${body}</div>
