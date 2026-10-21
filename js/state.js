@@ -23,13 +23,13 @@ const URL_PARAMS = (() => {
 })();
 
 let currentUser = null;
+// Завжди відкриваємо головну вкладку "Сьогодні" за замовчуванням (якщо явно не передано ?view=...)
 let currentView = VALID_VIEWS.includes(URL_PARAMS.get('view') || '')
   ? URL_PARAMS.get('view')
-  : (VALID_VIEWS.includes(readStored('g7_view', '')) ? readStored('g7_view', '') : 'today');
+  : 'today';
 let currentGroup = ((URL_PARAMS.get('group') || '') in GROUP_LABELS)
   ? URL_PARAMS.get('group')
   : ((readStored('g7_group', '') in GROUP_LABELS) ? readStored('g7_group', '') : PRIMARY_GROUP);
-let selectedDayOffset = null; // 0..4 (Пн..Пт) у режимі "Сьогодні"; null = авто (сьогодні або найближчий навчальний день)
 let collapsedMonthsState = {};
 
 // Розклад з БД (сирі рядки schedule_lessons). null — ще не завантажено.

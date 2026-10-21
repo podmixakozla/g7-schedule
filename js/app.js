@@ -65,9 +65,7 @@ function toggleTheme() {
 
 function setViewMode(mode, { silent = false } = {}) {
   if (!VALID_VIEWS.includes(mode)) mode = 'today';
-  if (mode === 'today' && !silent) selectedDayOffset = null;
   currentView = mode;
-  writeStored('g7_view', mode);
   if (!silent) haptic('light');
 
   document.querySelectorAll('.tab[data-view]').forEach(btn => {

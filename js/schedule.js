@@ -150,15 +150,6 @@ function handleScheduleClick(e) {
     return;
   }
 
-  const dayPick = e.target.closest('[data-pick-day]');
-  if (dayPick) {
-    const offset = Number(dayPick.dataset.pickDay);
-    selectedDayOffset = offset;
-    haptic('light');
-    renderSchedule();
-    return;
-  }
-
   const add = e.target.closest('[data-action="add-pair"]');
   if (add) {
     const dayId = Number(add.dataset.day);
@@ -245,23 +236,12 @@ function renderSchedule() {
   let html = '';
 
   if (currentView === 'today') {
-    const autoDate = findNextTeachingDay(now) || monday;
-    let defaultOffset = Math.round((startOfDay(autoDate) - startOfDay(monday)) / 86400000);
-    if (defaultOffset < 0 || defaultOffset > 4) defaultOffset = 0;
-
-    const activeOffset = (selectedDayOffset !== null && selectedDayOffset >= 0 && selectedDayOffset <= 4)
-      ? selectedDayOffset
-      : defaultOffset;
-
-    const activeDate = addDays(monday, activeOffset);
-    const isToday = isSameDay(activeDate, now);
-    const dayData = scheduleForGroup.find(d => d.dayId === activeDate.getDay());
+    const dayData = scheduleForGroup.find(d => d.dayId === now.getDay()) || null;
 
     html += `<div class="now-card" id="nowCard"></div>`;
-    html += renderDayStrip(monday, activeDate, now, scheduleForGroup);
-    html += `<div class="days days-single">${createDayCard(dayData, activeDate, {
-      isToday,
-      livePairNum: isToday ? livePairNum : null,
+    html += `<div class="days days-single">${createDayCard(dayData, now, {
+      isToday: true,
+      livePairNum,
       editable,
       detailedHeader: true
     })}</div>`;
@@ -318,25 +298,63 @@ function createDayCard(dayData, date, opts = {}) {
   const dayType = getDayType(date);
   const isOff = !isTeachingDay(date);
   const pairs = dayData ? getVisiblePairs(dayData) : [];
+  const activePairs = (!isOff && dayData)
+    ? dayData.pairs.filter(p => !p.isWindow && isPairOnDate(p, date))
+    : [];
   const groupCode = currentGroup;
   const summary = summarizeDaySchedule(dayData, date);
 
+  // Перевіряємо, чи всі сьогоднішні пари вже закінчилися
+  let isTodayFinished = false;
+  if (isToday && activePairs.length > 0) {
+    const now = getNow();
+    const secNow = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    const lastPair = activePairs[activePairs.length - 1];
+    const lastSlot = timeSlots[lastPair.num];
+    if (lastSlot && secNow >= lastSlot.end * 60) {
+      isTodayFinished = true;
+    }
+  }
+
   const tags = [];
-  if (isToday) tags.push('<span class="chip chip-lime chip-xs">Сьогодні</span>');
-  if (detailedHeader) tags.push(weekTypeChip(date, 'chip-xs'));
+  if (isTodayFinished) {
+    tags.push('<span class="chip chip-lime chip-xs">Завершено</span>');
+  } else if (isToday) {
+    tags.push('<span class="chip chip-lime chip-xs">Сьогодні</span>');
+  }
+  if (detailedHeader && !isOff) tags.push(weekTypeChip(date, 'chip-xs'));
   if (dayType === 'control' && !isOff) tags.push('<span class="chip chip-blue chip-xs">Контроль</span>');
 
   const subParts = [formatDayMonth(date)];
   if (summary) {
     subParts.push(summary.countLabel);
-    if (detailedHeader && summary.endText) subParts.push(`до ${summary.endText}`);
+    if (detailedHeader && summary.endText) {
+      subParts.push(`до ${summary.endText}`);
+    }
+  } else if (isOff && reason) {
+    subParts.push(reason);
+  }
+
+  let finishedNotice = '';
+  if (detailedHeader && isTodayFinished) {
+    finishedNotice = `<div class="day-status-banner">${icon('check', 16)}<span>На сьогодні пари вже закінчилися</span></div>`;
   }
 
   let body = '';
-  if (isOff) {
-    body = `<div class="day-empty"><span>${escapeHtml(reason || 'Вихідний')}</span></div>`;
-  } else if (pairs.length === 0) {
-    body = `<div class="day-empty"><span>Пар немає</span></div>`;
+  if (isOff || activePairs.length === 0) {
+    if (detailedHeader) {
+      const emptySub = reason
+        ? `${reason} — сьогодні можна відпочивати`
+        : 'За розкладом на сьогодні пар немає';
+      body = `
+        <div class="day-empty is-detailed">
+          <div class="day-empty-title">Сьогодні занять немає</div>
+          <div class="day-empty-sub">${escapeHtml(emptySub)}</div>
+        </div>
+      `;
+    } else {
+      body = `<div class="day-empty"><span>${escapeHtml(isOff ? (reason || 'Вихідний') : 'Пар немає')}</span></div>`;
+    }
   } else {
     body = pairs.map((p, idx) => createPairRow(p, dayData.dayId, date, {
       isLive: isToday && p.num === livePairNum,
@@ -347,12 +365,12 @@ function createDayCard(dayData, date, opts = {}) {
     })).join('');
   }
 
-  const addBtn = editable && !isOff
+  const addBtn = editable && !isOff && dayData
     ? `<button class="day-add" data-action="add-pair" data-day="${dayData.dayId}">${icon('plus', 15)} Додати пару</button>`
     : '';
 
   return `
-    <article class="day-card ${isToday ? 'is-today' : ''} ${isOff || pairs.length === 0 ? 'is-empty-day' : ''}">
+    <article class="day-card ${isToday ? 'is-today' : ''} ${isOff || activePairs.length === 0 ? 'is-empty-day' : ''}">
       <header class="day-head">
         <div class="day-head-text">
           <h2 class="day-name">${escapeHtml(DAY_NAMES[date.getDay()])}</h2>
@@ -363,6 +381,7 @@ function createDayCard(dayData, date, opts = {}) {
           <span class="day-corner-arrow" aria-hidden="true">${icon('arrowUpRight', 16)}</span>
         </div>
       </header>
+      ${finishedNotice}
       <div class="pairs">${body}</div>
       ${addBtn}
     </article>

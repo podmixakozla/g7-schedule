@@ -56,6 +56,8 @@ function computeScheduleStatus(now = getNow(), groupCode = currentGroup) {
     }
   }
 
+  const hadPairsToday = todayPairs.length > 0;
+
   // Наступна пара — у найближчий навчальний день після сьогодні.
   for (let add = 1; add <= 120; add++) {
     const d = addDays(startOfDay(now), add);
@@ -67,6 +69,8 @@ function computeScheduleStatus(now = getNow(), groupCode = currentGroup) {
       target.setHours(Math.floor(slot.start / 60), slot.start % 60, 0, 0);
       return {
         kind: 'upcoming',
+        todayFinished: hadPairsToday,
+        todayCount: todayPairs.length,
         date: d,
         daysAhead: add,
         pair: first,
@@ -76,7 +80,7 @@ function computeScheduleStatus(now = getNow(), groupCode = currentGroup) {
     }
   }
 
-  return { kind: 'none' };
+  return { kind: 'none', todayFinished: hadPairsToday, todayCount: todayPairs.length };
 }
 
 function updateClockAndCountdown(forceRender = false) {
@@ -195,25 +199,30 @@ function buildNowCardHtml(status, now) {
   if (status.kind === 'upcoming') {
     const p = status.pair;
     const reason = getNoClassesReason(now);
-    const when = status.daysAhead === 1 ? 'Завтра' : `${DAY_NAMES[status.date.getDay()]}, ${formatDayMonth(status.date)}`;
-    const subtitle = reason ? `${reason} · Наступна пара за розкладом` : 'На сьогодні пари завершено';
+    const when = status.daysAhead === 1 ? 'Завтра' : `${DAY_SHORT[status.date.getDay()]}, ${status.date.getDate()}.${pad2(status.date.getMonth() + 1)}`;
+    const mainTitle = status.todayFinished
+      ? 'На сьогодні пари закінчилися'
+      : 'Сьогодні занять немає';
+    const subtitle = status.todayFinished
+      ? `Усі заняття (${status.todayCount} ${plural(status.todayCount, ['пара', 'пари', 'пар'])}) завершено · Далі: ${p.subject}`
+      : `${reason || 'Вільний від занять день'} · Далі: ${p.subject}`;
     return `
       <div class="now-top">
         <div class="now-head-left">
-          <div class="now-title">${escapeHtml(p.subject)}</div>
+          <div class="now-title">${escapeHtml(mainTitle)}</div>
           <div class="now-sub">${escapeHtml(subtitle)}</div>
         </div>
         <span class="now-corner-icon">${icon('arrowUpRight', 18)}</span>
       </div>
-      ${buildWaveBars(14)}
+      ${buildWaveBars(status.todayFinished ? 100 : 12)}
       <div class="now-stats">
         <div class="now-stat">
-          <span class="now-stat-label">Коли</span>
-          <strong class="now-stat-val">${escapeHtml(when)}</strong>
+          <span class="now-stat-label">Наступна</span>
+          <strong class="now-stat-val">${p.num} пара · ${escapeHtml(status.slot.from)}</strong>
         </div>
         <div class="now-stat">
-          <span class="now-stat-label">Початок</span>
-          <strong class="now-stat-val mono">${p.num} пара · ${escapeHtml(status.slot.from)}</strong>
+          <span class="now-stat-label">Коли</span>
+          <strong class="now-stat-val mono">${escapeHtml(when)}</strong>
         </div>
         <div class="now-stat">
           <span class="now-stat-label">До початку</span>
@@ -226,7 +235,7 @@ function buildNowCardHtml(status, now) {
   return `
     <div class="now-top">
       <div class="now-head-left">
-        <div class="now-title">Пар у розкладі немає</div>
+        <div class="now-title">${status.todayFinished ? 'На сьогодні пари закінчилися' : 'Сьогодні занять немає'}</div>
         <div class="now-sub">${escapeHtml(dateHeader)}</div>
       </div>
     </div>
