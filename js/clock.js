@@ -26,12 +26,51 @@ function getRealPairsForDate(date, groupCode = currentGroup) {
   return dayData.pairs.filter(p => !p.isWindow && isPairOnDate(p, date));
 }
 
+const NOW_RING_RADIUS = 23;
+const NOW_RING_CIRCUMFERENCE = 2 * Math.PI * NOW_RING_RADIUS;
+
+function formatRemainMinutesText(sec) {
+  const mins = Math.max(1, Math.ceil(Math.max(0, sec) / 60));
+  return `залишилось ${mins} хв`;
+}
+
+function formatWindowMinutesText(sec) {
+  const mins = Math.max(1, Math.ceil(Math.max(0, sec) / 60));
+  return `Вікно ${mins} хв`;
+}
+
+function buildCircularProgressRing(progressPct, centerVal, centerUnit = '') {
+  const pct = Math.max(0, Math.min(100, Number(progressPct) || 0));
+  const offset = NOW_RING_CIRCUMFERENCE * (1 - pct / 100);
+  return `
+    <div class="now-ring" aria-hidden="true">
+      <svg class="now-ring-svg" viewBox="0 0 58 58">
+        <circle class="now-ring-track" cx="29" cy="29" r="${NOW_RING_RADIUS}" />
+        <circle
+          class="now-ring-fill"
+          data-now-ring-circle
+          cx="29"
+          cy="29"
+          r="${NOW_RING_RADIUS}"
+          stroke-dasharray="${NOW_RING_CIRCUMFERENCE.toFixed(2)}"
+          stroke-dashoffset="${offset.toFixed(2)}"
+        />
+      </svg>
+      <div class="now-ring-center">
+        <span class="now-ring-val mono" data-now-ring-val>${escapeHtml(String(centerVal))}</span>
+        ${centerUnit ? `<span class="now-ring-unit">${escapeHtml(centerUnit)}</span>` : ''}
+      </div>
+    </div>
+  `;
+}
+
 // Знаходить стан на зараз: активна пара, перерва/вікно до наступної пари сьогодні,
 // або наступна пара в інший навчальний день.
 function computeScheduleStatus(now = getNow(), groupCode = currentGroup) {
   const secNow = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
   const todayPairs = getRealPairsForDate(now, groupCode);
 
+  let prevEndSec = null;
   for (const p of todayPairs) {
     const slot = timeSlots[p.num];
     if (!slot) continue;
@@ -47,13 +86,24 @@ function computeScheduleStatus(now = getNow(), groupCode = currentGroup) {
       };
     }
     if (secNow < startSec) {
+      const firstSlotStartSec = timeSlots[1] ? timeSlots[1].start * 60 : 8 * 3600;
+      const isWindow = prevEndSec !== null || (p.num > 1 && secNow >= firstSlotStartSec);
+      const windowStartSec = prevEndSec !== null
+        ? prevEndSec
+        : (p.num > 1 && secNow >= firstSlotStartSec ? firstSlotStartSec : Math.max(0, startSec - 3600));
+      const totalWinSec = Math.max(60, startSec - windowStartSec);
+      const progress = Math.max(0, Math.min(100, ((secNow - windowStartSec) / totalWinSec) * 100));
+
       return {
-        kind: 'today-next',
+        kind: isWindow ? 'window' : 'today-next',
         pair: p,
         slot,
-        untilSec: startSec - secNow
+        untilSec: startSec - secNow,
+        windowTotalSec: totalWinSec,
+        progress
       };
     }
+    prevEndSec = endSec;
   }
 
   const hadPairsToday = todayPairs.length > 0;
@@ -102,11 +152,15 @@ function updateClockAndCountdown(forceRender = false) {
     ? activeAnnouncement
     : null;
   const newsSig = newsObj ? `${newsObj.id}:${announcementExpanded ? '1' : '0'}` : 'none';
-  const signature = `${status.kind}:${status.pair ? status.pair.num : 0}:${currentGroup}:${newsSig}`;
+  const changeObj = (typeof getActiveScheduleChangeForGroup === 'function')
+    ? getActiveScheduleChangeForGroup(currentGroup)
+    : null;
+  const changeSig = changeObj ? changeObj.key : 'nochange';
+  const signature = `${status.kind}:${status.pair ? status.pair.num : 0}:${currentGroup}:${newsSig}:${changeSig}`;
 
   if (forceRender || card.dataset.sig !== signature) {
     card.dataset.sig = signature;
-    card.className = `now-card is-${status.kind} ${newsObj ? 'has-news' : ''}`;
+    card.className = `now-card is-${status.kind} ${newsObj ? 'has-news' : ''} ${changeObj ? 'has-change' : ''}`.trim();
     card.innerHTML = buildNowCardHtml(status, now);
   } else {
     const timerEl = card.querySelector('[data-now-timer]');
@@ -114,14 +168,36 @@ function updateClockAndCountdown(forceRender = false) {
       const sec = status.kind === 'live' ? status.remainingSec : status.untilSec;
       timerEl.textContent = formatCountdown(sec);
     }
+    const remainMinEl = card.querySelector('[data-now-remain-min]');
+    if (remainMinEl && status.kind === 'live') {
+      remainMinEl.textContent = formatRemainMinutesText(status.remainingSec);
+    }
+    const windowMinEl = card.querySelector('[data-now-window-min]');
+    if (windowMinEl && (status.kind === 'window' || status.kind === 'today-next')) {
+      windowMinEl.textContent = formatWindowMinutesText(status.untilSec);
+    }
+    const ringCircle = card.querySelector('[data-now-ring-circle]');
+    if (ringCircle && (status.kind === 'live' || status.kind === 'window')) {
+      const pct = Math.max(0, Math.min(100, status.progress || 0));
+      const offset = NOW_RING_CIRCUMFERENCE * (1 - pct / 100);
+      ringCircle.setAttribute('stroke-dashoffset', offset.toFixed(2));
+    }
+    const ringVal = card.querySelector('[data-now-ring-val]');
+    if (ringVal) {
+      if (status.kind === 'live') {
+        ringVal.textContent = `${Math.round(status.progress)}%`;
+      } else if (status.kind === 'window') {
+        ringVal.textContent = String(Math.max(1, Math.ceil(status.untilSec / 60)));
+      }
+    }
     const barEl = card.querySelector('[data-now-progress]');
     if (barEl && status.kind === 'live') {
       barEl.style.width = `${status.progress.toFixed(1)}%`;
     }
     const waveEl = card.querySelector('[data-now-wave]');
-    if (waveEl && status.kind === 'live') {
+    if (waveEl && (status.kind === 'live' || status.kind === 'window')) {
       const bars = waveEl.querySelectorAll('i');
-      const activeCount = Math.round((status.progress / 100) * bars.length);
+      const activeCount = Math.round(((status.progress || 0) / 100) * bars.length);
       bars.forEach((b, idx) => b.classList.toggle('is-filled', idx < activeCount));
     }
   }
@@ -144,18 +220,27 @@ function buildNowCardHtml(status, now) {
   const newsHtml = (typeof buildNowCardAnnouncementHtml === 'function')
     ? buildNowCardAnnouncementHtml()
     : '';
+  const changeHtml = (typeof buildNowCardScheduleChangeHtml === 'function')
+    ? buildNowCardScheduleChangeHtml(currentGroup)
+    : '';
+  const bannersHtml = `${changeHtml}${newsHtml}`;
 
   if (status.kind === 'live') {
     const p = status.pair;
-    const meta = [p.teacher, p.classroom ? `ауд. ${p.classroom}` : ''].filter(Boolean).join(' · ') || `${DAY_NAMES[now.getDay()]}, ${formatDayMonth(now)}`;
+    const meta = [p.teacher, p.classroom ? `ауд. ${p.classroom}` : ''].filter(Boolean).join(' · ') || dateHeader;
+    const remainText = formatRemainMinutesText(status.remainingSec);
     return `
-      ${newsHtml}
+      ${bannersHtml}
       <div class="now-top">
         <div class="now-head-left">
+          <div class="now-badges-row">
+            <span class="live-pill"><i></i>Йде пара</span>
+            <span class="now-hero-remain" data-now-remain-min>${escapeHtml(remainText)}</span>
+          </div>
           <div class="now-title">${escapeHtml(p.subject)}</div>
           <div class="now-sub">${escapeHtml(meta)}</div>
         </div>
-        <span class="live-pill"><i></i>Зараз</span>
+        ${buildCircularProgressRing(status.progress, `${Math.round(status.progress)}%`)}
       </div>
       ${buildWaveBars(status.progress)}
       <div class="now-stats">
@@ -175,11 +260,46 @@ function buildNowCardHtml(status, now) {
     `;
   }
 
+  if (status.kind === 'window') {
+    const p = status.pair;
+    const meta = [p.teacher, p.classroom ? `ауд. ${p.classroom}` : ''].filter(Boolean).join(' · ') || dateHeader;
+    const winText = formatWindowMinutesText(status.untilSec);
+    const winMins = Math.max(1, Math.ceil(status.untilSec / 60));
+    return `
+      ${bannersHtml}
+      <div class="now-top">
+        <div class="now-head-left">
+          <div class="now-badges-row">
+            <span class="now-window-badge" data-now-window-min>${escapeHtml(winText)}</span>
+          </div>
+          <div class="now-title">Далі: ${escapeHtml(p.subject)}</div>
+          <div class="now-sub">${escapeHtml(meta)}</div>
+        </div>
+        ${buildCircularProgressRing(status.progress, winMins, 'хв')}
+      </div>
+      ${buildWaveBars(status.progress || 25)}
+      <div class="now-stats">
+        <div class="now-stat">
+          <span class="now-stat-label">Час пари</span>
+          <strong class="now-stat-val mono">${escapeHtml(status.slot.from)} – ${escapeHtml(status.slot.to)}</strong>
+        </div>
+        <div class="now-stat">
+          <span class="now-stat-label">Наступна</span>
+          <strong class="now-stat-val">${p.num} пара</strong>
+        </div>
+        <div class="now-stat">
+          <span class="now-stat-label">Початок через</span>
+          <strong class="now-stat-val mono" data-now-timer>${formatCountdown(status.untilSec)}</strong>
+        </div>
+      </div>
+    `;
+  }
+
   if (status.kind === 'today-next') {
     const p = status.pair;
-    const meta = [p.teacher, p.classroom ? `ауд. ${p.classroom}` : ''].filter(Boolean).join(' · ') || `${DAY_NAMES[now.getDay()]}, ${formatDayMonth(now)}`;
+    const meta = [p.teacher, p.classroom ? `ауд. ${p.classroom}` : ''].filter(Boolean).join(' · ') || dateHeader;
     return `
-      ${newsHtml}
+      ${bannersHtml}
       <div class="now-top">
         <div class="now-head-left">
           <div class="now-title">${escapeHtml(p.subject)}</div>
@@ -215,7 +335,7 @@ function buildNowCardHtml(status, now) {
       ? `Усі заняття (${status.todayCount} ${plural(status.todayCount, ['пара', 'пари', 'пар'])}) завершено · Далі: ${p.subject}`
       : `${reason || 'Вільний від занять день'} · Далі: ${p.subject}`;
     return `
-      ${newsHtml}
+      ${bannersHtml}
       <div class="now-top">
         <div class="now-head-left">
           <div class="now-title">${escapeHtml(mainTitle)}</div>
@@ -241,7 +361,7 @@ function buildNowCardHtml(status, now) {
   }
 
   return `
-    ${newsHtml}
+    ${bannersHtml}
     <div class="now-top">
       <div class="now-head-left">
         <div class="now-title">${status.todayFinished ? 'На сьогодні пари закінчилися' : 'Сьогодні занять немає'}</div>

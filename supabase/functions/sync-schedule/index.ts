@@ -535,7 +535,18 @@ function formatLessonSummary(row: ScheduleRow): string {
   return parts.join(', ')
 }
 
-function computeScheduleChanges(oldRows: ScheduleRow[], newRows: ScheduleRow[]): string[] {
+const DAY_LOCATIVE: Record<number, string> = {
+  1: 'у понеділок',
+  2: 'у вівторок',
+  3: 'у середу',
+  4: 'у четвер',
+  5: 'у п’ятницю',
+}
+
+function computeScheduleChanges(
+  oldRows: ScheduleRow[],
+  newRows: ScheduleRow[]
+): { changes: string[]; summaryByGroup: Record<string, string[]> } {
   // Resolve effective lessons per (group_code, day_of_week, pair_number)
   const resolveGroupMap = (rows: ScheduleRow[], groupCode: string): Map<string, ScheduleRow> => {
     const primary = new Map<string, ScheduleRow>()
@@ -570,6 +581,11 @@ function computeScheduleChanges(oldRows: ScheduleRow[], newRows: ScheduleRow[]):
   }
 
   const changes: string[] = []
+  const summaryByGroup: Record<string, string[]> = {
+    'AR-26-1': [],
+    'AR-26sk-1': [],
+  }
+
   for (const groupCode of ['AR-26-1', 'AR-26sk-1']) {
     const oldMap = resolveGroupMap(oldRows, groupCode)
     const newMap = resolveGroupMap(newRows, groupCode)
@@ -577,6 +593,7 @@ function computeScheduleChanges(oldRows: ScheduleRow[], newRows: ScheduleRow[]):
 
     for (let d = 1; d <= 5; d++) {
       const dayLabel = DAY_NAMES[d] || `День ${d}`
+      const dayLoc = DAY_LOCATIVE[d] || `у ${dayLabel.toLowerCase()}`
       for (let p = 1; p <= 8; p++) {
         const key = `${d}:${p}`
         const o = oldMap.get(key)
@@ -584,8 +601,10 @@ function computeScheduleChanges(oldRows: ScheduleRow[], newRows: ScheduleRow[]):
         if (!o && !n) continue
         if (!o && n) {
           changes.push(`➕ [${groupLabel}] ${dayLabel}, ${p} пара: додано «${formatLessonSummary(n)}»`)
+          summaryByGroup[groupCode].push(`Змінилась ${p} пара ${dayLoc}`)
         } else if (o && !n) {
           changes.push(`➖ [${groupLabel}] ${dayLabel}, ${p} пара: скасовано «${formatLessonSummary(o)}»`)
+          summaryByGroup[groupCode].push(`Змінилась ${p} пара ${dayLoc}`)
         } else if (o && n) {
           if (
             o.subject !== n.subject ||
@@ -595,13 +614,14 @@ function computeScheduleChanges(oldRows: ScheduleRow[], newRows: ScheduleRow[]):
             changes.push(
               `🔄 [${groupLabel}] ${dayLabel}, ${p} пара:\n   було: ${formatLessonSummary(o)}\n   стало: ${formatLessonSummary(n)}`
             )
+            summaryByGroup[groupCode].push(`Змінилась ${p} пара ${dayLoc}`)
           }
         }
       }
     }
   }
 
-  return changes
+  return { changes, summaryByGroup }
 }
 
 async function broadcastTelegramNotification(
@@ -776,7 +796,9 @@ Deno.serve(async (req) => {
       .in('group_code', ['AR-26-1', 'AR-26sk-1'])
 
     const oldRows: ScheduleRow[] = Array.isArray(existingRows) ? existingRows : []
-    const changes = oldRows.length > 0 ? computeScheduleChanges(oldRows, rows) : []
+    const { changes, summaryByGroup } = oldRows.length > 0
+      ? computeScheduleChanges(oldRows, rows)
+      : { changes: [], summaryByGroup: { 'AR-26-1': [], 'AR-26sk-1': [] } }
 
     // 5. Replace rows in schedule_lessons for AR-26-1 and AR-26sk-1
     const { error: delErr } = await supabase
@@ -798,17 +820,22 @@ Deno.serve(async (req) => {
 
     // 6. Update sync metadata
     const syncedAt = now.toISOString()
+    const metaPatch: Record<string, any> = {
+      id: 1,
+      last_synced_at: syncedAt,
+      source_page_url: SCHEDULE_PAGE_URL,
+      source_file_url: excelUrl,
+      quarter,
+      lessons_count: rows.length,
+      last_error: null,
+    }
+    if (changes.length > 0) {
+      metaPatch.last_change_at = syncedAt
+      metaPatch.last_change_summary = summaryByGroup
+    }
     await supabase
       .from('schedule_sync_meta')
-      .upsert({
-        id: 1,
-        last_synced_at: syncedAt,
-        source_page_url: SCHEDULE_PAGE_URL,
-        source_file_url: excelUrl,
-        quarter,
-        lessons_count: rows.length,
-        last_error: null,
-      })
+      .upsert(metaPatch)
 
     // 7. If schedule changed, notify users via Telegram bot!
     let notifyStats = null

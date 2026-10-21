@@ -109,9 +109,161 @@ async function loadScheduleFromDB() {
   }
 }
 
+const DAY_LOCATIVE_NAMES = {
+  1: 'у понеділок',
+  2: 'у вівторок',
+  3: 'у середу',
+  4: 'у четвер',
+  5: 'у п’ятницю'
+};
+
+const SCHEDULE_CHANGE_TTL_MS = 48 * 60 * 60 * 1000; // 48 годин
+
+function computeClientScheduleDiff(oldRows, newRows) {
+  if (!Array.isArray(oldRows) || !Array.isArray(newRows) || oldRows.length === 0 || newRows.length === 0) {
+    return null;
+  }
+  const summaryByGroup = {};
+  let totalChanges = 0;
+
+  for (const groupCode of Object.keys(GROUP_LABELS)) {
+    const oldDays = buildScheduleForGroup(oldRows, groupCode);
+    const newDays = buildScheduleForGroup(newRows, groupCode);
+    const labels = [];
+
+    for (let d = 1; d <= 5; d++) {
+      const oDay = oldDays.find(x => x.dayId === d);
+      const nDay = newDays.find(x => x.dayId === d);
+      const dayLoc = DAY_LOCATIVE_NAMES[d] || `у ${DAY_NAMES[d].toLowerCase()}`;
+
+      for (let p = 1; p <= 8; p++) {
+        const oPair = oDay ? oDay.pairs.find(x => x.num === p && !x.isWindow) : null;
+        const nPair = nDay ? nDay.pairs.find(x => x.num === p && !x.isWindow) : null;
+        if (!oPair && !nPair) continue;
+        if (!oPair || !nPair ||
+            oPair.subject !== nPair.subject ||
+            oPair.parity !== nPair.parity ||
+            oPair.teacher !== nPair.teacher ||
+            oPair.classroom !== nPair.classroom) {
+          labels.push(`Змінилась ${p} пара ${dayLoc}`);
+          totalChanges++;
+        }
+      }
+    }
+    summaryByGroup[groupCode] = labels;
+  }
+
+  return totalChanges > 0 ? summaryByGroup : null;
+}
+
+async function loadScheduleChangeMeta() {
+  if (!supabaseClient) return null;
+  try {
+    const { data: meta, error } = await supabaseClient
+      .from('schedule_sync_meta')
+      .select('last_change_at, last_change_summary')
+      .eq('id', 1)
+      .maybeSingle();
+
+    if (!error && meta && meta.last_change_at && meta.last_change_summary) {
+      const age = Date.now() - new Date(meta.last_change_at).getTime();
+      if (age >= 0 && age <= SCHEDULE_CHANGE_TTL_MS) {
+        scheduleChangeMeta = {
+          changedAt: String(meta.last_change_at),
+          summaryByGroup: meta.last_change_summary
+        };
+        if (typeof updateClockAndCountdown === 'function') {
+          updateClockAndCountdown(true);
+        }
+        return scheduleChangeMeta;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load schedule change meta:', e);
+  }
+  return null;
+}
+
+function getActiveScheduleChangeForGroup(groupCode = currentGroup) {
+  const paramChange = URL_PARAMS.get('change');
+  if (paramChange) {
+    const customText = paramChange === '1' || paramChange === 'true'
+      ? 'Змінилась 3 пара у вівторок'
+      : paramChange;
+    return {
+      key: `param:${customText}`,
+      primaryText: customText,
+      extraCount: 0,
+      allItems: [customText]
+    };
+  }
+
+  if (!scheduleChangeMeta || !scheduleChangeMeta.changedAt || !scheduleChangeMeta.summaryByGroup) {
+    return null;
+  }
+
+  const dismissedKey = readStored(`g7_dismissed_change_${groupCode}`, '');
+  if (dismissedKey === String(scheduleChangeMeta.changedAt)) {
+    return null;
+  }
+
+  const list = scheduleChangeMeta.summaryByGroup[groupCode] || scheduleChangeMeta.summaryByGroup[PRIMARY_GROUP] || [];
+  if (!Array.isArray(list) || list.length === 0) return null;
+
+  return {
+    key: `${scheduleChangeMeta.changedAt}:${groupCode}:${list.length}`,
+    primaryText: list[0],
+    extraCount: Math.max(0, list.length - 1),
+    allItems: list
+  };
+}
+
+function dismissScheduleChange(event) {
+  if (event) event.stopPropagation();
+  if (scheduleChangeMeta && scheduleChangeMeta.changedAt) {
+    writeStored(`g7_dismissed_change_${currentGroup}`, String(scheduleChangeMeta.changedAt));
+  }
+  haptic('light');
+  if (typeof updateClockAndCountdown === 'function') {
+    updateClockAndCountdown(true);
+  }
+}
+
+function buildNowCardScheduleChangeHtml(groupCode = currentGroup) {
+  const change = getActiveScheduleChangeForGroup(groupCode);
+  if (!change) return '';
+
+  const extraBadge = change.extraCount > 0
+    ? `<span class="now-change-more">+${change.extraCount}</span>`
+    : '';
+  const tooltip = change.allItems.join(' • ');
+
+  return `
+    <div class="now-change-pill" onclick="setViewMode('week')" role="button" tabindex="0" title="${escapeHtml(tooltip)}">
+      <div class="now-change-left">
+        <span class="now-change-icon">${icon('sparkles', 15)}</span>
+        <span class="now-change-text">${escapeHtml(change.primaryText)}</span>
+        ${extraBadge}
+      </div>
+      <button type="button" class="now-change-close" onclick="dismissScheduleChange(event)" title="Приховати сповіщення про зміни" aria-label="Закрити">
+        ${icon('close', 14)}
+      </button>
+    </div>
+  `;
+}
+
 async function reloadSchedule() {
   const rows = await loadScheduleFromDB();
   if (rows) {
+    if (dbRawRows && dbRawRows.length > 0) {
+      const localDiff = computeClientScheduleDiff(dbRawRows, rows);
+      if (localDiff) {
+        scheduleChangeMeta = {
+          changedAt: new Date().toISOString(),
+          summaryByGroup: localDiff
+        };
+      }
+    }
     dbRawRows = rows;
     scheduleFromFallback = false;
     writeStored('g7_schedule_cache', JSON.stringify(rows));
@@ -163,6 +315,7 @@ async function maybeAutoSyncSchedule(force = false) {
     const payload = await res.json();
     if (payload && payload.ok && !payload.skipped) {
       await reloadSchedule();
+      await loadScheduleChangeMeta();
       renderSchedule();
       return true;
     }
@@ -190,6 +343,7 @@ async function initSchedule() {
   renderHeaderGroupSwitch();
   renderSchedule();
   await reloadSchedule();
+  await loadScheduleChangeMeta();
   renderSchedule();
 
   // Автоматична перевірка та синхронізація розкладу з nmu.org.ua кожну годину + оновлення новин
@@ -197,6 +351,7 @@ async function initSchedule() {
   maybeAutoSyncSchedule(false);
   setInterval(() => {
     maybeAutoSyncSchedule(false);
+    loadScheduleChangeMeta();
     if (typeof loadActiveAnnouncement === 'function') loadActiveAnnouncement();
   }, 15 * 60 * 1000);
 }

@@ -51,6 +51,8 @@ let activeAnnouncement = null;
 let cachedAnnouncements = [];
 let announcementExpanded = false;
 
+let scheduleChangeMeta = null; // { changedAt: string, summaryByGroup: Record<string, string[]> }
+
 const POPULAR_EMOJIS = ['🐳', '❤️', '😍', '😡', '😱', '🔥', '🥶', '💀', '👍', '👎'];
 let userReactionsMap = {};     // entryId -> emoji
 

@@ -215,6 +215,158 @@
   text-overflow: ellipsis;
 }
 
+/* ── Акцентна плашка зміни розкладу («Змінилась 3 пара у вівторок») ── */
+.now-change-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  padding: 0.48rem 0.55rem 0.48rem 0.78rem;
+  border-radius: 999px;
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s var(--ease);
+}
+
+.now-change-left {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  min-width: 0;
+}
+
+.now-change-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.now-change-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.now-change-more {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.42rem;
+  border-radius: 999px;
+  background: rgba(18, 18, 18, 0.14);
+  color: var(--lime-ink);
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.now-change-close {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(18, 18, 18, 0.14);
+  color: var(--lime-ink);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background 0.2s var(--ease);
+}
+
+.now-change-close:hover {
+  background: rgba(18, 18, 18, 0.24);
+}
+
+/* ── Бейджі станів (Йде пара / залишилось 34 хв / Вікно 25 хв) ── */
+.now-badges-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+  margin-bottom: 0.2rem;
+}
+
+.now-hero-remain {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.24rem 0.68rem;
+  border-radius: 999px;
+  background: rgba(18, 18, 18, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.now-window-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  padding: 0.28rem 0.76rem;
+  border-radius: 999px;
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Круговий прогрес (SVG ring) у синій картці ── */
+.now-ring {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.now-ring-svg {
+  width: 58px;
+  height: 58px;
+  transform: rotate(-90deg);
+}
+
+.now-ring-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 5;
+}
+
+.now-ring-fill {
+  fill: none;
+  stroke: var(--lime);
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.35s var(--ease);
+}
+
+.now-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
+  pointer-events: none;
+}
+
+.now-ring-val {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.now-ring-unit {
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.76);
+}
+
 /* ── Бейдж "Зараз" (лаймовий) ── */
 @keyframes livePulse {
   0%, 100% { opacity: 1; transform: scale(1); }
