@@ -328,21 +328,44 @@ function buildNowCardHtml(status, now) {
     const p = status.pair;
     const reason = getNoClassesReason(now);
     const when = status.daysAhead === 1 ? 'Завтра' : `${DAY_SHORT[status.date.getDay()]}, ${status.date.getDate()}.${pad2(status.date.getMonth() + 1)}`;
-    const mainTitle = status.todayFinished
-      ? 'На сьогодні пари закінчилися'
-      : 'Сьогодні занять немає';
-    const subtitle = status.todayFinished
-      ? `Усі заняття (${status.todayCount} ${plural(status.todayCount, ['пара', 'пари', 'пар'])}) завершено`
-      : `${reason || 'Вільний від занять день'} · Далі: ${p.subject}`;
+
+    if (status.todayFinished) {
+      const subtitle = `Усі заняття (${status.todayCount} ${plural(status.todayCount, ['пара', 'пари', 'пар'])}) завершено`;
+      return `
+        ${bannersHtml}
+        <div class="now-top">
+          <div class="now-head-left">
+            <div class="now-title">На сьогодні пари закінчилися</div>
+            <div class="now-sub">${escapeHtml(subtitle)}</div>
+          </div>
+        </div>
+        ${buildWaveBars(100)}
+        <div class="now-stats">
+          <div class="now-stat">
+            <span class="now-stat-label">Наступна</span>
+            <strong class="now-stat-val">${p.num} пара · ${escapeHtml(status.slot.from)}</strong>
+          </div>
+          <div class="now-stat">
+            <span class="now-stat-label">Коли</span>
+            <strong class="now-stat-val mono">${escapeHtml(when)}</strong>
+          </div>
+          <div class="now-stat">
+            <span class="now-stat-label">До початку</span>
+            <strong class="now-stat-val mono" data-now-timer>${formatCountdown(status.untilSec)}</strong>
+          </div>
+        </div>
+      `;
+    }
+
+    const offTitle = reason || 'Вихідний';
     return `
       ${bannersHtml}
       <div class="now-top">
         <div class="now-head-left">
-          <div class="now-title">${escapeHtml(mainTitle)}</div>
-          <div class="now-sub">${escapeHtml(subtitle)}</div>
+          <div class="now-title is-off-hero">${escapeHtml(offTitle)}</div>
+          <div class="now-sub">Сьогодні занять немає</div>
         </div>
       </div>
-      ${buildWaveBars(status.todayFinished ? 100 : 12)}
       <div class="now-stats">
         <div class="now-stat">
           <span class="now-stat-label">Наступна</span>
@@ -360,12 +383,13 @@ function buildNowCardHtml(status, now) {
     `;
   }
 
+  const fallbackReason = getNoClassesReason(now);
   return `
     ${bannersHtml}
     <div class="now-top">
       <div class="now-head-left">
-        <div class="now-title">${status.todayFinished ? 'На сьогодні пари закінчилися' : 'Сьогодні занять немає'}</div>
-        <div class="now-sub">${escapeHtml(dateHeader)}</div>
+        <div class="now-title ${status.todayFinished ? '' : 'is-off-hero'}">${escapeHtml(status.todayFinished ? 'На сьогодні пари закінчилися' : (fallbackReason || 'Вихідний'))}</div>
+        <div class="now-sub">${escapeHtml(status.todayFinished ? dateHeader : 'Сьогодні занять немає')}</div>
       </div>
     </div>
   `;

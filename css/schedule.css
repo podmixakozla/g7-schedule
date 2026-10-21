@@ -36,6 +36,13 @@
   color: #FFFFFF;
 }
 
+.now-title.is-off-hero {
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
 .now-sub {
   font-size: 0.8125rem;
   color: rgba(255, 255, 255, 0.76);
