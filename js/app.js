@@ -70,7 +70,7 @@ function setViewMode(mode, { silent = false } = {}) {
   writeStored('g7_view', mode);
   if (!silent) haptic('light');
 
-  document.querySelectorAll('.tab[data-view], .mode-pill[data-view]').forEach(btn => {
+  document.querySelectorAll('.tab[data-view]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.view === mode);
   });
 

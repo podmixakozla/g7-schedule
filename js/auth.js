@@ -206,8 +206,8 @@ function renderUserSlot() {
 
   if (!currentUser) {
     slot.innerHTML = `
-      <button class="btn btn-secondary btn-sm" onclick="showAuthOverlay()">
-        ${TELEGRAM_SVG}<span>Увійти</span>
+      <button class="btn btn-secondary btn-sm user-login-btn" onclick="showAuthOverlay()" title="Увійти через Telegram" aria-label="Увійти через Telegram">
+        ${TELEGRAM_SVG}<span class="user-login-text">Увійти</span>
       </button>
     `;
     return;

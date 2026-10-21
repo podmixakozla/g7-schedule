@@ -110,8 +110,7 @@
   background: var(--lime-hover);
 }
 
-/* ── Сегментована "таблетка" (Сьогодні / Тиждень / Календар та підфільтри) ── */
-.mode-pills,
+/* ── Сегментована "таблетка" (підфільтри Дошки ганьби) ── */
 .segmented {
   display: inline-flex;
   padding: 5px;
@@ -119,23 +118,6 @@
   background: var(--surface);
   border: 1px solid var(--border);
   gap: 5px;
-}
-
-.mode-pills {
-  width: 100%;
-  max-width: 440px;
-  margin: 0 auto 0.85rem;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-}
-
-@media (min-width: 860px) {
-  .mode-pills {
-    display: none;
-  }
-}
-
-.segmented {
   align-self: flex-start;
 }
 
@@ -143,7 +125,6 @@
   width: 100%;
 }
 
-.mode-pill,
 .segmented-item {
   flex: 1;
   padding: 0.56rem 1rem;
@@ -157,17 +138,14 @@
   white-space: nowrap;
 }
 
-html[data-theme="light"] .mode-pill,
 html[data-theme="light"] .segmented-item {
   background: rgba(18, 18, 18, 0.05);
 }
 
-.mode-pill:hover,
 .segmented-item:hover {
   background: var(--surface-hover);
 }
 
-.mode-pill.active,
 .segmented-item.active {
   background: var(--lime);
   color: var(--lime-ink);
