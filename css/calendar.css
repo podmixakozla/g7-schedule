@@ -29,11 +29,12 @@
   display: inline-block;
 }
 
-.legend-dot.type-theory   { background: var(--surface-2); border: 1px solid var(--border-strong); }
-.legend-dot.type-control  { background: var(--cal-control-bg); border: 1px solid var(--blue); }
-.legend-dot.type-session  { background: var(--blue); }
-.legend-dot.type-vacation { background: transparent; border: 1.5px dashed var(--text-2); }
-.legend-dot.type-practice { background: var(--cal-practice-bg); border: 1px solid var(--lime); }
+.legend-dot.type-theory    { background: var(--surface-2); border: 1px solid var(--border-strong); }
+.legend-dot.type-control   { background: var(--cal-control-bg); border: 1px solid var(--blue); }
+.legend-dot.type-session   { background: var(--blue); }
+.legend-dot.type-vacation  { background: transparent; border: 1.5px dashed var(--text-2); }
+.legend-dot.type-practice  { background: var(--cal-practice-bg); border: 1px solid var(--lime); }
+.legend-dot.type-selfstudy { background: rgba(212, 245, 74, 0.14); border: 1.5px dashed var(--lime); }
 
 .legend-week {
   width: 20px;
@@ -295,6 +296,17 @@ html[data-theme="light"] . month-card:not(.is-current) .cal-cell.type-vacation s
 .cal-cell.type-practice span {
   background: var(--cal-practice-bg);
   color: var(--cal-practice-fg);
+}
+
+.cal-cell.type-selfstudy span {
+  background: rgba(212, 245, 74, 0.12);
+  color: var(--lime);
+  border: 1.5px dashed rgba(212, 245, 74, 0.55);
+}
+
+html[data-theme="light"] .cal-cell.type-selfstudy span {
+  color: var(--lime-ink);
+  border-color: rgba(18, 18, 18, 0.45);
 }
 
 /* Сьогоднішня дата — кругла комірка, залита лаймом #D4F54A з темним текстом */

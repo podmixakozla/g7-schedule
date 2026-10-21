@@ -29,7 +29,6 @@ const SUBJECT_EXPANSIONS: Record<string, string> = {
   'Інж.та комп.графіка': "Інженерна та комп'ютерна графіка",
   "Інж.та комп'ютерна графіка": "Інженерна та комп'ютерна графіка",
   'І та КГ': "Інженерна та комп'ютерна графіка",
-  'ЦПУС': 'ЦП в УС',
 }
 
 function decodeXmlEntities(s: string): string {
@@ -62,13 +61,16 @@ function idxToCol(n: number): string {
 }
 
 /**
- * Determine current academic quarter (1 or 2) in Europe/Kyiv time.
+ * Determine current academic quarter (1 or 2) in Europe/Kyiv time
+ * based on the official NTU "DP" 2026-2027 academic calendar (row 1Б)
+ * control weeks (КЗ/Т) and vacations (К / СР):
+ *
  * Autumn semester:
- *   Quarter 1 (І Чв): Sep 1 – Oct 25
- *   Quarter 2 (ІІ Чв): Oct 26 – Jan 31
+ *   Quarter 1 (І Чв): Sep 1 – Oct 18 (Weeks 1–7, ends with 1st КЗ/Т on Oct 12–18)
+ *   Quarter 2 (ІІ Чв): Oct 19 – Jan 31 (starts Week 8 right after 1st КЗ/Т, through winter vacation/СР)
  * Spring semester:
- *   Quarter 1 (І Чв): Feb 1 – Apr 4
- *   Quarter 2 (ІІ Чв): Apr 5 – Aug 31
+ *   Quarter 1 (І Чв): Feb 1 – Apr 4 (Weeks 23–31, starts after winter СР, ends with 1st spring КЗ/Т on Mar 29–Apr 4)
+ *   Quarter 2 (ІІ Чв): Apr 5 – Aug 31 (starts Week 32 right after 1st spring КЗ/Т)
  */
 function detectCurrentQuarter(now = new Date()): 1 | 2 {
   const kyivStr = now.toLocaleString('en-US', { timeZone: 'Europe/Kyiv' })
@@ -77,7 +79,7 @@ function detectCurrentQuarter(now = new Date()): 1 | 2 {
   const day = kyiv.getDate()
 
   if (month === 9) return 1
-  if (month === 10) return day <= 25 ? 1 : 2
+  if (month === 10) return day <= 18 ? 1 : 2
   if (month === 11 || month === 12 || month === 1) return 2
   if (month === 2 || month === 3) return 1
   if (month === 4) return day <= 4 ? 1 : 2
@@ -689,6 +691,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
     let force = false
+    let silent = false
     let quarterOverride: 1 | 2 | null = null
     let testMessage: string | null = null
 
@@ -696,6 +699,7 @@ Deno.serve(async (req) => {
       try {
         const body = await req.json()
         if (body?.force === true) force = true
+        if (body?.silent === true) silent = true
         if (body?.quarter === 1 || body?.quarter === 2) quarterOverride = body.quarter
         if (typeof body?.test_message === 'string' && body.test_message.trim()) {
           testMessage = body.test_message.trim()
@@ -808,7 +812,7 @@ Deno.serve(async (req) => {
 
     // 7. If schedule changed, notify users via Telegram bot!
     let notifyStats = null
-    if (changes.length > 0) {
+    if (changes.length > 0 && !silent) {
       const maxLines = 15
       const shown = changes.slice(0, maxLines).join('\n')
       const extra = changes.length > maxLines ? `\n…та ще ${changes.length - maxLines} змін(и).` : ''

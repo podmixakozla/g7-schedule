@@ -23,10 +23,11 @@ function updateToggleAllLabel() {
 
 function summarizeMonth(m) {
   const parts = [];
-  if (m.controlDays.length) parts.push('Контроль');
-  if (m.sessionDays.length) parts.push('Сесія');
-  if (m.vacationDays.length) parts.push('Канікули');
-  if (m.practiceDays.length) parts.push('Практика');
+  if (m.controlDays && m.controlDays.length) parts.push('Контроль');
+  if (m.sessionDays && m.sessionDays.length) parts.push('Сесія');
+  if (m.vacationDays && m.vacationDays.length) parts.push('Канікули');
+  if (m.selfStudyDays && m.selfStudyDays.length) parts.push('СР');
+  if (m.practiceDays && m.practiceDays.length) parts.push('Практика');
   return parts.join(' · ');
 }
 
@@ -89,10 +90,11 @@ function renderCalendar() {
           const isTodayCell = isCurrentMonth && dNum === currentDayDate;
 
           let type = 'theory';
-          if (m.sessionDays.includes(dNum)) type = 'session';
-          else if (m.controlDays.includes(dNum)) type = 'control';
-          else if (m.vacationDays.includes(dNum)) type = 'vacation';
-          else if (m.practiceDays.includes(dNum)) type = 'practice';
+          if (m.sessionDays && m.sessionDays.includes(dNum)) type = 'session';
+          else if (m.controlDays && m.controlDays.includes(dNum)) type = 'control';
+          else if (m.vacationDays && m.vacationDays.includes(dNum)) type = 'vacation';
+          else if (m.practiceDays && m.practiceDays.includes(dNum)) type = 'practice';
+          else if (m.selfStudyDays && m.selfStudyDays.includes(dNum)) type = 'selfstudy';
 
           let cls = `cal-cell type-${type}`;
           if (col >= 5) cls += ' is-weekend';
