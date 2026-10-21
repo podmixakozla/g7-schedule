@@ -332,7 +332,7 @@ function buildNowCardHtml(status, now) {
       ? 'На сьогодні пари закінчилися'
       : 'Сьогодні занять немає';
     const subtitle = status.todayFinished
-      ? `Усі заняття (${status.todayCount} ${plural(status.todayCount, ['пара', 'пари', 'пар'])}) завершено · Далі: ${p.subject}`
+      ? `Усі заняття (${status.todayCount} ${plural(status.todayCount, ['пара', 'пари', 'пар'])}) завершено`
       : `${reason || 'Вільний від занять день'} · Далі: ${p.subject}`;
     return `
       ${bannersHtml}
