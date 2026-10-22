@@ -38,6 +38,103 @@ function toggleAnnouncementExpand(event) {
   updateClockAndCountdown(true);
 }
 
+let starostaPreviewUrls = [];
+
+function getAnnouncementPhotos(item) {
+  if (!item) return [];
+  if (Array.isArray(item.photo_urls) && item.photo_urls.length > 0) {
+    return item.photo_urls.filter(u => typeof u === 'string' && u.trim());
+  }
+  if (typeof item.photo_url === 'string' && item.photo_url.trim()) {
+    return [item.photo_url.trim()];
+  }
+  return [];
+}
+
+function openAnnouncementPhoto(url, event) {
+  if (event) event.stopPropagation();
+  if (typeof openLightbox === 'function' && url) {
+    openLightbox(url, 'Фото до оголошення');
+  }
+}
+
+function resetStarostaPhotos() {
+  for (const u of starostaPreviewUrls) {
+    try { URL.revokeObjectURL(u); } catch {}
+  }
+  starostaPreviewUrls = [];
+
+  const input = document.getElementById('starostaNewsPhotos');
+  const previews = document.getElementById('starostaPhotoPreviews');
+  const label = document.getElementById('starostaFileLabel');
+  const drop = document.getElementById('starostaFileDrop');
+  const clearBtn = document.getElementById('btnClearStarostaPhotos');
+
+  if (input) input.value = '';
+  if (previews) {
+    previews.innerHTML = '';
+    previews.hidden = true;
+  }
+  if (drop) drop.classList.remove('has-file');
+  if (label) label.innerHTML = `${icon('image', 18)}<span>Прикріпити фото</span>`;
+  if (clearBtn) clearBtn.hidden = true;
+}
+
+function handleStarostaPhotoSelect(event) {
+  const files = Array.from(event.target.files || []);
+  const previews = document.getElementById('starostaPhotoPreviews');
+  const label = document.getElementById('starostaFileLabel');
+  const drop = document.getElementById('starostaFileDrop');
+  const clearBtn = document.getElementById('btnClearStarostaPhotos');
+
+  for (const u of starostaPreviewUrls) {
+    try { URL.revokeObjectURL(u); } catch {}
+  }
+  starostaPreviewUrls = [];
+
+  if (files.length === 0) {
+    resetStarostaPhotos();
+    return;
+  }
+
+  if (files.length > 10) {
+    toast('Можна прикріпити максимум 10 фото', 'error');
+    resetStarostaPhotos();
+    return;
+  }
+
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) {
+      toast('Приймаються лише зображення', 'error');
+      resetStarostaPhotos();
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      toast(`Файл "${file.name}" перевищує 15 МБ`, 'error');
+      resetStarostaPhotos();
+      return;
+    }
+  }
+
+  starostaPreviewUrls = files.map(f => URL.createObjectURL(f));
+
+  if (previews) {
+    previews.innerHTML = starostaPreviewUrls
+      .map(u => `<img class="starosta-photo-thumb" src="${u}" alt="" />`)
+      .join('');
+    previews.hidden = false;
+  }
+  if (drop) drop.classList.add('has-file');
+  if (label) {
+    const totalMb = (files.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024)).toFixed(1);
+    const countText = files.length === 1
+      ? escapeHtml(files[0].name)
+      : `Обрано ${files.length} фото`;
+    label.innerHTML = `${icon('image', 16)}<span>${countText} (${totalMb} МБ)</span>`;
+  }
+  if (clearBtn) clearBtn.hidden = false;
+}
+
 function buildNowCardAnnouncementHtml() {
   const a = activeAnnouncement;
   if (!a || !a.is_active || isAnnouncementDismissed(a.id)) return '';
@@ -45,7 +142,10 @@ function buildNowCardAnnouncementHtml() {
   const text = String(a.content || '').trim();
   if (!text) return '';
 
+  const photos = getAnnouncementPhotos(a);
+  const hasPhotos = photos.length > 0;
   const isLong = text.length > 140 || text.split('\n').length > 3;
+  const canExpand = isLong || hasPhotos;
   const expanded = Boolean(announcementExpanded);
   const authorLabel = a.author_username
     ? `@${a.author_username}`
@@ -56,21 +156,49 @@ function buildNowCardAnnouncementHtml() {
     ? `${pad2(dt.getHours())}:${pad2(dt.getMinutes())}`
     : '';
 
+  let toggleLabel = 'Розгорнути повністю';
+  if (expanded) {
+    toggleLabel = 'Згорнути';
+  } else if (hasPhotos) {
+    const photoCountLabel = photos.length === 1 ? 'фото' : `${photos.length} фото`;
+    toggleLabel = isLong ? `Розгорнути повністю (${photoCountLabel})` : `Розгорнути (${photoCountLabel})`;
+  }
+
+  const photosHtml = (expanded && hasPhotos)
+    ? `
+      <div class="now-news-photos ${photos.length > 1 ? 'is-grid' : ''}">
+        ${photos.map(url => `
+          <img
+            class="now-news-photo"
+            src="${escapeHtml(url)}"
+            alt="Фото до оголошення"
+            loading="lazy"
+            onclick="openAnnouncementPhoto('${escapeHtml(url)}', event)"
+          />
+        `).join('')}
+      </div>
+    `
+    : '';
+
   return `
     <div class="now-news ${expanded ? 'is-expanded' : ''}">
       <div class="now-news-head">
         <div class="now-news-meta">
           <span class="now-news-badge">${icon('megaphone', 13)}<span>Важливо</span></span>
           <span class="now-news-author">від ${escapeHtml(authorLabel)}${timeLabel ? ` · ${escapeHtml(timeLabel)}` : ''}</span>
+          ${hasPhotos && !expanded ? `<span class="now-news-photo-chip">${icon('image', 12)}<span>${photos.length > 1 ? photos.length : 'Фото'}</span></span>` : ''}
         </div>
         <button type="button" class="now-news-close" onclick="dismissAnnouncement(${Number(a.id)}, event)" title="Закрити повідомлення" aria-label="Закрити повідомлення">
           ${icon('close', 16)}
         </button>
       </div>
-      <div class="now-news-body ${isLong && !expanded ? 'is-clamped' : ''} ${expanded ? 'is-scrollable' : ''}">${escapeHtml(text)}</div>
-      ${isLong ? `
+      <div class="now-news-scroll ${expanded ? 'is-scrollable' : ''}">
+        <div class="now-news-body ${isLong && !expanded ? 'is-clamped' : ''}">${escapeHtml(text)}</div>
+        ${photosHtml}
+      </div>
+      ${canExpand ? `
         <button type="button" class="now-news-toggle" onclick="toggleAnnouncementExpand(event)">
-          <span>${expanded ? 'Згорнути' : 'Розгорнути повністю'}</span>
+          <span>${escapeHtml(toggleLabel)}</span>
           ${icon('chevronDown', 15, expanded ? 'is-rotated' : '')}
         </button>
       ` : ''}
@@ -152,6 +280,22 @@ function renderStarostaView() {
     const authorStr = item.author_username
       ? `@${item.author_username} (${item.author_name || ''})`
       : (item.author_name || 'Староста');
+    const photos = getAnnouncementPhotos(item);
+    const photosHtml = photos.length > 0
+      ? `
+        <div class="starosta-card-photos">
+          ${photos.map(url => `
+            <img
+              class="starosta-card-photo"
+              src="${escapeHtml(url)}"
+              alt="Фото до новини"
+              loading="lazy"
+              onclick="openAnnouncementPhoto('${escapeHtml(url)}', event)"
+            />
+          `).join('')}
+        </div>
+      `
+      : '';
 
     return `
       <article class="visits-card starosta-news-card ${item.is_active ? 'is-active-news' : ''}">
@@ -167,6 +311,7 @@ function renderStarostaView() {
           </button>
         </header>
         <div class="starosta-news-content">${escapeHtml(item.content)}</div>
+        ${photosHtml}
         <div class="visit-meta">
           <span>Автор: <strong>${escapeHtml(authorStr)}</strong></span>
         </div>
@@ -185,6 +330,7 @@ async function handleAnnouncementSubmit(event) {
   }
 
   const input = document.getElementById('starostaNewsText');
+  const photoInput = document.getElementById('starostaNewsPhotos');
   const btn = document.getElementById('btnSubmitStarostaNews');
   if (!input || !btn) return;
 
@@ -194,17 +340,43 @@ async function handleAnnouncementSubmit(event) {
     return;
   }
 
+  const files = photoInput ? Array.from(photoInput.files || []) : [];
+
   const originalHtml = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span><span>Публікуємо та розсилаємо в ТГ…</span>';
 
   try {
+    await getFreshAccessToken();
+
+    const photoUrls = [];
+    if (files.length > 0 && supabaseClient) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExt = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '');
+        const filePath = `announcements/${Date.now()}_${i}_${Math.random().toString(36).substring(2, 9)}.${fileExt || 'jpg'}`;
+        const { error: uploadErr } = await supabaseClient.storage
+          .from('board-photos')
+          .upload(filePath, file);
+        if (uploadErr) throw uploadErr;
+
+        const { data: urlData } = supabaseClient.storage
+          .from('board-photos')
+          .getPublicUrl(filePath);
+        if (urlData && urlData.publicUrl) {
+          photoUrls.push(urlData.publicUrl);
+        }
+      }
+    }
+
     const res = await callEdgeFunction('starosta-announcements', {
       action: 'create',
-      content
+      content,
+      photo_urls: photoUrls
     });
 
     input.value = '';
+    resetStarostaPhotos();
     writeStored('g7_dismissed_news_id', '');
     announcementExpanded = false;
 

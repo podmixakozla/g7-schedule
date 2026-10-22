@@ -73,9 +73,87 @@ async function verifyStarostaOrAdmin(
   };
 }
 
+async function sendAnnouncementToChat(
+  chatId: number,
+  text: string,
+  photoUrls: string[]
+): Promise<boolean> {
+  if (photoUrls.length === 1) {
+    const caption = text.length <= 1024 ? text : text.slice(0, 1020) + "…";
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        photo: photoUrls[0],
+        caption,
+      }),
+    });
+    if (res.ok) {
+      if (text.length > 1024) {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: text.slice(1020),
+            disable_web_page_preview: true,
+          }),
+        });
+      }
+      return true;
+    }
+  } else if (photoUrls.length > 1) {
+    const caption = text.length <= 1024 ? text : text.slice(0, 1020) + "…";
+    const media = photoUrls.slice(0, 10).map((url, idx) => ({
+      type: "photo",
+      media: url,
+      ...(idx === 0 ? { caption } : {}),
+    }));
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMediaGroup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        media,
+      }),
+    });
+    if (res.ok) {
+      if (text.length > 1024) {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: text.slice(1020),
+            disable_web_page_preview: true,
+          }),
+        });
+      }
+      return true;
+    }
+  }
+
+  // Fallback or text-only announcement
+  const fallbackText = photoUrls.length > 0
+    ? `${text}\n\n${photoUrls.join("\n")}`
+    : text;
+  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: fallbackText,
+      disable_web_page_preview: photoUrls.length === 0,
+    }),
+  });
+  return res.ok;
+}
+
 async function broadcastStarostaMessage(
   supabase: ReturnType<typeof createClient>,
-  text: string
+  text: string,
+  photoUrls: string[] = []
 ): Promise<{ sent: number; failed: number }> {
   if (!BOT_TOKEN) {
     return { sent: 0, failed: 0 };
@@ -119,16 +197,8 @@ async function broadcastStarostaMessage(
   let failed = 0;
   for (const chatId of chatIds) {
     try {
-      const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text,
-          disable_web_page_preview: true,
-        }),
-      });
-      if (res.ok) sent++;
+      const ok = await sendAnnouncementToChat(chatId, text, photoUrls);
+      if (ok) sent++;
       else failed++;
     } catch {
       failed++;
@@ -170,6 +240,18 @@ Deno.serve(async (req) => {
         throw new HttpError(400, "Повідомлення занадто довге (максимум 3500 символів)");
       }
 
+      const rawUrls: string[] = [];
+      if (Array.isArray(body.photo_urls)) {
+        for (const u of body.photo_urls) {
+          if (typeof u === "string" && u.trim().startsWith("http")) {
+            rawUrls.push(u.trim());
+          }
+        }
+      } else if (typeof body.photo_url === "string" && body.photo_url.trim().startsWith("http")) {
+        rawUrls.push(body.photo_url.trim());
+      }
+      const photoUrls = rawUrls.slice(0, 10);
+
       const first = (caller.firstName || "").trim();
       const last = (caller.lastName || "").trim();
       const authorName = [first, last].filter(Boolean).join(" ") || caller.username || `ID ${caller.telegramId}`;
@@ -187,6 +269,8 @@ Deno.serve(async (req) => {
           author_name: authorName,
           author_username: caller.username,
           content,
+          photo_url: photoUrls[0] || null,
+          photo_urls: photoUrls,
           is_active: true,
         })
         .select("*")
@@ -203,7 +287,7 @@ Deno.serve(async (req) => {
         : authorName;
       const tgText = `📢 Повідомлення від старости ${authorTag}:\n\n${content}`;
 
-      const notify = await broadcastStarostaMessage(supabase, tgText);
+      const notify = await broadcastStarostaMessage(supabase, tgText, photoUrls);
 
       return jsonResponse(200, {
         ok: true,
