@@ -20,18 +20,19 @@ function normalizeTeacher(teacher, isWindow = false) {
 }
 
 function buildScheduleForGroup(rows, groupCode) {
-  const primary = {};
-  const overrides = {};
+  const parentCode = (typeof PARENT_GROUP !== 'undefined' && PARENT_GROUP[groupCode]) || null;
+  const parentPairs = {};
+  const groupPairs = {};
 
   for (const row of rows) {
     const code = row.group_code || PRIMARY_GROUP;
-    if (code === PRIMARY_GROUP) {
-      primary[row.day_of_week] = primary[row.day_of_week] || {};
-      primary[row.day_of_week][row.pair_number] = row;
+    if (parentCode && code === parentCode) {
+      parentPairs[row.day_of_week] = parentPairs[row.day_of_week] || {};
+      parentPairs[row.day_of_week][row.pair_number] = row;
     }
     if (code === groupCode) {
-      overrides[row.day_of_week] = overrides[row.day_of_week] || {};
-      overrides[row.day_of_week][row.pair_number] = row;
+      groupPairs[row.day_of_week] = groupPairs[row.day_of_week] || {};
+      groupPairs[row.day_of_week][row.pair_number] = row;
     }
   }
 
@@ -39,8 +40,8 @@ function buildScheduleForGroup(rows, groupCode) {
   for (let d = 1; d <= 5; d++) {
     const pairs = [];
     for (let p = 1; p <= 8; p++) {
-      const own = overrides[d] && overrides[d][p];
-      const row = own || (primary[d] && primary[d][p]);
+      const own = groupPairs[d] && groupPairs[d][p];
+      const row = own || (parentPairs[d] && parentPairs[d][p]);
       if (!row) continue;
       const { subject, parity } = parsePairParity(row.subject);
       const isWin = isWindowSubject(subject);
@@ -51,7 +52,7 @@ function buildScheduleForGroup(rows, groupCode) {
         teacher: normalizeTeacher(row.teacher, isWin),
         classroom: (row.classroom || '').trim(),
         isWindow: isWin,
-        inherited: !own && groupCode !== PRIMARY_GROUP
+        inherited: !own && Boolean(parentCode)
       });
     }
     pairs.sort((a, b) => a.num - b.num);
@@ -207,7 +208,7 @@ function getActiveScheduleChangeForGroup(groupCode = currentGroup) {
     return null;
   }
 
-  const list = scheduleChangeMeta.summaryByGroup[groupCode] || scheduleChangeMeta.summaryByGroup[PRIMARY_GROUP] || [];
+  const list = (scheduleChangeMeta.summaryByGroup && scheduleChangeMeta.summaryByGroup[groupCode]) || [];
   if (!Array.isArray(list) || list.length === 0) return null;
 
   return {
@@ -274,11 +275,9 @@ async function reloadSchedule() {
 }
 
 function renderHeaderGroupSwitch() {
+  // Перемикач групи прибрано з шапки — група обирається в профілі/слоті користувача
   const el = document.getElementById('headerGroupSwitch');
-  if (!el) return;
-  el.innerHTML = Object.entries(GROUP_LABELS).map(([code, label]) =>
-    `<button type="button" class="group-switch-btn ${code === currentGroup ? 'active' : ''}" onclick="setGroup('${code}')">${escapeHtml(label)}</button>`
-  ).join('');
+  if (el) el.innerHTML = '';
 }
 
 const SCHEDULE_SYNC_INTERVAL_MS = 60 * 60 * 1000; // 1 година
@@ -364,12 +363,21 @@ function handleScheduleClick(e) {
 }
 
 function setGroup(code) {
-  if (!(code in GROUP_LABELS) || code === currentGroup) return;
-  currentGroup = code;
-  writeStored('g7_group', code);
-  haptic('light');
-  renderHeaderGroupSwitch();
-  renderSchedule();
+  if (currentUser && typeof changeUserGroup === 'function') {
+    changeUserGroup(code);
+  } else if (typeof setGuestGroup === 'function') {
+    setGuestGroup(code);
+  }
+}
+
+function openGroupPicker(e) {
+  if (e) e.stopPropagation();
+  if (currentUser) {
+    const menu = document.getElementById('userMenu');
+    if (menu) menu.classList.add('open');
+  } else if (typeof openGuestGroupModal === 'function') {
+    openGuestGroupModal();
+  }
 }
 
 // Знаходить найближчий навчальний день, починаючи з `from` (включно).
@@ -430,6 +438,20 @@ function renderSchedule() {
   const monday = isWeekend ? addDays(getWeekMonday(now), 7) : getWeekMonday(now);
 
   let html = '';
+
+  if (!hasExplicitGroup()) {
+    html += `
+      <aside class="schedule-group-hint" role="note">
+        <div class="schedule-group-hint-content">
+          ${icon('info', 16)}
+          <span>Показано розклад <strong>${escapeHtml(GROUP_LABELS[PRIMARY_GROUP] || PRIMARY_GROUP)}</strong></span>
+        </div>
+        <button type="button" class="btn btn-outline-lime" onclick="openGroupPicker(event)">
+          ${currentUser ? 'Змінити в профілі' : 'Обрати свою групу'}
+        </button>
+      </aside>
+    `;
+  }
 
   if (currentView === 'today') {
     const dayData = scheduleForGroup.find(d => d.dayId === now.getDay()) || null;

@@ -102,11 +102,34 @@ async function authenticateWithTelegram() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Помилка автентифікації');
 
+    if (!data.user.user_group) {
+      const guestG = readStored('g7_guest_group', '') || readStored('g7_group', '');
+      if (guestG && guestG in GROUP_LABELS && supabaseClient) {
+        try {
+          await supabaseClient.rpc('set_my_group', { target_group: guestG });
+          data.user.user_group = guestG;
+        } catch (e) {
+          console.warn('Failed to auto-sync guest group on login:', e);
+        }
+      }
+    }
+    try {
+      localStorage.removeItem('g7_guest_group');
+      localStorage.removeItem('g7_group');
+    } catch {}
+    currentGroup = resolveCurrentGroup();
     persistSession(data.user, data.session);
     await syncSupabaseSession(data.session.access_token, data.session.refresh_token);
 
     hideAuthOverlay();
     updateAuthUI();
+    renderSchedule();
+    if (typeof updateClockAndCountdown === 'function') {
+      updateClockAndCountdown(true);
+    }
+    if (typeof loadActiveAnnouncement === 'function') {
+      loadActiveAnnouncement();
+    }
     toast('Ви увійшли', 'success');
   } catch (err) {
     console.error('Auth error:', err);
@@ -163,6 +186,20 @@ async function restoreSession() {
       });
       const data = await response.json();
       if (response.ok && data.session) {
+        if (!data.user.user_group) {
+          const guestG = readStored('g7_guest_group', '') || readStored('g7_group', '');
+          if (guestG && guestG in GROUP_LABELS && supabaseClient) {
+            try {
+              await supabaseClient.rpc('set_my_group', { target_group: guestG });
+              data.user.user_group = guestG;
+            } catch (e) {}
+          }
+        }
+        try {
+          localStorage.removeItem('g7_guest_group');
+          localStorage.removeItem('g7_group');
+        } catch {}
+        currentGroup = resolveCurrentGroup();
         persistSession(data.user, data.session);
         await syncSupabaseSession(data.session.access_token, data.session.refresh_token);
         updateAuthUI();
@@ -177,11 +214,23 @@ async function restoreSession() {
 }
 
 async function logout() {
+  const lastGroup = (currentUser && currentUser.user_group) || currentGroup;
   clearStoredSession();
+  if (lastGroup && lastGroup in GROUP_LABELS) {
+    writeStored('g7_guest_group', lastGroup);
+  }
+  currentGroup = resolveCurrentGroup();
   if (supabaseClient) {
     try { await supabaseClient.auth.signOut(); } catch {}
   }
   updateAuthUI();
+  renderSchedule();
+  if (typeof updateClockAndCountdown === 'function') {
+    updateClockAndCountdown(true);
+  }
+  if (typeof loadActiveAnnouncement === 'function') {
+    loadActiveAnnouncement();
+  }
   toast('Ви вийшли з облікового запису');
 }
 
@@ -205,10 +254,19 @@ function renderUserSlot() {
   if (!slot) return;
 
   if (!currentUser) {
+    const guestG = readStored('g7_guest_group', '') || readStored('g7_group', '');
+    const hasGroup = Boolean(guestG && guestG in GROUP_LABELS);
+    const pill = hasGroup
+      ? `<button type="button" class="group-pill is-set" onclick="openGuestGroupModal()" title="Обрана група: ${escapeHtml(GROUP_LABELS[guestG])}"><span class="group-pill-dot"></span><span>${escapeHtml(GROUP_LABELS[guestG])}</span></button>`
+      : `<button type="button" class="group-pill is-missing" onclick="openGuestGroupModal()" title="Оберіть групу для розкладу"><span class="group-pill-dot"></span><span>Група?</span></button>`;
+
     slot.innerHTML = `
-      <button class="btn btn-secondary btn-sm user-login-btn" onclick="showAuthOverlay()" title="Увійти через Telegram" aria-label="Увійти через Telegram">
-        ${TELEGRAM_SVG}<span class="user-login-text">Увійти</span>
-      </button>
+      <div class="user-slot-guest">
+        ${pill}
+        <button class="btn btn-secondary btn-sm user-login-btn" onclick="showAuthOverlay()" title="Увійти через Telegram" aria-label="Увійти через Telegram">
+          ${TELEGRAM_SVG}<span class="user-login-text">Увійти</span>
+        </button>
+      </div>
     `;
     return;
   }
@@ -218,9 +276,16 @@ function renderUserSlot() {
   const isAdmin = !!currentUser.is_admin;
   const isStarosta = isAdmin || !!currentUser.is_starosta;
   const roleLabel = isAdmin ? 'Адміністратор · Староста' : (isStarosta ? 'Староста' : 'Студент');
+  const userG = currentUser.user_group;
+  const hasGroup = Boolean(userG && userG in GROUP_LABELS);
+
+  const pill = hasGroup
+    ? `<button type="button" class="group-pill is-set" onclick="toggleUserMenu(event)" title="Ваша група: ${escapeHtml(GROUP_LABELS[userG])}"><span class="group-pill-dot"></span><span>${escapeHtml(GROUP_LABELS[userG])}</span></button>`
+    : `<button type="button" class="group-pill is-missing" onclick="toggleUserMenu(event)" title="Оберіть вашу групу в меню"><span class="group-pill-dot"></span><span>Група?</span></button>`;
 
   slot.innerHTML = `
     <div class="user-box">
+      ${pill}
       <button class="user-btn" type="button" onclick="toggleUserMenu(event)" aria-label="Профіль">
         <span class="user-avatar">${escapeHtml(initials)}</span>
         <span class="user-name">${escapeHtml(name)}</span>
@@ -233,12 +298,144 @@ function renderUserSlot() {
           <div class="user-menu-name">${escapeHtml(name)}</div>
           <div class="user-menu-role">${escapeHtml(roleLabel)}</div>
         </div>
+
+        <div class="user-menu-group-sec">
+          <div class="user-menu-group-label">Моя група</div>
+          <div class="user-menu-chips">
+            ${Object.entries(GROUP_LABELS).map(([code, label]) => `
+              <button type="button" class="user-group-chip ${userG === code ? 'active' : ''}" onclick="changeUserGroup('${code}', event)">
+                ${escapeHtml(label)}
+              </button>
+            `).join('')}
+          </div>
+          <div class="user-menu-group-sub">Розклад і новини — для цієї групи</div>
+          ${userG ? `
+            <button type="button" class="user-group-clear" onclick="changeUserGroup(null, event)">Не вказувати</button>
+          ` : ''}
+        </div>
+
         <button type="button" class="user-menu-item is-danger" onclick="logout()">
           ${icon('logout', 16)}<span>Вийти</span>
         </button>
       </div>
     </div>
   `;
+}
+
+async function changeUserGroup(code, event) {
+  if (event) event.stopPropagation();
+  if (code && !(code in GROUP_LABELS)) return;
+  haptic('light');
+
+  try {
+    if (supabaseClient) {
+      const { error } = await supabaseClient.rpc('set_my_group', { target_group: code || null });
+      if (error) {
+        console.error('RPC set_my_group error:', error);
+        throw error;
+      }
+    }
+
+    if (currentUser) {
+      currentUser.user_group = code || null;
+      try {
+        localStorage.setItem('g7_user', JSON.stringify(currentUser));
+      } catch {}
+    }
+
+    try {
+      localStorage.removeItem('g7_guest_group');
+      localStorage.removeItem('g7_group');
+    } catch {}
+
+    currentGroup = resolveCurrentGroup();
+    toast(code ? `Обрано групу ${GROUP_LABELS[code]}` : 'Групу скинуто', 'success');
+    renderUserSlot();
+    renderSchedule();
+    if (typeof updateClockAndCountdown === 'function') {
+      updateClockAndCountdown(true);
+    }
+    if (typeof loadActiveAnnouncement === 'function') {
+      loadActiveAnnouncement();
+    }
+  } catch (err) {
+    console.error('Failed to change user group:', err);
+    toast('Не вдалося зберегти групу', 'error');
+  }
+}
+
+function openGuestGroupModal() {
+  const overlay = document.getElementById('guestGroupModal');
+  if (!overlay) return;
+  const currentGuestG = readStored('g7_guest_group', '') || readStored('g7_group', '');
+  overlay.innerHTML = `
+    <div class="sheet sheet-sm" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h2 class="sheet-title">Обери свою групу</h2>
+        <button class="btn btn-icon btn-ghost" onclick="closeGuestGroupModal()" aria-label="Закрити">${icon('close', 18)}</button>
+      </div>
+      <div class="auth-sheet-body">
+        <div class="guest-group-chips">
+          ${Object.entries(GROUP_LABELS).map(([code, label]) => `
+            <button type="button" class="guest-group-chip ${currentGuestG === code ? 'active' : ''}" onclick="setGuestGroup('${code}')">
+              <span class="guest-group-name">${escapeHtml(label)}</span>
+            </button>
+          `).join('')}
+        </div>
+        <p class="auth-desc" style="margin-top:0.75rem">Розклад підлаштується одразу під обрану групу.</p>
+        <div class="guest-auth-promo">
+          <div class="form-note">
+            ${icon('info', 16)}
+            <span>Щоб отримувати важливі новини своєї групи в боті:</span>
+          </div>
+          <button class="btn btn-telegram btn-block btn-md" onclick="closeGuestGroupModal(); showAuthOverlay();">
+            ${TELEGRAM_SVG}<span>Увійти через Telegram</span>
+          </button>
+        </div>
+        ${currentGuestG ? `
+          <button type="button" class="btn btn-ghost btn-sm btn-block" style="margin-top:0.5rem; color:var(--text-2)" onclick="setGuestGroup(null)">
+            Скинути вибір
+          </button>
+        ` : ''}
+      </div>
+    </div>
+  `;
+  overlay.onclick = (e) => { if (e.target === overlay) closeGuestGroupModal(); };
+  openSheet(overlay);
+}
+
+function closeGuestGroupModal() {
+  const overlay = document.getElementById('guestGroupModal');
+  if (!overlay) return;
+  closeSheet(overlay);
+  overlay.innerHTML = '';
+  overlay.onclick = null;
+}
+
+function setGuestGroup(code) {
+  if (code && !(code in GROUP_LABELS)) return;
+  haptic('light');
+  if (code) {
+    writeStored('g7_guest_group', code);
+    toast(`Обрано групу ${GROUP_LABELS[code]}`, 'success');
+  } else {
+    try {
+      localStorage.removeItem('g7_guest_group');
+      localStorage.removeItem('g7_group');
+    } catch {}
+    toast('Групу скинуто');
+  }
+  currentGroup = resolveCurrentGroup();
+  closeGuestGroupModal();
+  renderUserSlot();
+  renderSchedule();
+  if (typeof updateClockAndCountdown === 'function') {
+    updateClockAndCountdown(true);
+  }
+  if (typeof loadActiveAnnouncement === 'function') {
+    loadActiveAnnouncement();
+  }
 }
 
 function toggleUserMenu(e) {

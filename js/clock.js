@@ -157,7 +157,7 @@ function updateClockAndCountdown(forceRender = false) {
   const newsObj = (typeof activeAnnouncement !== 'undefined' && activeAnnouncement && activeAnnouncement.is_active && typeof isAnnouncementDismissed === 'function' && !isAnnouncementDismissed(activeAnnouncement.id))
     ? activeAnnouncement
     : null;
-  const newsSig = newsObj ? `${newsObj.id}:${announcementExpanded ? '1' : '0'}` : 'none';
+  const newsSig = newsObj ? `${newsObj.id}:${typeof activeAnnouncementIndex !== 'undefined' ? activeAnnouncementIndex : 0}:${announcementExpanded ? '1' : '0'}` : 'none';
   const changeObj = (typeof getActiveScheduleChangeForGroup === 'function')
     ? getActiveScheduleChangeForGroup(currentGroup)
     : null;

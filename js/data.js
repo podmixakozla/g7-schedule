@@ -14,11 +14,16 @@ const timeSlots = {
   8: { text: "19:05 – 20:25", from: "19:05", to: "20:25", start: 19 * 60 + 5,  end: 20 * 60 + 25 }
 };
 
-// Групи. Основна група — джерело "успадкованих" пар для підгруп.
+// Групи. Основна група — джерело "успадкованих" пар для прискореної групи.
 const PRIMARY_GROUP = 'AR-26-1';
 const GROUP_LABELS = {
   'AR-26-1': 'АР-26-1',
+  'AR-26-2': 'АР-26-2',
   'AR-26sk-1': 'АР-26ск-1'
+};
+
+const PARENT_GROUP = {
+  'AR-26sk-1': 'AR-26-1'
 };
 
 const DAY_NAMES = {
@@ -74,7 +79,21 @@ const fallbackScheduleRows = [
   { group_code: 'AR-26-1', day_of_week: 5, pair_number: 4, subject: "ЦП в УС", teacher: "Первий Г.Л.", classroom: "1/69" },
   { group_code: 'AR-26sk-1', day_of_week: 5, pair_number: 4, subject: "ОКІК(чисельник)", teacher: "Воскобойник Є.К.", classroom: "3/14" },
   { group_code: 'AR-26-1', day_of_week: 5, pair_number: 5, subject: "ЦП в УС", teacher: "Перший Г.Л.", classroom: "1/69" },
-  { group_code: 'AR-26sk-1', day_of_week: 5, pair_number: 5, subject: "-", teacher: "", classroom: "" }
+  { group_code: 'AR-26sk-1', day_of_week: 5, pair_number: 5, subject: "-", teacher: "", classroom: "" },
+  // AR-26-2 (резервний розклад)
+  { group_code: 'AR-26-2', day_of_week: 1, pair_number: 2, subject: "ЦПУС д.Первий Г.Л. +ЕТФ, ММФ(знаменник)", teacher: "Викладач невідомий", classroom: "1/64" },
+  { group_code: 'AR-26-2', day_of_week: 1, pair_number: 3, subject: "Всуп до фаху", teacher: "Новицький І.В.", classroom: "3/14" },
+  { group_code: 'AR-26-2', day_of_week: 1, pair_number: 4, subject: "Вища математика", teacher: "иходько В.В.", classroom: "5/32" },
+  { group_code: 'AR-26-2', day_of_week: 2, pair_number: 1, subject: "Фізична культура і спорт", teacher: "Викладач невідомий", classroom: "" },
+  { group_code: 'AR-26-2', day_of_week: 2, pair_number: 2, subject: "Інженерна та комп'ютерна графіка", teacher: "Довгаль Д.О.", classroom: "1/129" },
+  { group_code: 'AR-26-2', day_of_week: 2, pair_number: 3, subject: "Фізика д.Куцева Н.О. ЕТФ, ММФ", teacher: "Викладач невідомий", classroom: "2/30" },
+  { group_code: 'AR-26-2', day_of_week: 2, pair_number: 4, subject: "ФІЗИКА 2/37", teacher: "Викладач невідомий", classroom: "" },
+  { group_code: 'AR-26-2', day_of_week: 3, pair_number: 2, subject: "Іноземна мова", teacher: "Викладач невідомий", classroom: "" },
+  { group_code: 'AR-26-2', day_of_week: 3, pair_number: 3, subject: "Вища математика д.Уланова Н.П. +ЕТФ", teacher: "Викладач невідомий", classroom: "10/611" },
+  { group_code: 'AR-26-2', day_of_week: 4, pair_number: 2, subject: "ЦПУС д.Первий Г.Л. +ЕТФ, ММФ", teacher: "Викладач невідомий", classroom: "1/64" },
+  { group_code: 'AR-26-2', day_of_week: 4, pair_number: 3, subject: "КТ та П", teacher: "Колисниченко І.Ю.", classroom: "3/14" },
+  { group_code: 'AR-26-2', day_of_week: 4, pair_number: 4, subject: "КТ та П(чисельник)", teacher: "Колисниченко І.Ю.", classroom: "3/14" },
+  { group_code: 'AR-26-2', day_of_week: 5, pair_number: 4, subject: "ЦПУС д.Первий Г.Л. +ЕТФ, ММФ", teacher: "Викладач невідомий", classroom: "1/64" }
 ];
 
 // Опис місяців 2026/2027 н.р. за офіційним графіком освітнього процесу НТУ «ДП» (рядок 1Б).

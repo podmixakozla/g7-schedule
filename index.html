@@ -31,20 +31,20 @@
     })();
   </script>
 
-  <link rel="stylesheet" href="css/base.css?v=20261021-16">
-  <link rel="stylesheet" href="css/app-container.css?v=20261021-16">
-  <link rel="stylesheet" href="css/header.css?v=20261021-16">
-  <link rel="stylesheet" href="css/controls.css?v=20261021-16">
-  <link rel="stylesheet" href="css/schedule.css?v=20261021-16">
-  <link rel="stylesheet" href="css/calendar.css?v=20261021-16">
-  <link rel="stylesheet" href="css/shame.css?v=20261021-16">
-  <link rel="stylesheet" href="css/visits.css?v=20261021-16">
-  <link rel="stylesheet" href="css/reactions.css?v=20261021-16">
-  <link rel="stylesheet" href="css/comments.css?v=20261021-16">
-  <link rel="stylesheet" href="css/modal.css?v=20261021-16">
-  <link rel="stylesheet" href="css/confetti.css?v=20261021-16">
-  <link rel="stylesheet" href="css/footer.css?v=20261021-16">
-  <link rel="stylesheet" href="css/auth.css?v=20261021-16">
+  <link rel="stylesheet" href="css/base.css?v=20261022-01">
+  <link rel="stylesheet" href="css/app-container.css?v=20261022-01">
+  <link rel="stylesheet" href="css/header.css?v=20261022-01">
+  <link rel="stylesheet" href="css/controls.css?v=20261022-01">
+  <link rel="stylesheet" href="css/schedule.css?v=20261022-01">
+  <link rel="stylesheet" href="css/calendar.css?v=20261022-01">
+  <link rel="stylesheet" href="css/shame.css?v=20261022-01">
+  <link rel="stylesheet" href="css/visits.css?v=20261022-01">
+  <link rel="stylesheet" href="css/reactions.css?v=20261022-01">
+  <link rel="stylesheet" href="css/comments.css?v=20261022-01">
+  <link rel="stylesheet" href="css/modal.css?v=20261022-01">
+  <link rel="stylesheet" href="css/confetti.css?v=20261022-01">
+  <link rel="stylesheet" href="css/footer.css?v=20261022-01">
+  <link rel="stylesheet" href="css/auth.css?v=20261022-01">
 </head>
 <body>
 
@@ -93,7 +93,6 @@
         </nav>
 
         <div class="topbar-actions">
-          <div class="group-switch" id="headerGroupSwitch" role="tablist" aria-label="Група"></div>
           <button class="btn btn-icon btn-glass" id="btnThemeToggle" onclick="toggleTheme()" title="Змінити тему" aria-label="Змінити тему">
             <span data-icon="moon"></span>
           </button>
@@ -197,6 +196,24 @@
 
         <article class="visits-card starosta-form-card">
           <form class="form" onsubmit="handleAnnouncementSubmit(event)">
+            <div class="field">
+              <span class="field-label">Кому <span class="field-hint">хто отримає новину</span></span>
+              <div class="starosta-audience-chips" id="starostaAudienceChips" role="group" aria-label="Аудиторія новини">
+                <button type="button" class="chip-select active" data-audience="all" onclick="selectStarostaAudience('all')">
+                  <span class="chip-select-dot"></span><span>🌐 Усім</span>
+                </button>
+                <button type="button" class="chip-select" data-audience="AR-26-1" onclick="selectStarostaAudience('AR-26-1')">
+                  <span>АР-26-1</span>
+                </button>
+                <button type="button" class="chip-select" data-audience="AR-26-2" onclick="selectStarostaAudience('AR-26-2')">
+                  <span>АР-26-2</span>
+                </button>
+                <button type="button" class="chip-select" data-audience="AR-26sk-1" onclick="selectStarostaAudience('AR-26sk-1')">
+                  <span>АР-26ск-1</span>
+                </button>
+              </div>
+              <div class="field-subnote" id="starostaAudienceNote">Повідомлення отримають усі студенти в боті та на сайті.</div>
+            </div>
             <label class="field">
               <span class="field-label">Нове повідомлення від старости</span>
               <textarea id="starostaNewsText" class="input textarea" placeholder="Напишіть важливу новину для групи…" rows="4" required maxlength="3500"></textarea>
@@ -257,6 +274,9 @@
   <!-- Модальне вікно: авторизація -->
   <div class="sheet-backdrop" id="authOverlay"></div>
 
+  <!-- Модальне вікно: вибір групи для гостя -->
+  <div class="sheet-backdrop" id="guestGroupModal"></div>
+
   <!-- Модальне вікно: додати на дошку -->
   <div class="sheet-backdrop" id="shameModal">
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shameModalTitle">
@@ -301,22 +321,22 @@
   <!-- Сповіщення -->
   <div class="toast-root" id="toastRoot" aria-live="assertive"></div>
 
-  <script src="js/config.js?v=20261021-16"></script>
-  <script src="js/data.js?v=20261021-16"></script>
-  <script src="js/state.js?v=20261021-16"></script>
-  <script src="js/utils.js?v=20261021-16"></script>
-  <script src="js/academic.js?v=20261021-16"></script>
-  <script src="js/confetti.js?v=20261021-16"></script>
-  <script src="js/schedule.js?v=20261021-16"></script>
-  <script src="js/schedule-admin.js?v=20261021-16"></script>
-  <script src="js/calendar.js?v=20261021-16"></script>
-  <script src="js/clock.js?v=20261021-16"></script>
-  <script src="js/auth.js?v=20261021-16"></script>
-  <script src="js/reactions.js?v=20261021-16"></script>
-  <script src="js/comments.js?v=20261021-16"></script>
-  <script src="js/shame-board.js?v=20261021-16"></script>
-  <script src="js/shame-form.js?v=20261021-16"></script>
-  <script src="js/visits.js?v=20261021-16"></script>
-  <script src="js/app.js?v=20261021-16"></script>
+  <script src="js/config.js?v=20261022-01"></script>
+  <script src="js/data.js?v=20261022-01"></script>
+  <script src="js/state.js?v=20261022-01"></script>
+  <script src="js/utils.js?v=20261022-01"></script>
+  <script src="js/academic.js?v=20261022-01"></script>
+  <script src="js/confetti.js?v=20261022-01"></script>
+  <script src="js/schedule.js?v=20261022-01"></script>
+  <script src="js/schedule-admin.js?v=20261022-01"></script>
+  <script src="js/calendar.js?v=20261022-01"></script>
+  <script src="js/clock.js?v=20261022-01"></script>
+  <script src="js/auth.js?v=20261022-01"></script>
+  <script src="js/reactions.js?v=20261022-01"></script>
+  <script src="js/comments.js?v=20261022-01"></script>
+  <script src="js/shame-board.js?v=20261022-01"></script>
+  <script src="js/shame-form.js?v=20261022-01"></script>
+  <script src="js/visits.js?v=20261022-01"></script>
+  <script src="js/app.js?v=20261022-01"></script>
 </body>
 </html>

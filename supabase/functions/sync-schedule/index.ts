@@ -21,7 +21,12 @@ const DAY_NAMES: Record<number, string> = {
 
 const GROUP_LABELS: Record<string, string> = {
   'AR-26-1': 'АР-26-1',
+  'AR-26-2': 'АР-26-2',
   'AR-26sk-1': 'АР-26ск-1',
+}
+
+const PARENT_GROUP: Record<string, string> = {
+  'AR-26sk-1': 'AR-26-1',
 }
 
 const SUBJECT_EXPANSIONS: Record<string, string> = {
@@ -356,27 +361,30 @@ function extractScheduleRowsFromWorkbook(xlsxBytes: Uint8Array, quarter: 1 | 2):
   const ssXml = files['xl/sharedStrings.xml'] ? strFromU8(files['xl/sharedStrings.xml']) : ''
   const sharedStrings = ssXml ? parseSharedStrings(ssXml) : []
 
-  // Find worksheet containing АР-26-1
-  let targetSheet: ParsedSheet | null = null
+  // Find all worksheets containing any АР-26 group
+  const matchingSheets: ParsedSheet[] = []
   for (const [path, bytes] of Object.entries(files)) {
     if (!/^xl\/worksheets\/sheet\d+\.xml$/.test(path)) continue
     const xml = strFromU8(bytes)
     if (!xml.includes('АР-26') && !sharedStrings.some(s => s.includes('АР-26'))) continue
     const parsed = parseWorksheet(xml, sharedStrings)
+    let hasGroup = false
     for (const val of parsed.cells.values()) {
-      if (val.includes('АР-26-1')) {
-        targetSheet = parsed
+      if (/АР-26/i.test(val)) {
+        hasGroup = true
         break
       }
     }
-    if (targetSheet) break
+    if (hasGroup) {
+      matchingSheets.push(parsed)
+    }
   }
 
-  if (!targetSheet) {
-    throw new Error('Worksheet with group АР-26-1 not found in ЕТФ workbook')
+  if (matchingSheets.length === 0) {
+    throw new Error('Worksheets with АР-26 groups not found in ЕТФ workbook')
   }
 
-  const { cells, merges } = targetSheet
+  const outRows: ScheduleRow[] = []
 
   interface MergeBounds {
     masterRef: string
@@ -385,136 +393,138 @@ function extractScheduleRowsFromWorkbook(xlsxBytes: Uint8Array, quarter: 1 | 2):
     c2: number
     r2: number
   }
-  const mergeMap = new Map<string, MergeBounds>()
-  for (const range of merges) {
-    const m = /^([A-Z]+)(\d+):([A-Z]+)(\d+)$/.exec(range)
-    if (!m) continue
-    const c1 = colToIdx(m[1])
-    const r1 = parseInt(m[2], 10)
-    const c2 = colToIdx(m[3])
-    const r2 = parseInt(m[4], 10)
-    const masterRef = `${m[1]}${r1}`
-    for (let c = c1; c <= c2; c++) {
-      for (let r = r1; r <= r2; r++) {
-        mergeMap.set(`${idxToCol(c)}${r}`, { masterRef, c1, r1, c2, r2 })
-      }
-    }
-  }
-
-  const getCellValue = (col: string, row: number): string => {
-    const ref = `${col}${row}`
-    const mb = mergeMap.get(ref)
-    return cells.get(mb ? mb.masterRef : ref) || ''
-  }
-
-  // Locate group columns (AR-26-1 and AR-26sk-1) in header rows 1..5
-  let colPrimary = ''
-  let colSk = ''
-  for (const [ref, val] of cells.entries()) {
-    const m = /^([A-Z]+)(\d+)$/.exec(ref)
-    if (!m) continue
-    const row = parseInt(m[2], 10)
-    if (row > 5) continue
-    if (/АР-26-1\b/i.test(val) && !/ск/i.test(val)) colPrimary = m[1]
-    if (/АР-26ск-1\b/i.test(val)) colSk = m[1]
-  }
-
-  if (!colPrimary) {
-    throw new Error('Column for АР-26-1 not found in worksheet header')
-  }
 
   interface PairSlotRows {
     day: number
     pair: number
     rows: number[]
   }
-  const slots: PairSlotRows[] = []
-  for (let r = 3; r <= 35; r++) {
-    const dayText = getCellValue('A', r)
-    const pairText = getCellValue('B', r)
-    const day = parseDayName(dayText)
-    const pair = parseRomanPair(pairText)
-    if (!day || !pair) continue
-    const prev = slots[slots.length - 1]
-    if (prev && prev.day === day && prev.pair === pair) {
-      prev.rows.push(r)
-    } else {
-      slots.push({ day, pair, rows: [r] })
+
+  for (const sheet of matchingSheets) {
+    const { cells, merges } = sheet
+
+    const mergeMap = new Map<string, MergeBounds>()
+    for (const range of merges) {
+      const m = /^([A-Z]+)(\d+):([A-Z]+)(\d+)$/.exec(range)
+      if (!m) continue
+      const c1 = colToIdx(m[1])
+      const r1 = parseInt(m[2], 10)
+      const c2 = colToIdx(m[3])
+      const r2 = parseInt(m[4], 10)
+      const masterRef = `${m[1]}${r1}`
+      for (let c = c1; c <= c2; c++) {
+        for (let r = r1; r <= r2; r++) {
+          mergeMap.set(`${idxToCol(c)}${r}`, { masterRef, c1, r1, c2, r2 })
+        }
+      }
     }
-  }
 
-  const extractGroupSlot = (col: string, slot: PairSlotRows): Map<number, ScheduleRow> => {
-    const result = new Map<number, ScheduleRow>()
-    if (!col) return result
-
-    const totalSubRows = slot.rows.length
-    const seenMasterRefs = new Set<string>()
-
-    for (let idx = 0; idx < totalSubRows; idx++) {
-      const r = slot.rows[idx]
-      const ref = `${col}${r}`
+    const getCellValue = (col: string, row: number): string => {
+      const ref = `${col}${row}`
       const mb = mergeMap.get(ref)
-      const masterRef = mb ? mb.masterRef : ref
-      if (seenMasterRefs.has(masterRef)) continue
-      seenMasterRefs.add(masterRef)
+      return cells.get(mb ? mb.masterRef : ref) || ''
+    }
 
-      const rawText = cells.get(masterRef) || ''
-      if (!rawText) continue
+    // Locate group columns on this sheet in header rows 1..5
+    let colPrimary = ''
+    let colSec = ''
+    let colSk = ''
+    for (const [ref, val] of cells.entries()) {
+      const m = /^([A-Z]+)(\d+)$/.exec(ref)
+      if (!m) continue
+      const row = parseInt(m[2], 10)
+      if (row > 5) continue
+      if (/АР-26-1\b/i.test(val) && !/ск/i.test(val)) colPrimary = m[1]
+      if (/АР-26-2\b/i.test(val)) colSec = m[1]
+      if (/АР-26ск-1\b/i.test(val)) colSk = m[1]
+    }
 
-      const parsed = parseLessonText(rawText, quarter)
-      if (!parsed || !parsed.activeInQuarter || !parsed.subject) continue
+    if (!colPrimary && !colSec && !colSk) continue
 
-      let parity = parsed.parity
-      if (!parity && totalSubRows === 2) {
-        const spansAllSubRows = mb && mb.r1 <= slot.rows[0] && mb.r2 >= slot.rows[totalSubRows - 1]
-        if (!spansAllSubRows) {
-          parity = idx === 0 ? 'чисельник' : 'знаменник'
+    const slots: PairSlotRows[] = []
+    for (let r = 3; r <= 35; r++) {
+      const dayText = getCellValue('A', r)
+      const pairText = getCellValue('B', r)
+      const day = parseDayName(dayText)
+      const pair = parseRomanPair(pairText)
+      if (!day || !pair) continue
+      const prev = slots[slots.length - 1]
+      if (prev && prev.day === day && prev.pair === pair) {
+        prev.rows.push(r)
+      } else {
+        slots.push({ day, pair, rows: [r] })
+      }
+    }
+
+    const extractGroupSlot = (col: string, slot: PairSlotRows, groupCode: string): Map<number, ScheduleRow> => {
+      const result = new Map<number, ScheduleRow>()
+      if (!col) return result
+
+      const totalSubRows = slot.rows.length
+      const seenMasterRefs = new Set<string>()
+
+      for (let idx = 0; idx < totalSubRows; idx++) {
+        const r = slot.rows[idx]
+        const ref = `${col}${r}`
+        const mb = mergeMap.get(ref)
+        const masterRef = mb ? mb.masterRef : ref
+        if (seenMasterRefs.has(masterRef)) continue
+        seenMasterRefs.add(masterRef)
+
+        const rawText = cells.get(masterRef) || ''
+        if (!rawText) continue
+
+        const parsed = parseLessonText(rawText, quarter)
+        if (!parsed || !parsed.activeInQuarter || !parsed.subject) continue
+
+        let parity = parsed.parity
+        if (!parity && totalSubRows === 2) {
+          const spansAllSubRows = mb && mb.r1 <= slot.rows[0] && mb.r2 >= slot.rows[totalSubRows - 1]
+          if (!spansAllSubRows) {
+            parity = idx === 0 ? 'чисельник' : 'знаменник'
+          }
+        }
+
+        const targetPair = parsed.pairOverride || slot.pair
+        const subjectWithParity = parity ? `${parsed.subject}(${parity})` : parsed.subject
+
+        const existing = result.get(targetPair)
+        if (!existing) {
+          result.set(targetPair, {
+            group_code: groupCode,
+            day_of_week: slot.day,
+            pair_number: targetPair,
+            subject: subjectWithParity,
+            teacher: parsed.teacher,
+            classroom: parsed.classroom,
+          })
         }
       }
 
-      const targetPair = parsed.pairOverride || slot.pair
-      const subjectWithParity = parity ? `${parsed.subject}(${parity})` : parsed.subject
-
-      const existing = result.get(targetPair)
-      if (!existing) {
-        result.set(targetPair, {
-          group_code: col === colPrimary ? 'AR-26-1' : 'AR-26sk-1',
-          day_of_week: slot.day,
-          pair_number: targetPair,
-          subject: subjectWithParity,
-          teacher: parsed.teacher,
-          classroom: parsed.classroom,
-        })
-      }
+      return result
     }
 
-    return result
-  }
+    for (const slot of slots) {
+      const primaryMap = colPrimary ? extractGroupSlot(colPrimary, slot, 'AR-26-1') : new Map<number, ScheduleRow>()
+      const secMap = colSec ? extractGroupSlot(colSec, slot, 'AR-26-2') : new Map<number, ScheduleRow>()
+      const skMap = colSk ? extractGroupSlot(colSk, slot, 'AR-26sk-1') : new Map<number, ScheduleRow>()
 
-  const outRows: ScheduleRow[] = []
+      for (const row of primaryMap.values()) outRows.push(row)
+      for (const row of secMap.values()) outRows.push(row)
+      for (const row of skMap.values()) outRows.push(row)
 
-  for (const slot of slots) {
-    const primaryMap = extractGroupSlot(colPrimary, slot)
-    const skMap = extractGroupSlot(colSk, slot)
-
-    for (const row of primaryMap.values()) {
-      outRows.push(row)
-    }
-    for (const row of skMap.values()) {
-      outRows.push(row)
-    }
-
-    if (colSk) {
-      for (const pairNum of primaryMap.keys()) {
-        if (!skMap.has(pairNum)) {
-          outRows.push({
-            group_code: 'AR-26sk-1',
-            day_of_week: slot.day,
-            pair_number: pairNum,
-            subject: '-',
-            teacher: '',
-            classroom: '',
-          })
+      if (colSk && colPrimary) {
+        for (const pairNum of primaryMap.keys()) {
+          if (!skMap.has(pairNum)) {
+            outRows.push({
+              group_code: 'AR-26sk-1',
+              day_of_week: slot.day,
+              pair_number: pairNum,
+              subject: '-',
+              teacher: '',
+              classroom: '',
+            })
+          }
         }
       }
     }
@@ -546,14 +556,19 @@ const DAY_LOCATIVE: Record<number, string> = {
 function computeScheduleChanges(
   oldRows: ScheduleRow[],
   newRows: ScheduleRow[]
-): { changes: string[]; summaryByGroup: Record<string, string[]> } {
+): {
+  allChanges: string[];
+  changesByGroup: Record<string, string[]>;
+  summaryByGroup: Record<string, string[]>;
+} {
   // Resolve effective lessons per (group_code, day_of_week, pair_number)
   const resolveGroupMap = (rows: ScheduleRow[], groupCode: string): Map<string, ScheduleRow> => {
+    const parentCode = PARENT_GROUP[groupCode] || groupCode
     const primary = new Map<string, ScheduleRow>()
     const overrides = new Map<string, ScheduleRow>()
     for (const r of rows) {
       const key = `${r.day_of_week}:${r.pair_number}`
-      if ((r.group_code || 'AR-26-1') === 'AR-26-1') {
+      if ((r.group_code || 'AR-26-1') === parentCode) {
         primary.set(key, r)
       }
       if (r.group_code === groupCode) {
@@ -580,13 +595,19 @@ function computeScheduleChanges(
     return effective
   }
 
-  const changes: string[] = []
+  const allChanges: string[] = []
+  const changesByGroup: Record<string, string[]> = {
+    'AR-26-1': [],
+    'AR-26-2': [],
+    'AR-26sk-1': [],
+  }
   const summaryByGroup: Record<string, string[]> = {
     'AR-26-1': [],
+    'AR-26-2': [],
     'AR-26sk-1': [],
   }
 
-  for (const groupCode of ['AR-26-1', 'AR-26sk-1']) {
+  for (const groupCode of ['AR-26-1', 'AR-26-2', 'AR-26sk-1']) {
     const oldMap = resolveGroupMap(oldRows, groupCode)
     const newMap = resolveGroupMap(newRows, groupCode)
     const groupLabel = GROUP_LABELS[groupCode] || groupCode
@@ -599,11 +620,12 @@ function computeScheduleChanges(
         const o = oldMap.get(key)
         const n = newMap.get(key)
         if (!o && !n) continue
+        let changeDesc = ''
         if (!o && n) {
-          changes.push(`➕ [${groupLabel}] ${dayLabel}, ${p} пара: додано «${formatLessonSummary(n)}»`)
+          changeDesc = `➕ [${groupLabel}] ${dayLabel}, ${p} пара: додано «${formatLessonSummary(n)}»`
           summaryByGroup[groupCode].push(`Змінилась ${p} пара ${dayLoc}`)
         } else if (o && !n) {
-          changes.push(`➖ [${groupLabel}] ${dayLabel}, ${p} пара: скасовано «${formatLessonSummary(o)}»`)
+          changeDesc = `➖ [${groupLabel}] ${dayLabel}, ${p} пара: скасовано «${formatLessonSummary(o)}»`
           summaryByGroup[groupCode].push(`Змінилась ${p} пара ${dayLoc}`)
         } else if (o && n) {
           if (
@@ -611,50 +633,71 @@ function computeScheduleChanges(
             o.teacher !== n.teacher ||
             o.classroom !== n.classroom
           ) {
-            changes.push(
-              `🔄 [${groupLabel}] ${dayLabel}, ${p} пара:\n   було: ${formatLessonSummary(o)}\n   стало: ${formatLessonSummary(n)}`
-            )
+            changeDesc = `🔄 [${groupLabel}] ${dayLabel}, ${p} пара:\n   було: ${formatLessonSummary(o)}\n   стало: ${formatLessonSummary(n)}`
             summaryByGroup[groupCode].push(`Змінилась ${p} пара ${dayLoc}`)
           }
+        }
+        if (changeDesc) {
+          allChanges.push(changeDesc)
+          changesByGroup[groupCode].push(changeDesc)
         }
       }
     }
   }
 
-  return { changes, summaryByGroup }
+  return { allChanges, changesByGroup, summaryByGroup }
 }
 
 async function broadcastTelegramNotification(
   supabase: any,
-  text: string
-): Promise<{ sent: number; failed: number; recipients: number[] }> {
+  changesByGroup: Record<string, string[]>,
+  allChanges: string[]
+): Promise<{ sent: number; failed: number }> {
   const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN')
   if (!botToken) {
     console.warn('TELEGRAM_BOT_TOKEN not configured, skipping notification')
-    return { sent: 0, failed: 0, recipients: [] }
+    return { sent: 0, failed: 0 }
   }
 
-  const chatIds = new Set<number>()
-
+  const messagesToSend = new Map<number, string>()
   const adminId = Number(Deno.env.get('ADMIN_TELEGRAM_ID'))
-  if (adminId && !Number.isNaN(adminId)) {
-    chatIds.add(adminId)
+
+  const formatList = (list: string[], title: string) => {
+    const maxLines = 15
+    const shown = list.slice(0, maxLines).join('\n')
+    const extra = list.length > maxLines ? `\n…та ще ${list.length - maxLines} змін(и).` : ''
+    return `${title}:\n\n${shown}${extra}`
   }
 
+  const allChangesText = formatList(allChanges, '🔔 Оновлено розклад на сайті НТУ «ДП» (ЕТФ)')
+
+  // 1. Query telegram_users with user_group
   try {
     const { data: tgUsers } = await supabase
       .from('telegram_users')
-      .select('telegram_id')
+      .select('telegram_id, user_group')
     if (Array.isArray(tgUsers)) {
       for (const u of tgUsers) {
         const id = Number(u.telegram_id)
-        if (id && !Number.isNaN(id)) chatIds.add(id)
+        if (!id || Number.isNaN(id)) continue
+
+        const grp = u.user_group
+        if (grp && changesByGroup[grp]) {
+          if (changesByGroup[grp].length > 0) {
+            const grpLabel = GROUP_LABELS[grp] || grp
+            messagesToSend.set(id, formatList(changesByGroup[grp], `🔔 Оновлено розклад для групи ${grpLabel}`))
+          }
+        } else {
+          // No group selected -> receives general update
+          messagesToSend.set(id, allChangesText)
+        }
       }
     }
   } catch (e) {
     console.warn('Failed to query telegram_users:', e)
   }
 
+  // 2. Query user_visits
   try {
     const { data: visitUsers } = await supabase
       .from('user_visits')
@@ -662,18 +705,24 @@ async function broadcastTelegramNotification(
     if (Array.isArray(visitUsers)) {
       for (const u of visitUsers) {
         const id = Number(u.telegram_id)
-        if (id && !Number.isNaN(id)) chatIds.add(id)
+        if (id && !Number.isNaN(id) && !messagesToSend.has(id)) {
+          messagesToSend.set(id, allChangesText)
+        }
       }
     }
   } catch (e) {
     console.warn('Failed to query user_visits:', e)
   }
 
+  // 3. Admin always receives full changes summary
+  if (adminId && !Number.isNaN(adminId)) {
+    messagesToSend.set(adminId, allChangesText)
+  }
+
   let sent = 0
   let failed = 0
-  const recipients = Array.from(chatIds)
 
-  for (const chatId of recipients) {
+  for (const [chatId, text] of messagesToSend.entries()) {
     try {
       const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
@@ -684,20 +733,14 @@ async function broadcastTelegramNotification(
           disable_web_page_preview: true,
         }),
       })
-      if (res.ok) {
-        sent++
-      } else {
-        failed++
-        const errBody = await res.text()
-        console.warn(`Telegram sendMessage failed for ${chatId}:`, errBody)
-      }
-    } catch (e) {
+      if (res.ok) sent++
+      else failed++
+    } catch {
       failed++
-      console.warn(`Telegram sendMessage threw for ${chatId}:`, e)
     }
   }
 
-  return { sent, failed, recipients }
+  return { sent, failed }
 }
 
 Deno.serve(async (req) => {
@@ -813,18 +856,18 @@ Deno.serve(async (req) => {
     const { data: existingRows } = await supabase
       .from('schedule_lessons')
       .select('group_code, day_of_week, pair_number, subject, teacher, classroom')
-      .in('group_code', ['AR-26-1', 'AR-26sk-1'])
+      .in('group_code', ['AR-26-1', 'AR-26-2', 'AR-26sk-1'])
 
     const oldRows: ScheduleRow[] = Array.isArray(existingRows) ? existingRows : []
-    const { changes, summaryByGroup } = oldRows.length > 0
+    const { allChanges, changesByGroup, summaryByGroup } = oldRows.length > 0
       ? computeScheduleChanges(oldRows, rows)
-      : { changes: [], summaryByGroup: { 'AR-26-1': [], 'AR-26sk-1': [] } }
+      : { allChanges: [], changesByGroup: { 'AR-26-1': [], 'AR-26-2': [], 'AR-26sk-1': [] }, summaryByGroup: { 'AR-26-1': [], 'AR-26-2': [], 'AR-26sk-1': [] } }
 
-    // 5. Replace rows in schedule_lessons for AR-26-1 and AR-26sk-1
+    // 5. Replace rows in schedule_lessons for AR-26-1, AR-26-2 and AR-26sk-1
     const { error: delErr } = await supabase
       .from('schedule_lessons')
       .delete()
-      .in('group_code', ['AR-26-1', 'AR-26sk-1'])
+      .in('group_code', ['AR-26-1', 'AR-26-2', 'AR-26sk-1'])
 
     if (delErr) {
       throw new Error(`Failed to clear old schedule_lessons: ${delErr.message}`)
@@ -849,7 +892,7 @@ Deno.serve(async (req) => {
       lessons_count: rows.length,
       last_error: null,
     }
-    if (changes.length > 0) {
+    if (allChanges.length > 0 && !silent) {
       metaPatch.last_change_at = syncedAt
       metaPatch.last_change_summary = summaryByGroup
     }
@@ -857,14 +900,10 @@ Deno.serve(async (req) => {
       .from('schedule_sync_meta')
       .upsert(metaPatch)
 
-    // 7. If schedule changed, notify users via Telegram bot!
+    // 7. If schedule changed and not silent, notify users via Telegram bot!
     let notifyStats = null
-    if (changes.length > 0 && !silent) {
-      const maxLines = 15
-      const shown = changes.slice(0, maxLines).join('\n')
-      const extra = changes.length > maxLines ? `\n…та ще ${changes.length - maxLines} змін(и).` : ''
-      const messageText = `🔔 Оновлено розклад на сайті НТУ «ДП» (ЕТФ):\n\n${shown}${extra}`
-      notifyStats = await broadcastTelegramNotification(supabase, messageText)
+    if (allChanges.length > 0 && !silent) {
+      notifyStats = await broadcastTelegramNotification(supabase, changesByGroup, allChanges)
     }
 
     return new Response(
@@ -875,8 +914,8 @@ Deno.serve(async (req) => {
         source_file_url: excelUrl,
         quarter,
         lessons_count: rows.length,
-        changes_count: changes.length,
-        changes,
+        changes_count: allChanges.length,
+        changes: allChanges,
         notify: notifyStats,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

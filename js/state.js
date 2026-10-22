@@ -22,14 +22,40 @@ const URL_PARAMS = (() => {
   catch { return new URLSearchParams(); }
 })();
 
+function resolveCurrentGroup() {
+  const urlG = URL_PARAMS.get('group');
+  if (urlG && urlG in GROUP_LABELS) return urlG;
+  if (currentUser && currentUser.user_group && currentUser.user_group in GROUP_LABELS) {
+    return currentUser.user_group;
+  }
+  let guestG = readStored('g7_guest_group', '');
+  if (!guestG) {
+    const legacy = readStored('g7_group', '');
+    if (legacy && legacy in GROUP_LABELS) {
+      guestG = legacy;
+      writeStored('g7_guest_group', legacy);
+    }
+  }
+  if (guestG && guestG in GROUP_LABELS) {
+    return guestG;
+  }
+  return PRIMARY_GROUP;
+}
+
+function hasExplicitGroup() {
+  if (currentUser) {
+    return Boolean(currentUser.user_group && currentUser.user_group in GROUP_LABELS);
+  }
+  const guestG = readStored('g7_guest_group', '') || readStored('g7_group', '');
+  return Boolean(guestG && guestG in GROUP_LABELS);
+}
+
 let currentUser = null;
 // Завжди відкриваємо головну вкладку "Сьогодні" за замовчуванням (якщо явно не передано ?view=...)
 let currentView = VALID_VIEWS.includes(URL_PARAMS.get('view') || '')
   ? URL_PARAMS.get('view')
   : 'today';
-let currentGroup = ((URL_PARAMS.get('group') || '') in GROUP_LABELS)
-  ? URL_PARAMS.get('group')
-  : ((readStored('g7_group', '') in GROUP_LABELS) ? readStored('g7_group', '') : PRIMARY_GROUP);
+let currentGroup = resolveCurrentGroup();
 let collapsedMonthsState = {};
 
 // Розклад з БД (сирі рядки schedule_lessons). null — ще не завантажено.

@@ -2,7 +2,7 @@
 
 ## What this is
 
-Static site & Telegram Mini App — schedule viewer, academic calendar, and community board ("Дошка ганьби") for NTU "Dnipro Polytechnic" specialty G7 (`АР-26-1` and `АР-26ск-1`).
+Static site & Telegram Mini App — schedule viewer, academic calendar, and community board ("Дошка ганьби") for NTU "Dnipro Polytechnic" specialty G7 (`АР-26-1`, `АР-26-2`, and `АР-26ск-1`).
 HTML shell in `index.html`, CSS in `css/`, JS in `js/`. No build step.
 
 ## Quick start
@@ -17,7 +17,7 @@ No `npm install`, no build commands.
 ### Useful URL parameters (for testing & deep-linking)
 
 - `?view=today|week|calendar|shame` — open a specific view
-- `?group=AR-26-1|AR-26sk-1` — select subgroup
+- `?group=AR-26-1|AR-26-2|AR-26sk-1` — override/select subgroup (testing only; normally chosen in user profile / guest pill)
 - `?theme=dark|light` — force color scheme
 - `?now=2026-10-21T10:00` — simulate a specific date/time for live pair & calendar testing
 
@@ -59,7 +59,7 @@ Each CSS file maps to a UI section. Load order in `index.html`:
 |---|---|
 | `base.css` | CSS variables (dark/light tokens), reset, `body::before` olive glow, skeletons, toasts |
 | `app-container.css` | `.app`, `.content`, `.view`, `.section-head` |
-| `header.css` | Sticky `.topbar`, `.brand`, `.group-switch` pill, `.user-slot` profile menu |
+| `header.css` | Sticky `.topbar`, `.brand`, `.group-pill`, `.user-slot` profile menu & group picker |
 | `controls.css` | `.btn`, `.segmented`, `.chip`, mobile circular `.tabbar` dock & desktop pill nav |
 | `schedule.css` | `#nowCard` (`#4558E6` hero + `.now-wave`), `.day-strip`, `.day-card`, "Daily Activities" `.pair` timeline |
 | `calendar.css` | `.legend`, `.months` grid, `#4558E6` current month card, circular `.cal-cell` dates, `#D4F54A` today |
@@ -119,20 +119,20 @@ Changing this order will break the app.
 
 | Role | Capabilities |
 |---|---|
-| Unauthenticated | View schedule (`АР-26-1` & `АР-26ск-1`), calendar, shame board (read-only), read/expand/dismiss starosta announcements in `#nowCard` |
-| Authenticated user | + React, comment, submit shame posts |
-| Starosta (`is_starosta`) | + 5th tab "Важливі новини": publish/remove important news shown in `#nowCard` and broadcast via Telegram bot |
+| Unauthenticated | View schedule (`АР-26-1`, `АР-26-2`, `АР-26ск-1`), pick group via topbar pill/sheet, calendar, shame board (read-only), read/expand/dismiss starosta announcements in `#nowCard` |
+| Authenticated user | + Pick group in profile menu (synced to DB `user_group`), react, comment, submit shame posts |
+| Starosta (`is_starosta`) | + 5th tab "Важливі новини": publish/remove important news targeted to "🌐 Усім" or specific group(s) (`target_groups`), broadcast per-group in Telegram bot |
 | Administrator | + Starosta by default (6th tab "Важливі новини"), 5th tab "Візити та старости" (7-day rolling visit log + appoint/remove starostas), delete any post/comment, clear entire board |
 
 ### Security model
 
 | Operation | Enforcement |
 |---|---|
+| User group set | `set_my_group` RPC (`security definer`, sets `user_group` for `auth.uid()`) |
 | Reactions | `upsert_reaction` RPC requires `auth.uid()` |
 | Comments insert | RLS: `user_id = auth.uid()` |
 | Post insert | RLS: `creator_id = auth.uid()` |
-| Schedule edit (`AR-26-1`) | `admin-upsert-lesson` / `admin-delete-lesson` Edge Functions (admin only) |
-| Schedule edit (`AR-26sk-1`) | `admin-upsert-lesson` / `admin-delete-lesson` Edge Functions (any authenticated user) |
+| Announcements | `starosta-announcements` Edge Function (starosta or admin) |
 | Post / Comment delete / Clear board | Admin Edge Functions only (no RLS DELETE policy) |
 
 ## Supabase integration
@@ -140,11 +140,11 @@ Changing this order will break the app.
 - **Credentials**: hardcoded in `js/config.js` (anon key)
 - **Edge Functions**: deployed via `supabase functions deploy`
 - **Edge Function secrets**: `TELEGRAM_BOT_TOKEN`, `ADMIN_TELEGRAM_ID`, `SUPABASE_SERVICE_ROLE_KEY`
-- **Tables**: `schedule_lessons`, `board_entries`, `comments`, `reactions`, `telegram_users`
+- **Tables**: `schedule_lessons`, `board_entries`, `comments`, `reactions`, `telegram_users` (with `user_group`), `announcements` (with `target_groups`)
 - **Storage**: `board-photos` bucket
-- **RPC**: `upsert_reaction` (add/toggle/remove reaction)
+- **RPC**: `upsert_reaction` (add/toggle/remove reaction), `set_my_group` (set/clear student group)
 - **Views**: `reaction_counts` (aggregate emojis per entry)
-- **Migrations**: `supabase/migrations/001_telegram_auth.sql` .. `004_schedule_lessons.sql`
+- **Migrations**: `supabase/migrations/001_telegram_auth.sql` .. `013_user_groups_and_news_audience.sql`
 
 ## Deploy & cache busting
 

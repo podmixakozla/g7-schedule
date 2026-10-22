@@ -49,6 +49,50 @@
 }
 
 /* ── Важлива новина від старости всередині синього блоку (#nowCard) ── */
+.schedule-group-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.55rem 0.95rem;
+  margin-bottom: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+.schedule-group-hint-content {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.schedule-group-hint-content strong {
+  color: var(--text);
+}
+
+.btn-outline-lime {
+  background: transparent;
+  border: 1px solid var(--lime);
+  color: var(--lime);
+  padding: 0.3rem 0.65rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  font-family: inherit;
+}
+
+.btn-outline-lime:hover {
+  background: var(--lime);
+  color: var(--lime-ink);
+}
+
 .now-news {
   background: rgba(18, 18, 18, 0.26);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -85,6 +129,53 @@
   font-size: 0.7rem;
   font-weight: 700;
   flex-shrink: 0;
+}
+
+.now-news-audience-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #FFFFFF;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.now-news-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.now-news-pager {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.now-news-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+
+.now-news-dot:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.now-news-dot.active {
+  width: 18px;
+  border-radius: 999px;
+  background: var(--lime);
 }
 
 .now-news-author {

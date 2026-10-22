@@ -391,6 +391,61 @@ function handleStarostaPhotoSelect(event) {
   if (clearBtn) clearBtn.hidden = false;
 }
 
+let starostaTargetAudience = [];
+let activeAnnouncementsList = [];
+let activeAnnouncementIndex = 0;
+
+function selectStarostaAudience(audience) {
+  const container = document.getElementById('starostaAudienceChips');
+  const noteEl = document.getElementById('starostaAudienceNote');
+
+  if (audience === 'all') {
+    starostaTargetAudience = [];
+  } else {
+    const idx = starostaTargetAudience.indexOf(audience);
+    if (idx >= 0) {
+      starostaTargetAudience.splice(idx, 1);
+    } else {
+      starostaTargetAudience.push(audience);
+    }
+    const allCodes = Object.keys(GROUP_LABELS);
+    if (starostaTargetAudience.length === allCodes.length || starostaTargetAudience.length === 0) {
+      starostaTargetAudience = [];
+    }
+  }
+
+  if (container) {
+    const isAll = starostaTargetAudience.length === 0;
+    container.querySelectorAll('.chip-select').forEach(btn => {
+      const aud = btn.dataset.audience;
+      if (aud === 'all') {
+        btn.classList.toggle('active', isAll);
+      } else {
+        btn.classList.toggle('active', starostaTargetAudience.includes(aud));
+      }
+    });
+  }
+
+  if (noteEl) {
+    if (starostaTargetAudience.length === 0) {
+      noteEl.textContent = 'Повідомлення отримають усі студенти в боті та на сайті.';
+    } else {
+      const labels = starostaTargetAudience.map(g => GROUP_LABELS[g] || g).join(', ');
+      noteEl.textContent = `Повідомлення отримають лише студенти групи ${labels} в боті та на сайті.`;
+    }
+  }
+}
+
+function setActiveAnnouncementIndex(idx, event) {
+  if (event) event.stopPropagation();
+  if (idx < 0 || idx >= activeAnnouncementsList.length) return;
+  activeAnnouncementIndex = idx;
+  activeAnnouncement = activeAnnouncementsList[idx] || null;
+  announcementExpanded = false;
+  haptic('light');
+  updateClockAndCountdown(true);
+}
+
 function buildNowCardAnnouncementHtml() {
   const a = activeAnnouncement;
   if (!a || !a.is_active) return '';
@@ -418,6 +473,11 @@ function buildNowCardAnnouncementHtml() {
     ? `${pad2(dt.getHours())}:${pad2(dt.getMinutes())}`
     : '';
 
+  const targetGroups = Array.isArray(a.target_groups) ? a.target_groups : [];
+  const audienceLabel = targetGroups.length === 0
+    ? 'Для всіх'
+    : targetGroups.map(g => GROUP_LABELS[g] || g).join(', ');
+
   let toggleLabel = 'Розгорнути повністю';
   if (expanded) {
     toggleLabel = 'Згорнути';
@@ -442,17 +502,37 @@ function buildNowCardAnnouncementHtml() {
     `
     : '';
 
+  const pagerHtml = (activeAnnouncementsList.length > 1)
+    ? `
+      <div class="now-news-pager" role="tablist" aria-label="Новини">
+        ${activeAnnouncementsList.map((item, idx) => `
+          <button
+            type="button"
+            class="now-news-dot ${idx === activeAnnouncementIndex ? 'active' : ''}"
+            onclick="setActiveAnnouncementIndex(${idx}, event)"
+            aria-label="Новина ${idx + 1}"
+            title="Новина ${idx + 1}"
+          ></button>
+        `).join('')}
+      </div>
+    `
+    : '';
+
   return `
     <div class="now-news ${expanded ? 'is-expanded' : ''}">
       <div class="now-news-head">
         <div class="now-news-meta">
           <span class="now-news-badge">${icon('megaphone', 13)}<span>Важливо</span></span>
+          <span class="now-news-audience-chip">${escapeHtml(audienceLabel)}</span>
           <span class="now-news-author">від ${escapeHtml(authorLabel)}${timeLabel ? ` · ${escapeHtml(timeLabel)}` : ''}</span>
           ${hasPhotos && !expanded ? `<span class="now-news-photo-chip">${icon('image', 12)}<span>${photos.length > 1 ? photos.length : 'Фото'}</span></span>` : ''}
         </div>
-        <button type="button" class="now-news-close" onclick="dismissAnnouncement(${Number(a.id)}, event)" title="Закрити повідомлення" aria-label="Закрити повідомлення">
-          ${icon('close', 16)}
-        </button>
+        <div class="now-news-actions">
+          ${pagerHtml}
+          <button type="button" class="now-news-close" onclick="dismissAnnouncement(${Number(a.id)}, event)" title="Закрити повідомлення" aria-label="Закрити повідомлення">
+            ${icon('close', 16)}
+          </button>
+        </div>
       </div>
       <div class="now-news-scroll ${expanded ? 'is-scrollable' : ''}">
         <div class="now-news-body ${isLong && !expanded ? 'is-clamped' : ''}">${escapeHtml(text)}</div>
@@ -476,18 +556,32 @@ async function loadActiveAnnouncement() {
       .select('*')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(10);
 
     if (!error) {
-      if (data && isAnnouncementExpired(data)) {
-        activeAnnouncement = null;
+      const rows = Array.isArray(data) ? data : [];
+      const hasExpired = rows.some(x => isAnnouncementExpired(x));
+      if (hasExpired) {
         triggerExpiredAnnouncementsCleanup();
-        updateClockAndCountdown(true);
-        return null;
       }
+      const validRows = rows.filter(x => !isAnnouncementExpired(x));
+
+      const hasExplicit = (typeof hasExplicitGroup === 'function') ? hasExplicitGroup() : true;
+      const targetGroup = currentGroup || PRIMARY_GROUP;
+
+      activeAnnouncementsList = validRows.filter(item => {
+        const tg = Array.isArray(item.target_groups) ? item.target_groups : [];
+        if (tg.length === 0) return true; // для всіх
+        if (!hasExplicit) return false; // гості без групи бачать тільки "для всіх"
+        return tg.includes(targetGroup);
+      });
+
+      if (activeAnnouncementIndex >= activeAnnouncementsList.length) {
+        activeAnnouncementIndex = 0;
+      }
+
       const prevId = activeAnnouncement ? activeAnnouncement.id : null;
-      activeAnnouncement = data || null;
+      activeAnnouncement = activeAnnouncementsList[activeAnnouncementIndex] || null;
       if (activeAnnouncement && activeAnnouncement.id !== prevId) {
         announcementExpanded = false;
       }
@@ -579,6 +673,15 @@ function renderStarostaView() {
       }
     }
 
+    let audienceBadgeHtml = '';
+    const targetGroups = Array.isArray(item.target_groups) ? item.target_groups : [];
+    if (targetGroups.length === 0) {
+      audienceBadgeHtml = '<span class="chip chip-muted chip-xs">🌐 Усім</span>';
+    } else {
+      const audNames = targetGroups.map(g => GROUP_LABELS[g] || g).join(', ');
+      audienceBadgeHtml = `<span class="chip chip-blue chip-xs">${escapeHtml(audNames)}</span>`;
+    }
+
     return `
       <article class="visits-card starosta-news-card ${item.is_active ? 'is-active-news' : ''}">
         <header class="visits-card-head">
@@ -586,6 +689,7 @@ function renderStarostaView() {
             ${item.is_active
               ? '<span class="chip chip-lime chip-xs">Активна у синьому блоці</span>'
               : '<span class="chip chip-muted chip-xs">В архіві</span>'}
+            ${audienceBadgeHtml}
             ${expiresBadgeHtml}
             <span class="visit-time mono">${escapeHtml(timeStr)}</span>
           </div>
@@ -666,12 +770,15 @@ async function handleAnnouncementSubmit(event) {
       action: 'create',
       content,
       photo_urls: photoUrls,
-      expires_at: expiresAtIso
+      expires_at: expiresAtIso,
+      target_groups: starostaTargetAudience
     });
 
     input.value = '';
     resetStarostaPhotos();
     resetStarostaTimer();
+    starostaTargetAudience = [];
+    selectStarostaAudience('all');
     writeStored('g7_dismissed_news_id', '');
     announcementExpanded = false;
 

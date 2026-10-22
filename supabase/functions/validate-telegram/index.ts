@@ -269,9 +269,20 @@ Deno.serve(async (req) => {
 
     const session = otpData.session;
 
-    // Step 4: Compute admin & starosta flags server-side
+    // Step 4: Compute admin & starosta flags server-side + fetch user_group
     const isAdmin = String(telegramId) === ADMIN_TELEGRAM_ID;
     let isStarosta = isAdmin;
+    let userGroup: string | null = null;
+
+    const { data: tgRow } = await supabase
+      .from("telegram_users")
+      .select("is_starosta, user_group")
+      .eq("id", authUserId)
+      .maybeSingle();
+
+    if (tgRow?.user_group) {
+      userGroup = tgRow.user_group;
+    }
 
     if (!isStarosta) {
       const { data: roleRow } = await supabase
@@ -282,17 +293,12 @@ Deno.serve(async (req) => {
 
       if (roleRow) {
         isStarosta = true;
-      } else {
-        const { data: tgRow } = await supabase
-          .from("telegram_users")
-          .select("is_starosta")
-          .eq("telegram_id", telegramId)
-          .maybeSingle();
-        if (tgRow?.is_starosta) isStarosta = true;
+      } else if (tgRow?.is_starosta) {
+        isStarosta = true;
       }
     }
 
-    if (isStarosta) {
+    if (isStarosta && !tgRow?.is_starosta) {
       await supabase
         .from("telegram_users")
         .update({ is_starosta: true })
@@ -353,6 +359,7 @@ Deno.serve(async (req) => {
         last_name: lastName,
         is_admin: isAdmin,
         is_starosta: isStarosta,
+        user_group: userGroup,
       },
     });
   } catch (err) {

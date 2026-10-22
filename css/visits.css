@@ -240,6 +240,56 @@ html[data-theme="light"] .visit-username {
   cursor: zoom-in;
 }
 
+/* ── Вибір аудиторії новини старости ── */
+.starosta-audience-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.chip-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.85rem;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  font-family: inherit;
+}
+
+.chip-select:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.chip-select.active {
+  background: var(--lime);
+  color: var(--lime-ink);
+  border-color: var(--lime);
+  font-weight: 700;
+}
+
+.chip-select-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.field-subnote {
+  font-size: 0.76rem;
+  color: var(--text-2);
+  margin-top: 0.38rem;
+  line-height: 1.35;
+}
+
 /* ── Крутилка (барабан вибору дня, місяця та години автовидалення) ── */
 .starosta-timer-row {
   display: flex;

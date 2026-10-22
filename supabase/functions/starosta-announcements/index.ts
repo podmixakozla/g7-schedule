@@ -188,7 +188,9 @@ async function sendAnnouncementToChat(
 async function broadcastStarostaMessage(
   supabase: ReturnType<typeof createClient>,
   text: string,
-  photoUrls: string[] = []
+  photoUrls: string[] = [],
+  targetGroups: string[] = [],
+  authorTelegramId = 0
 ): Promise<{ sent: number; failed: number; telegramMessages: TelegramMessageRef[] }> {
   if (!BOT_TOKEN) {
     return { sent: 0, failed: 0, telegramMessages: [] };
@@ -199,11 +201,18 @@ async function broadcastStarostaMessage(
   if (adminId && !Number.isNaN(adminId) && adminId > 0) {
     chatIds.add(adminId);
   }
+  if (authorTelegramId && !Number.isNaN(authorTelegramId) && authorTelegramId > 0) {
+    chatIds.add(authorTelegramId);
+  }
+
+  const isTargeted = Array.isArray(targetGroups) && targetGroups.length > 0;
 
   try {
-    const { data: tgUsers } = await supabase
-      .from("telegram_users")
-      .select("telegram_id");
+    let query = supabase.from("telegram_users").select("telegram_id, user_group");
+    if (isTargeted) {
+      query = query.in("user_group", targetGroups);
+    }
+    const { data: tgUsers } = await query;
     if (Array.isArray(tgUsers)) {
       for (const u of tgUsers) {
         const id = Number(u.telegram_id);
@@ -214,18 +223,21 @@ async function broadcastStarostaMessage(
     console.warn("Failed to read telegram_users:", e);
   }
 
-  try {
-    const { data: visitUsers } = await supabase
-      .from("user_visits")
-      .select("telegram_id");
-    if (Array.isArray(visitUsers)) {
-      for (const u of visitUsers) {
-        const id = Number(u.telegram_id);
-        if (id && !Number.isNaN(id) && id > 0) chatIds.add(id);
+  // If broadcast to all, also include user_visits
+  if (!isTargeted) {
+    try {
+      const { data: visitUsers } = await supabase
+        .from("user_visits")
+        .select("telegram_id");
+      if (Array.isArray(visitUsers)) {
+        for (const u of visitUsers) {
+          const id = Number(u.telegram_id);
+          if (id && !Number.isNaN(id) && id > 0) chatIds.add(id);
+        }
       }
+    } catch (e) {
+      console.warn("Failed to read user_visits:", e);
     }
-  } catch (e) {
-    console.warn("Failed to read user_visits:", e);
   }
 
   let sent = 0;
@@ -405,15 +417,60 @@ Deno.serve(async (req) => {
         }
       }
 
+      const ALLOWED_GROUPS = ["AR-26-1", "AR-26-2", "AR-26sk-1"];
+      const GROUP_TITLE_MAP: Record<string, string> = {
+        "AR-26-1": "АР-26-1",
+        "AR-26-2": "АР-26-2",
+        "AR-26sk-1": "АР-26ск-1",
+      };
+
+      const rawTargets: string[] = [];
+      if (Array.isArray(body.target_groups)) {
+        for (const g of body.target_groups) {
+          if (typeof g === "string" && ALLOWED_GROUPS.includes(g.trim())) {
+            rawTargets.push(g.trim());
+          }
+        }
+      }
+      let targetGroups = Array.from(new Set(rawTargets));
+      if (targetGroups.length === ALLOWED_GROUPS.length) {
+        targetGroups = [];
+      }
+
       const first = (caller.firstName || "").trim();
       const last = (caller.lastName || "").trim();
       const authorName = [first, last].filter(Boolean).join(" ") || caller.username || `ID ${caller.telegramId}`;
 
-      // Деактивуємо попередні активні оголошення, щоб нове стало головним у синьому блоці
-      await supabase
+      // Деактивуємо лише ті активні оголошення, аудиторія яких перетинається з новою
+      const { data: activeRows } = await supabase
         .from("announcements")
-        .update({ is_active: false })
+        .select("id, target_groups")
         .eq("is_active", true);
+
+      if (Array.isArray(activeRows) && activeRows.length > 0) {
+        const toDeactivateIds: number[] = [];
+        for (const row of activeRows) {
+          const rowTargets: string[] = Array.isArray(row.target_groups) ? row.target_groups : [];
+          if (targetGroups.length === 0) {
+            if (rowTargets.length === 0) {
+              toDeactivateIds.push(row.id);
+            }
+          } else {
+            if (rowTargets.length > 0) {
+              const overlaps = targetGroups.some((g) => rowTargets.includes(g));
+              if (overlaps) {
+                toDeactivateIds.push(row.id);
+              }
+            }
+          }
+        }
+        if (toDeactivateIds.length > 0) {
+          await supabase
+            .from("announcements")
+            .update({ is_active: false })
+            .in("id", toDeactivateIds);
+        }
+      }
 
       const { data: inserted, error: insertError } = await supabase
         .from("announcements")
@@ -426,6 +483,7 @@ Deno.serve(async (req) => {
           photo_urls: photoUrls,
           expires_at: expiresAtIso,
           is_active: true,
+          target_groups: targetGroups,
         })
         .select("*")
         .single();
@@ -435,13 +493,26 @@ Deno.serve(async (req) => {
         throw new HttpError(500, "Не вдалося зберегти новину");
       }
 
-      // Формуємо повідомлення в чат бота в ТГ: нік старости + повідомлення старости
+      // Формуємо повідомлення в чат бота в ТГ: нік старости + аудиторія + текст
       const authorTag = caller.username
         ? `@${caller.username} (${authorName})`
         : authorName;
-      const tgText = `📢 Повідомлення від старости ${authorTag}:\n\n${content}`;
 
-      const notify = await broadcastStarostaMessage(supabase, tgText, photoUrls);
+      let audienceHeader = "оголошення для всіх";
+      if (targetGroups.length > 0) {
+        const labels = targetGroups.map((g) => GROUP_TITLE_MAP[g] || g).join(", ");
+        audienceHeader = `оголошення для ${labels}`;
+      }
+
+      const tgText = `📢 Повідомлення від старости ${authorTag} (${audienceHeader}):\n\n${content}`;
+
+      const notify = await broadcastStarostaMessage(
+        supabase,
+        tgText,
+        photoUrls,
+        targetGroups,
+        caller.telegramId
+      );
 
       if (notify.telegramMessages.length > 0) {
         const { data: updated } = await supabase
