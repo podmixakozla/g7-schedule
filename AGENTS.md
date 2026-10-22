@@ -50,6 +50,7 @@ supabase/
 - **Cards**: `rgba(255, 255, 255, 0.06)`, `border-radius: 24px`, subtle hairline border, `18–20px` padding, `200ms` transitions.
 - **Typography**: `Poppins` + `Urbanist` + `Manrope` (Cyrillic geometric support). Bold `600–700` headings, secondary text `#9A9A9A` at `13px` (`0.8125rem`).
 - **Icons**: inline Lucide SVG icons via `icon()` / `hydrateIcons()` in `js/utils.js` (no emojis in UI chrome).
+- **Emoji restriction rule**: категорично заборонено використовувати емодзі без явної потреби або прямого запиту користувача в будь-яких елементах інтерфейсу (вкладки, кнопки, чіпи, бейджі, списки, шапка, заголовки тощо). Замість емодзі — виключно чистий текст або інлайнові SVG-іконки Lucide через `icon()`. Єдине місце з емодзі — блок студентських реакцій на дошці (`POPULAR_EMOJIS`).
 
 ## CSS architecture
 
@@ -121,7 +122,7 @@ Changing this order will break the app.
 |---|---|
 | Unauthenticated | View schedule (`АР-26-1`, `АР-26-2`, `АР-26ск-1`), pick group via topbar pill/sheet, calendar, shame board (read-only), read/expand/dismiss starosta announcements in `#nowCard` |
 | Authenticated user | + Pick group in profile menu (synced to DB `user_group`), react, comment, submit shame posts |
-| Starosta (`is_starosta`) | + 5th tab "Важливі новини": publish/remove important news targeted to "🌐 Усім" or specific group(s) (`target_groups`), broadcast per-group in Telegram bot |
+| Starosta (`is_starosta`) | + 5th tab "Важливі новини": publish/remove important news targeted to "Усім" or specific group(s) (`target_groups`), broadcast per-group in Telegram bot |
 | Administrator | + Starosta by default (6th tab "Важливі новини"), 5th tab "Візити та старости" (7-day rolling visit log + appoint/remove starostas), delete any post/comment, clear entire board |
 
 ### Security model

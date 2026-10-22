@@ -279,13 +279,8 @@ function renderUserSlot() {
   const userG = currentUser.user_group;
   const hasGroup = Boolean(userG && userG in GROUP_LABELS);
 
-  const pill = hasGroup
-    ? `<button type="button" class="group-pill is-set" onclick="toggleUserMenu(event)" title="Ваша група: ${escapeHtml(GROUP_LABELS[userG])}"><span class="group-pill-dot"></span><span>${escapeHtml(GROUP_LABELS[userG])}</span></button>`
-    : `<button type="button" class="group-pill is-missing" onclick="toggleUserMenu(event)" title="Оберіть вашу групу в меню"><span class="group-pill-dot"></span><span>Група?</span></button>`;
-
   slot.innerHTML = `
     <div class="user-box">
-      ${pill}
       <button class="user-btn" type="button" onclick="toggleUserMenu(event)" aria-label="Профіль">
         <span class="user-avatar">${escapeHtml(initials)}</span>
         <span class="user-name">${escapeHtml(name)}</span>

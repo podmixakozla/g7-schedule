@@ -475,7 +475,7 @@ function buildNowCardAnnouncementHtml() {
 
   const targetGroups = Array.isArray(a.target_groups) ? a.target_groups : [];
   const audienceLabel = targetGroups.length === 0
-    ? 'Для всіх'
+    ? 'Усім'
     : targetGroups.map(g => GROUP_LABELS[g] || g).join(', ');
 
   let toggleLabel = 'Розгорнути повністю';
@@ -676,7 +676,7 @@ function renderStarostaView() {
     let audienceBadgeHtml = '';
     const targetGroups = Array.isArray(item.target_groups) ? item.target_groups : [];
     if (targetGroups.length === 0) {
-      audienceBadgeHtml = '<span class="chip chip-muted chip-xs">🌐 Усім</span>';
+      audienceBadgeHtml = '<span class="chip chip-muted chip-xs">Усім</span>';
     } else {
       const audNames = targetGroups.map(g => GROUP_LABELS[g] || g).join(', ');
       audienceBadgeHtml = `<span class="chip chip-blue chip-xs">${escapeHtml(audNames)}</span>`;
