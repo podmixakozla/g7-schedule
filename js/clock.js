@@ -148,6 +148,12 @@ function updateClockAndCountdown(forceRender = false) {
   if (!card) return;
 
   const status = computeScheduleStatus(now, currentGroup);
+  if (typeof activeAnnouncement !== 'undefined' && activeAnnouncement && typeof isAnnouncementExpired === 'function' && isAnnouncementExpired(activeAnnouncement)) {
+    activeAnnouncement = null;
+    if (typeof triggerExpiredAnnouncementsCleanup === 'function') {
+      triggerExpiredAnnouncementsCleanup();
+    }
+  }
   const newsObj = (typeof activeAnnouncement !== 'undefined' && activeAnnouncement && activeAnnouncement.is_active && typeof isAnnouncementDismissed === 'function' && !isAnnouncementDismissed(activeAnnouncement.id))
     ? activeAnnouncement
     : null;

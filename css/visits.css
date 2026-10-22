@@ -240,6 +240,167 @@ html[data-theme="light"] .visit-username {
   cursor: zoom-in;
 }
 
+/* ── Крутилка (барабан вибору дня, місяця та години автовидалення) ── */
+.starosta-timer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.starosta-timer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+  min-width: 0;
+}
+
+.starosta-timer-summary {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.starosta-timer-summary.is-active {
+  color: var(--lime);
+  font-weight: 700;
+}
+
+html[data-theme="light"] .starosta-timer-summary.is-active {
+  color: var(--blue);
+}
+
+.starosta-timer-summary.is-warning {
+  color: #FF6B6B;
+  font-weight: 600;
+}
+
+.starosta-timer-toggle[aria-pressed="true"] {
+  background: var(--lime);
+  color: var(--lime-ink);
+  border-color: transparent;
+}
+
+.wheel-picker-wrap {
+  margin-top: 0.55rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.75rem 0.65rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.wheel-picker-head {
+  display: grid;
+  grid-template-columns: 0.85fr 1.3fr 0.95fr;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  padding-bottom: 0.2rem;
+}
+
+.wheel-picker {
+  position: relative;
+  height: 200px;
+  display: grid;
+  grid-template-columns: 0.85fr 1.3fr 0.95fr;
+  gap: 0.35rem;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.4) 18%,
+    #000 38%,
+    #000 62%,
+    rgba(0, 0, 0, 0.4) 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.4) 18%,
+    #000 38%,
+    #000 62%,
+    rgba(0, 0, 0, 0.4) 82%,
+    transparent 100%
+  );
+}
+
+html[data-theme="light"] .wheel-picker {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.wheel-highlight {
+  position: absolute;
+  left: 0.4rem;
+  right: 0.4rem;
+  top: 80px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(212, 245, 74, 0.14);
+  border: 1px solid rgba(212, 245, 74, 0.45);
+  pointer-events: none;
+  z-index: 1;
+}
+
+html[data-theme="light"] .wheel-highlight {
+  background: rgba(69, 88, 230, 0.12);
+  border-color: rgba(69, 88, 230, 0.38);
+}
+
+.wheel-col {
+  height: 200px;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  padding: 80px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  position: relative;
+  z-index: 2;
+  -webkit-overflow-scrolling: touch;
+}
+
+.wheel-col::-webkit-scrollbar {
+  display: none;
+}
+
+.wheel-item {
+  width: 100%;
+  height: 40px;
+  scroll-snap-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-2);
+  background: transparent;
+  border: 0;
+  padding: 0 0.25rem;
+  cursor: pointer;
+  transition: color 0.15s var(--ease), transform 0.15s var(--ease), font-weight 0.15s var(--ease);
+  user-select: none;
+}
+
+.wheel-item.is-selected {
+  color: var(--lime);
+  font-size: 1.02rem;
+  font-weight: 800;
+  transform: scale(1.05);
+}
+
+html[data-theme="light"] .wheel-item.is-selected {
+  color: var(--blue);
+}
+
 @media (max-width: 460px) {
   .visits-stat-card {
     padding: 0.85rem 0.75rem;

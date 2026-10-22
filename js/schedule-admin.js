@@ -40,6 +40,262 @@ function toggleAnnouncementExpand(event) {
 
 let starostaPreviewUrls = [];
 
+const WHEEL_ITEM_HEIGHT = 40;
+
+const starostaTimerState = {
+  enabled: false,
+  day: 1,
+  month: 0,
+  hour: 12,
+  initialized: false,
+  programmaticScroll: false
+};
+
+let expiredCleanupInFlight = false;
+
+function isAnnouncementExpired(item) {
+  if (!item || !item.expires_at) return false;
+  const expMs = new Date(item.expires_at).getTime();
+  return !Number.isNaN(expMs) && expMs <= Date.now();
+}
+
+async function triggerExpiredAnnouncementsCleanup() {
+  if (expiredCleanupInFlight) return;
+  expiredCleanupInFlight = true;
+  try {
+    await fetch(`${EDGE_FUNCTION_URL}/starosta-announcements`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ action: 'cleanup' })
+    });
+  } catch (e) {
+    console.warn('Expired announcement cleanup failed:', e);
+  } finally {
+    setTimeout(() => {
+      expiredCleanupInFlight = false;
+    }, 10000);
+  }
+}
+
+function getDaysInWheelMonth(monthIdx) {
+  const now = new Date();
+  const year = monthIdx < now.getMonth() ? now.getFullYear() + 1 : now.getFullYear();
+  return new Date(year, monthIdx + 1, 0).getDate();
+}
+
+function computeStarostaExpiresAtDate() {
+  if (!starostaTimerState.enabled) return null;
+  const now = new Date();
+  const maxDay = getDaysInWheelMonth(starostaTimerState.month);
+  const day = Math.min(starostaTimerState.day, maxDay);
+  const month = starostaTimerState.month;
+  const hour = starostaTimerState.hour;
+
+  let year = now.getFullYear();
+  let candidate = new Date(year, month, day, hour, 0, 0, 0);
+
+  // Якщо обрано місяць/день раніше в календарі, ніж сьогодні — це наступний рік (у межах 1 року)
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfChosenDay = new Date(year, month, day).getTime();
+  if (startOfChosenDay < startOfToday) {
+    year += 1;
+    candidate = new Date(year, month, day, hour, 0, 0, 0);
+  }
+
+  return candidate;
+}
+
+function updateStarostaTimerSummary() {
+  const summaryEl = document.getElementById('starostaTimerSummary');
+  const toggleBtn = document.getElementById('btnToggleStarostaTimer');
+  const toggleLabel = document.getElementById('starostaTimerToggleLabel');
+  if (!summaryEl) return;
+
+  if (!starostaTimerState.enabled) {
+    summaryEl.textContent = 'Без таймера (вручну)';
+    summaryEl.classList.remove('is-active', 'is-warning');
+    if (toggleBtn) toggleBtn.setAttribute('aria-pressed', 'false');
+    if (toggleLabel) toggleLabel.textContent = 'Встановити час';
+    return;
+  }
+
+  if (toggleBtn) toggleBtn.setAttribute('aria-pressed', 'true');
+  if (toggleLabel) toggleLabel.textContent = 'Скасувати таймер';
+
+  const dt = computeStarostaExpiresAtDate();
+  if (!dt) return;
+
+  if (dt.getTime() <= Date.now()) {
+    summaryEl.textContent = `Час ${dt.getDate()} ${MONTH_GENITIVE[dt.getMonth()]} о ${pad2(dt.getHours())}:00 вже минув — оберіть пізнішу годину`;
+    summaryEl.classList.add('is-warning');
+    summaryEl.classList.remove('is-active');
+  } else {
+    summaryEl.textContent = `Видалиться: ${dt.getDate()} ${MONTH_GENITIVE[dt.getMonth()]} о ${pad2(dt.getHours())}:00`;
+    summaryEl.classList.add('is-active');
+    summaryEl.classList.remove('is-warning');
+  }
+}
+
+function syncWheelColumnSelection(colEl, selectedIndex) {
+  if (!colEl) return;
+  const items = colEl.querySelectorAll('.wheel-item');
+  items.forEach((el, idx) => {
+    el.classList.toggle('is-selected', idx === selectedIndex);
+  });
+}
+
+function scrollWheelColumnToIndex(colEl, index, smooth = false) {
+  if (!colEl) return;
+  const targetTop = index * WHEEL_ITEM_HEIGHT;
+  starostaTimerState.programmaticScroll = true;
+  if (smooth) {
+    colEl.scrollTo({ top: targetTop, behavior: 'smooth' });
+  } else {
+    colEl.scrollTop = targetTop;
+  }
+  syncWheelColumnSelection(colEl, index);
+  setTimeout(() => {
+    starostaTimerState.programmaticScroll = false;
+  }, smooth ? 260 : 60);
+}
+
+function renderWheelDaysColumn(preserveScroll = true) {
+  const dayCol = document.getElementById('wheelColDay');
+  if (!dayCol) return;
+  const maxDays = getDaysInWheelMonth(starostaTimerState.month);
+  if (starostaTimerState.day > maxDays) {
+    starostaTimerState.day = maxDays;
+  }
+  const items = [];
+  for (let d = 1; d <= maxDays; d++) {
+    const isSel = d === starostaTimerState.day;
+    items.push(
+      `<button type="button" class="wheel-item mono ${isSel ? 'is-selected' : ''}" onclick="selectWheelValue('day', ${d})">${pad2(d)}</button>`
+    );
+  }
+  dayCol.innerHTML = items.join('');
+  if (preserveScroll) {
+    scrollWheelColumnToIndex(dayCol, starostaTimerState.day - 1, false);
+  }
+}
+
+function initStarostaWheelPicker() {
+  const dayCol = document.getElementById('wheelColDay');
+  const monthCol = document.getElementById('wheelColMonth');
+  const hourCol = document.getElementById('wheelColHour');
+  if (!dayCol || !monthCol || !hourCol) return;
+
+  renderWheelDaysColumn(false);
+
+  monthCol.innerHTML = MONTH_GENITIVE.map((mName, idx) => {
+    const isSel = idx === starostaTimerState.month;
+    return `<button type="button" class="wheel-item ${isSel ? 'is-selected' : ''}" onclick="selectWheelValue('month', ${idx})">${escapeHtml(mName)}</button>`;
+  }).join('');
+
+  const hours = [];
+  for (let h = 0; h <= 23; h++) {
+    const isSel = h === starostaTimerState.hour;
+    hours.push(
+      `<button type="button" class="wheel-item mono ${isSel ? 'is-selected' : ''}" onclick="selectWheelValue('hour', ${h})">${pad2(h)}:00</button>`
+    );
+  }
+  hourCol.innerHTML = hours.join('');
+
+  if (!starostaTimerState.initialized) {
+    starostaTimerState.initialized = true;
+
+    const attachWheelScroll = (colEl, type) => {
+      let rafId = null;
+      colEl.addEventListener('scroll', () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          const idx = Math.max(0, Math.round(colEl.scrollTop / WHEEL_ITEM_HEIGHT));
+          if (type === 'day') {
+            const maxD = getDaysInWheelMonth(starostaTimerState.month);
+            const newDay = Math.min(maxD, idx + 1);
+            if (starostaTimerState.day !== newDay) {
+              starostaTimerState.day = newDay;
+              syncWheelColumnSelection(colEl, newDay - 1);
+              updateStarostaTimerSummary();
+            }
+          } else if (type === 'month') {
+            const newMonth = Math.min(11, idx);
+            if (starostaTimerState.month !== newMonth) {
+              starostaTimerState.month = newMonth;
+              syncWheelColumnSelection(colEl, newMonth);
+              renderWheelDaysColumn(true);
+              updateStarostaTimerSummary();
+            }
+          } else if (type === 'hour') {
+            const newHour = Math.min(23, idx);
+            if (starostaTimerState.hour !== newHour) {
+              starostaTimerState.hour = newHour;
+              syncWheelColumnSelection(colEl, newHour);
+              updateStarostaTimerSummary();
+            }
+          }
+        });
+      }, { passive: true });
+    };
+
+    attachWheelScroll(dayCol, 'day');
+    attachWheelScroll(monthCol, 'month');
+    attachWheelScroll(hourCol, 'hour');
+  }
+
+  requestAnimationFrame(() => {
+    scrollWheelColumnToIndex(dayCol, starostaTimerState.day - 1, false);
+    scrollWheelColumnToIndex(monthCol, starostaTimerState.month, false);
+    scrollWheelColumnToIndex(hourCol, starostaTimerState.hour, false);
+  });
+}
+
+function selectWheelValue(type, value) {
+  haptic('light');
+  if (type === 'day') {
+    starostaTimerState.day = value;
+    scrollWheelColumnToIndex(document.getElementById('wheelColDay'), value - 1, true);
+  } else if (type === 'month') {
+    starostaTimerState.month = value;
+    scrollWheelColumnToIndex(document.getElementById('wheelColMonth'), value, true);
+    renderWheelDaysColumn(true);
+  } else if (type === 'hour') {
+    starostaTimerState.hour = value;
+    scrollWheelColumnToIndex(document.getElementById('wheelColHour'), value, true);
+  }
+  updateStarostaTimerSummary();
+}
+
+function toggleStarostaTimer() {
+  haptic('light');
+  const wrap = document.getElementById('starostaWheelWrap');
+  starostaTimerState.enabled = !starostaTimerState.enabled;
+
+  if (starostaTimerState.enabled) {
+    // За замовчуванням пропонуємо +24 години від поточного моменту
+    const defaultTarget = new Date(Date.now() + 24 * 3600 * 1000);
+    starostaTimerState.day = defaultTarget.getDate();
+    starostaTimerState.month = defaultTarget.getMonth();
+    starostaTimerState.hour = defaultTarget.getHours();
+    if (wrap) wrap.hidden = false;
+    initStarostaWheelPicker();
+  } else {
+    if (wrap) wrap.hidden = true;
+  }
+
+  updateStarostaTimerSummary();
+}
+
+function resetStarostaTimer() {
+  starostaTimerState.enabled = false;
+  const wrap = document.getElementById('starostaWheelWrap');
+  if (wrap) wrap.hidden = true;
+  updateStarostaTimerSummary();
+}
+
 function getAnnouncementPhotos(item) {
   if (!item) return [];
   if (Array.isArray(item.photo_urls) && item.photo_urls.length > 0) {
@@ -137,7 +393,13 @@ function handleStarostaPhotoSelect(event) {
 
 function buildNowCardAnnouncementHtml() {
   const a = activeAnnouncement;
-  if (!a || !a.is_active || isAnnouncementDismissed(a.id)) return '';
+  if (!a || !a.is_active) return '';
+  if (isAnnouncementExpired(a)) {
+    activeAnnouncement = null;
+    triggerExpiredAnnouncementsCleanup();
+    return '';
+  }
+  if (isAnnouncementDismissed(a.id)) return '';
 
   const text = String(a.content || '').trim();
   if (!text) return '';
@@ -218,6 +480,12 @@ async function loadActiveAnnouncement() {
       .maybeSingle();
 
     if (!error) {
+      if (data && isAnnouncementExpired(data)) {
+        activeAnnouncement = null;
+        triggerExpiredAnnouncementsCleanup();
+        updateClockAndCountdown(true);
+        return null;
+      }
       const prevId = activeAnnouncement ? activeAnnouncement.id : null;
       activeAnnouncement = data || null;
       if (activeAnnouncement && activeAnnouncement.id !== prevId) {
@@ -252,7 +520,12 @@ async function loadStarostaAnnouncements() {
       .limit(15);
 
     if (error) throw error;
-    cachedAnnouncements = Array.isArray(data) ? data : [];
+    const rows = Array.isArray(data) ? data : [];
+    const hasExpired = rows.some(x => isAnnouncementExpired(x));
+    if (hasExpired) {
+      triggerExpiredAnnouncementsCleanup();
+    }
+    cachedAnnouncements = rows.filter(x => !isAnnouncementExpired(x));
     activeAnnouncement = cachedAnnouncements.find(x => x.is_active) || null;
     renderStarostaView();
     updateClockAndCountdown(true);
@@ -297,6 +570,15 @@ function renderStarostaView() {
       `
       : '';
 
+    let expiresBadgeHtml = '';
+    if (item.expires_at) {
+      const expDt = new Date(item.expires_at);
+      if (!Number.isNaN(expDt.getTime())) {
+        const expStr = `${expDt.getDate()} ${MONTH_GENITIVE[expDt.getMonth()]} о ${pad2(expDt.getHours())}:00`;
+        expiresBadgeHtml = `<span class="chip chip-blue chip-xs">${icon('clock', 12)}<span>Видалиться: ${escapeHtml(expStr)}</span></span>`;
+      }
+    }
+
     return `
       <article class="visits-card starosta-news-card ${item.is_active ? 'is-active-news' : ''}">
         <header class="visits-card-head">
@@ -304,9 +586,10 @@ function renderStarostaView() {
             ${item.is_active
               ? '<span class="chip chip-lime chip-xs">Активна у синьому блоці</span>'
               : '<span class="chip chip-muted chip-xs">В архіві</span>'}
+            ${expiresBadgeHtml}
             <span class="visit-time mono">${escapeHtml(timeStr)}</span>
           </div>
-          <button type="button" class="btn btn-icon btn-danger-ghost btn-sm" onclick="handleAnnouncementDelete(${Number(item.id)})" title="Видалити новину" aria-label="Видалити новину">
+          <button type="button" class="btn btn-icon btn-danger-ghost btn-sm" onclick="handleAnnouncementDelete(${Number(item.id)})" title="Видалити новину з сайту та бота" aria-label="Видалити новину">
             ${icon('trash', 16)}
           </button>
         </header>
@@ -338,6 +621,16 @@ async function handleAnnouncementSubmit(event) {
   if (!content) {
     toast('Введіть текст важливої новини', 'error');
     return;
+  }
+
+  let expiresAtIso = null;
+  if (starostaTimerState.enabled) {
+    const expDate = computeStarostaExpiresAtDate();
+    if (!expDate || expDate.getTime() <= Date.now()) {
+      toast('Оберіть майбутній час для автовидалення новини', 'error');
+      return;
+    }
+    expiresAtIso = expDate.toISOString();
   }
 
   const files = photoInput ? Array.from(photoInput.files || []) : [];
@@ -372,11 +665,13 @@ async function handleAnnouncementSubmit(event) {
     const res = await callEdgeFunction('starosta-announcements', {
       action: 'create',
       content,
-      photo_urls: photoUrls
+      photo_urls: photoUrls,
+      expires_at: expiresAtIso
     });
 
     input.value = '';
     resetStarostaPhotos();
+    resetStarostaTimer();
     writeStored('g7_dismissed_news_id', '');
     announcementExpanded = false;
 
@@ -397,15 +692,16 @@ async function handleAnnouncementSubmit(event) {
 
 async function handleAnnouncementDelete(id) {
   if (!isCurrentUserStarosta()) return;
-  if (!(await uiConfirm('Видалити цю новину? Вона зникне із синього блоку на головній сторінці.'))) return;
+  if (!(await uiConfirm('Видалити цю новину? Вона зникне із синього блоку на головній сторінці та видалиться з чату бота в Telegram.'))) return;
 
   try {
-    await callEdgeFunction('starosta-announcements', {
+    const res = await callEdgeFunction('starosta-announcements', {
       action: 'delete',
       id: Number(id)
     });
     await loadStarostaAnnouncements();
-    toast('Новину видалено', 'success');
+    const tgCount = res?.deletedTgMessages ?? 0;
+    toast(tgCount > 0 ? `Новину видалено з сайту та чату ТГ (${tgCount})` : 'Новину видалено', 'success');
   } catch (err) {
     toast(err.message || 'Не вдалося видалити новину', 'error');
   }

@@ -16,6 +16,11 @@ interface StarostaProfile {
   isStarosta: boolean;
 }
 
+interface TelegramMessageRef {
+  chat_id: number;
+  message_id: number;
+}
+
 async function verifyStarostaOrAdmin(
   req: Request,
   supabase: ReturnType<typeof createClient>
@@ -77,7 +82,9 @@ async function sendAnnouncementToChat(
   chatId: number,
   text: string,
   photoUrls: string[]
-): Promise<boolean> {
+): Promise<number[]> {
+  const messageIds: number[] = [];
+
   if (photoUrls.length === 1) {
     const caption = text.length <= 1024 ? text : text.slice(0, 1020) + "…";
     const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
@@ -90,8 +97,12 @@ async function sendAnnouncementToChat(
       }),
     });
     if (res.ok) {
+      const data = await res.json().catch(() => null);
+      if (data?.result?.message_id) {
+        messageIds.push(Number(data.result.message_id));
+      }
       if (text.length > 1024) {
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        const resExtra = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -100,8 +111,14 @@ async function sendAnnouncementToChat(
             disable_web_page_preview: true,
           }),
         });
+        if (resExtra.ok) {
+          const extraData = await resExtra.json().catch(() => null);
+          if (extraData?.result?.message_id) {
+            messageIds.push(Number(extraData.result.message_id));
+          }
+        }
       }
-      return true;
+      return messageIds;
     }
   } else if (photoUrls.length > 1) {
     const caption = text.length <= 1024 ? text : text.slice(0, 1020) + "…";
@@ -119,8 +136,14 @@ async function sendAnnouncementToChat(
       }),
     });
     if (res.ok) {
+      const data = await res.json().catch(() => null);
+      if (Array.isArray(data?.result)) {
+        for (const msg of data.result) {
+          if (msg?.message_id) messageIds.push(Number(msg.message_id));
+        }
+      }
       if (text.length > 1024) {
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        const resExtra = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -129,8 +152,14 @@ async function sendAnnouncementToChat(
             disable_web_page_preview: true,
           }),
         });
+        if (resExtra.ok) {
+          const extraData = await resExtra.json().catch(() => null);
+          if (extraData?.result?.message_id) {
+            messageIds.push(Number(extraData.result.message_id));
+          }
+        }
       }
-      return true;
+      return messageIds;
     }
   }
 
@@ -147,16 +176,22 @@ async function sendAnnouncementToChat(
       disable_web_page_preview: photoUrls.length === 0,
     }),
   });
-  return res.ok;
+  if (res.ok) {
+    const data = await res.json().catch(() => null);
+    if (data?.result?.message_id) {
+      messageIds.push(Number(data.result.message_id));
+    }
+  }
+  return messageIds;
 }
 
 async function broadcastStarostaMessage(
   supabase: ReturnType<typeof createClient>,
   text: string,
   photoUrls: string[] = []
-): Promise<{ sent: number; failed: number }> {
+): Promise<{ sent: number; failed: number; telegramMessages: TelegramMessageRef[] }> {
   if (!BOT_TOKEN) {
-    return { sent: 0, failed: 0 };
+    return { sent: 0, failed: 0, telegramMessages: [] };
   }
 
   const chatIds = new Set<number>();
@@ -195,17 +230,114 @@ async function broadcastStarostaMessage(
 
   let sent = 0;
   let failed = 0;
+  const telegramMessages: TelegramMessageRef[] = [];
+
   for (const chatId of chatIds) {
     try {
-      const ok = await sendAnnouncementToChat(chatId, text, photoUrls);
-      if (ok) sent++;
-      else failed++;
+      const msgIds = await sendAnnouncementToChat(chatId, text, photoUrls);
+      if (msgIds.length > 0) {
+        sent++;
+        for (const mid of msgIds) {
+          telegramMessages.push({ chat_id: chatId, message_id: mid });
+        }
+      } else {
+        failed++;
+      }
     } catch {
       failed++;
     }
   }
 
-  return { sent, failed };
+  return { sent, failed, telegramMessages };
+}
+
+async function deleteAnnouncementTelegramMessagesAndAssets(
+  supabase: ReturnType<typeof createClient>,
+  row: any
+): Promise<{ deletedTgMessages: number; failedTgMessages: number }> {
+  let deletedTgMessages = 0;
+  let failedTgMessages = 0;
+
+  if (BOT_TOKEN && Array.isArray(row?.telegram_messages)) {
+    for (const ref of row.telegram_messages) {
+      const chatId = Number(ref?.chat_id);
+      const messageId = Number(ref?.message_id);
+      if (!chatId || !messageId) continue;
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            message_id: messageId,
+          }),
+        });
+        if (res.ok) deletedTgMessages++;
+        else failedTgMessages++;
+      } catch {
+        failedTgMessages++;
+      }
+    }
+  }
+
+  // Clean up storage photos if any
+  const urls: string[] = [];
+  if (Array.isArray(row?.photo_urls)) {
+    for (const u of row.photo_urls) {
+      if (typeof u === "string") urls.push(u);
+    }
+  } else if (typeof row?.photo_url === "string") {
+    urls.push(row.photo_url);
+  }
+
+  const storagePaths: string[] = [];
+  const marker = "/storage/v1/object/public/board-photos/";
+  for (const u of urls) {
+    const idx = u.indexOf(marker);
+    if (idx !== -1) {
+      storagePaths.push(decodeURIComponent(u.slice(idx + marker.length)));
+    }
+  }
+  if (storagePaths.length > 0) {
+    try {
+      await supabase.storage.from("board-photos").remove(storagePaths);
+    } catch (e) {
+      console.warn("Failed to remove announcement storage files:", e);
+    }
+  }
+
+  return { deletedTgMessages, failedTgMessages };
+}
+
+async function cleanupExpiredAnnouncements(
+  supabase: ReturnType<typeof createClient>
+): Promise<{ expiredDeleted: number; tgDeleted: number }> {
+  const nowIso = new Date().toISOString();
+  const { data: expiredRows } = await supabase
+    .from("announcements")
+    .select("*")
+    .not("expires_at", "is", null)
+    .lte("expires_at", nowIso);
+
+  if (!Array.isArray(expiredRows) || expiredRows.length === 0) {
+    return { expiredDeleted: 0, tgDeleted: 0 };
+  }
+
+  let expiredDeleted = 0;
+  let tgDeleted = 0;
+
+  for (const row of expiredRows) {
+    const stats = await deleteAnnouncementTelegramMessagesAndAssets(supabase, row);
+    tgDeleted += stats.deletedTgMessages;
+
+    const { error } = await supabase
+      .from("announcements")
+      .delete()
+      .eq("id", row.id);
+    if (!error) expiredDeleted++;
+  }
+
+  return { expiredDeleted, tgDeleted };
 }
 
 Deno.serve(async (req) => {
@@ -214,7 +346,7 @@ Deno.serve(async (req) => {
       status: 204,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Authorization, Content-Type",
+        "Access-Control-Allow-Headers": "Authorization, Content-Type, apikey",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
       },
     });
@@ -228,6 +360,17 @@ Deno.serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const body = await req.json().catch(() => ({}));
     const action = body.action || "create";
+
+    // Always clean up expired announcements first
+    const cleanupStats = await cleanupExpiredAnnouncements(supabase);
+
+    // Public cleanup action (can be called by client or cron when timer expires)
+    if (action === "cleanup") {
+      return jsonResponse(200, {
+        ok: true,
+        ...cleanupStats,
+      });
+    }
 
     const caller = await verifyStarostaOrAdmin(req, supabase);
 
@@ -252,6 +395,16 @@ Deno.serve(async (req) => {
       }
       const photoUrls = rawUrls.slice(0, 10);
 
+      let expiresAtIso: string | null = null;
+      if (typeof body.expires_at === "string" && body.expires_at.trim()) {
+        const parsed = new Date(body.expires_at.trim());
+        if (!Number.isNaN(parsed.getTime()) && parsed.getTime() > Date.now()) {
+          expiresAtIso = parsed.toISOString();
+        } else {
+          throw new HttpError(400, "Час автовидалення має бути в майбутньому");
+        }
+      }
+
       const first = (caller.firstName || "").trim();
       const last = (caller.lastName || "").trim();
       const authorName = [first, last].filter(Boolean).join(" ") || caller.username || `ID ${caller.telegramId}`;
@@ -271,6 +424,7 @@ Deno.serve(async (req) => {
           content,
           photo_url: photoUrls[0] || null,
           photo_urls: photoUrls,
+          expires_at: expiresAtIso,
           is_active: true,
         })
         .select("*")
@@ -289,10 +443,26 @@ Deno.serve(async (req) => {
 
       const notify = await broadcastStarostaMessage(supabase, tgText, photoUrls);
 
+      if (notify.telegramMessages.length > 0) {
+        const { data: updated } = await supabase
+          .from("announcements")
+          .update({ telegram_messages: notify.telegramMessages })
+          .eq("id", inserted.id)
+          .select("*")
+          .single();
+        if (updated) {
+          return jsonResponse(200, {
+            ok: true,
+            announcement: updated,
+            notify: { sent: notify.sent, failed: notify.failed },
+          });
+        }
+      }
+
       return jsonResponse(200, {
         ok: true,
         announcement: inserted,
-        notify,
+        notify: { sent: notify.sent, failed: notify.failed },
       });
     }
 
@@ -300,6 +470,17 @@ Deno.serve(async (req) => {
       const id = Number(body.id);
       if (!id || Number.isNaN(id)) {
         throw new HttpError(400, "Некоректний ID новини");
+      }
+
+      const { data: row } = await supabase
+        .from("announcements")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      let tgDeleteStats = { deletedTgMessages: 0, failedTgMessages: 0 };
+      if (row) {
+        tgDeleteStats = await deleteAnnouncementTelegramMessagesAndAssets(supabase, row);
       }
 
       const { error: delError } = await supabase
@@ -311,7 +492,11 @@ Deno.serve(async (req) => {
         throw new HttpError(500, "Не вдалося видалити новину");
       }
 
-      return jsonResponse(200, { ok: true, id });
+      return jsonResponse(200, {
+        ok: true,
+        id,
+        ...tgDeleteStats,
+      });
     }
 
     throw new HttpError(400, "Невідома дія");

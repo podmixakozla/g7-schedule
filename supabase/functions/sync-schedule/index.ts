@@ -742,6 +742,26 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Clean up any expired starosta announcements (deletes from Telegram bot chat & DB)
+    try {
+      const nowIso = new Date().toISOString()
+      const { data: expiredAnnouncements } = await supabase
+        .from('announcements')
+        .select('id')
+        .not('expires_at', 'is', null)
+        .lte('expires_at', nowIso)
+        .limit(1)
+      if (Array.isArray(expiredAnnouncements) && expiredAnnouncements.length > 0) {
+        await fetch(`${supabaseUrl}/functions/v1/starosta-announcements`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'cleanup' }),
+        })
+      }
+    } catch (e) {
+      console.warn('Expired announcement cleanup check failed:', e)
+    }
+
     // Check cooldown in schedule_sync_meta
     const { data: meta } = await supabase
       .from('schedule_sync_meta')

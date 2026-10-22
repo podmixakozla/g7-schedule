@@ -31,20 +31,20 @@
     })();
   </script>
 
-  <link rel="stylesheet" href="css/base.css?v=20261021-15">
-  <link rel="stylesheet" href="css/app-container.css?v=20261021-15">
-  <link rel="stylesheet" href="css/header.css?v=20261021-15">
-  <link rel="stylesheet" href="css/controls.css?v=20261021-15">
-  <link rel="stylesheet" href="css/schedule.css?v=20261021-15">
-  <link rel="stylesheet" href="css/calendar.css?v=20261021-15">
-  <link rel="stylesheet" href="css/shame.css?v=20261021-15">
-  <link rel="stylesheet" href="css/visits.css?v=20261021-15">
-  <link rel="stylesheet" href="css/reactions.css?v=20261021-15">
-  <link rel="stylesheet" href="css/comments.css?v=20261021-15">
-  <link rel="stylesheet" href="css/modal.css?v=20261021-15">
-  <link rel="stylesheet" href="css/confetti.css?v=20261021-15">
-  <link rel="stylesheet" href="css/footer.css?v=20261021-15">
-  <link rel="stylesheet" href="css/auth.css?v=20261021-15">
+  <link rel="stylesheet" href="css/base.css?v=20261021-16">
+  <link rel="stylesheet" href="css/app-container.css?v=20261021-16">
+  <link rel="stylesheet" href="css/header.css?v=20261021-16">
+  <link rel="stylesheet" href="css/controls.css?v=20261021-16">
+  <link rel="stylesheet" href="css/schedule.css?v=20261021-16">
+  <link rel="stylesheet" href="css/calendar.css?v=20261021-16">
+  <link rel="stylesheet" href="css/shame.css?v=20261021-16">
+  <link rel="stylesheet" href="css/visits.css?v=20261021-16">
+  <link rel="stylesheet" href="css/reactions.css?v=20261021-16">
+  <link rel="stylesheet" href="css/comments.css?v=20261021-16">
+  <link rel="stylesheet" href="css/modal.css?v=20261021-16">
+  <link rel="stylesheet" href="css/confetti.css?v=20261021-16">
+  <link rel="stylesheet" href="css/footer.css?v=20261021-16">
+  <link rel="stylesheet" href="css/auth.css?v=20261021-16">
 </head>
 <body>
 
@@ -213,6 +213,31 @@
               </label>
               <button type="button" class="btn btn-secondary btn-sm starosta-clear-photos" id="btnClearStarostaPhotos" onclick="resetStarostaPhotos()" hidden>Прибрати фото</button>
             </div>
+            <div class="field">
+              <div class="starosta-timer-row">
+                <div class="starosta-timer-info">
+                  <span class="field-label">Автовидалення за часом <span class="field-hint">за потреби</span></span>
+                  <span class="starosta-timer-summary" id="starostaTimerSummary">Без таймера (вручну)</span>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm starosta-timer-toggle" id="btnToggleStarostaTimer" onclick="toggleStarostaTimer()" aria-pressed="false">
+                  <span data-icon="clock"></span><span id="starostaTimerToggleLabel">Встановити час</span>
+                </button>
+              </div>
+
+              <div class="wheel-picker-wrap" id="starostaWheelWrap" hidden>
+                <div class="wheel-picker-head">
+                  <span>День</span>
+                  <span>Місяць</span>
+                  <span>Година</span>
+                </div>
+                <div class="wheel-picker" id="starostaWheelPicker">
+                  <div class="wheel-highlight" aria-hidden="true"></div>
+                  <div class="wheel-col" id="wheelColDay" data-wheel="day" aria-label="День"></div>
+                  <div class="wheel-col" id="wheelColMonth" data-wheel="month" aria-label="Місяць"></div>
+                  <div class="wheel-col" id="wheelColHour" data-wheel="hour" aria-label="Година"></div>
+                </div>
+              </div>
+            </div>
             <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnSubmitStarostaNews">
               <span data-icon="send"></span><span>Опублікувати новину</span>
             </button>
@@ -276,22 +301,22 @@
   <!-- Сповіщення -->
   <div class="toast-root" id="toastRoot" aria-live="assertive"></div>
 
-  <script src="js/config.js?v=20261021-15"></script>
-  <script src="js/data.js?v=20261021-15"></script>
-  <script src="js/state.js?v=20261021-15"></script>
-  <script src="js/utils.js?v=20261021-15"></script>
-  <script src="js/academic.js?v=20261021-15"></script>
-  <script src="js/confetti.js?v=20261021-15"></script>
-  <script src="js/schedule.js?v=20261021-15"></script>
-  <script src="js/schedule-admin.js?v=20261021-15"></script>
-  <script src="js/calendar.js?v=20261021-15"></script>
-  <script src="js/clock.js?v=20261021-15"></script>
-  <script src="js/auth.js?v=20261021-15"></script>
-  <script src="js/reactions.js?v=20261021-15"></script>
-  <script src="js/comments.js?v=20261021-15"></script>
-  <script src="js/shame-board.js?v=20261021-15"></script>
-  <script src="js/shame-form.js?v=20261021-15"></script>
-  <script src="js/visits.js?v=20261021-15"></script>
-  <script src="js/app.js?v=20261021-15"></script>
+  <script src="js/config.js?v=20261021-16"></script>
+  <script src="js/data.js?v=20261021-16"></script>
+  <script src="js/state.js?v=20261021-16"></script>
+  <script src="js/utils.js?v=20261021-16"></script>
+  <script src="js/academic.js?v=20261021-16"></script>
+  <script src="js/confetti.js?v=20261021-16"></script>
+  <script src="js/schedule.js?v=20261021-16"></script>
+  <script src="js/schedule-admin.js?v=20261021-16"></script>
+  <script src="js/calendar.js?v=20261021-16"></script>
+  <script src="js/clock.js?v=20261021-16"></script>
+  <script src="js/auth.js?v=20261021-16"></script>
+  <script src="js/reactions.js?v=20261021-16"></script>
+  <script src="js/comments.js?v=20261021-16"></script>
+  <script src="js/shame-board.js?v=20261021-16"></script>
+  <script src="js/shame-form.js?v=20261021-16"></script>
+  <script src="js/visits.js?v=20261021-16"></script>
+  <script src="js/app.js?v=20261021-16"></script>
 </body>
 </html>
