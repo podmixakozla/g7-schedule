@@ -74,7 +74,7 @@ function clearStoredSession() {
 async function authenticateWithTelegram() {
   const tg = getTelegram();
   if (!tg || !tg.initData) {
-    showAuthError('Відкрийте цей сайт через Telegram-бота, щоб увійти.');
+    window.location.href = 'https://t.me/opezdolibot';
     return;
   }
 
@@ -389,7 +389,7 @@ function openGuestGroupModal() {
             ${icon('info', 16)}
             <span>Щоб отримувати важливі новини своєї групи в боті:</span>
           </div>
-          <button class="btn btn-telegram btn-block btn-md" onclick="closeGuestGroupModal(); showAuthOverlay();">
+          <button class="btn btn-telegram btn-block btn-md" onclick="closeGuestGroupModal(); authenticateWithTelegram();">
             ${TELEGRAM_SVG}<span>Увійти через Telegram</span>
           </button>
         </div>
