@@ -117,7 +117,6 @@ async function authenticateWithTelegram() {
       localStorage.removeItem('g7_guest_group');
       localStorage.removeItem('g7_group');
     } catch {}
-    currentGroup = resolveCurrentGroup();
     persistSession(data.user, data.session);
     await syncSupabaseSession(data.session.access_token, data.session.refresh_token);
 
@@ -199,7 +198,6 @@ async function restoreSession() {
           localStorage.removeItem('g7_guest_group');
           localStorage.removeItem('g7_group');
         } catch {}
-        currentGroup = resolveCurrentGroup();
         persistSession(data.user, data.session);
         await syncSupabaseSession(data.session.access_token, data.session.refresh_token);
         updateAuthUI();
@@ -439,6 +437,7 @@ document.addEventListener('click', (e) => {
 });
 
 function updateAuthUI() {
+  currentGroup = resolveCurrentGroup();
   renderUserSlot();
 
   const isAdmin = !!(currentUser && currentUser.is_admin);
