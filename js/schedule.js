@@ -275,9 +275,11 @@ async function reloadSchedule() {
 }
 
 function renderHeaderGroupSwitch() {
-  // Перемикач групи прибрано з шапки — група обирається в профілі/слоті користувача
-  const el = document.getElementById('headerGroupSwitch');
-  if (el) el.innerHTML = '';
+  const button = document.getElementById('headerGroupSwitch');
+  if (!button) return;
+  const label = GROUP_LABELS[currentGroup];
+  button.innerHTML = `<span>${escapeHtml(label)}</span>${icon('chevronDown', 14)}`;
+  button.setAttribute('aria-label', `Група ${label}. Змінити групу`);
 }
 
 const SCHEDULE_SYNC_INTERVAL_MS = 60 * 60 * 1000; // 1 година
@@ -355,7 +357,46 @@ async function initSchedule() {
   }, 15 * 60 * 1000);
 }
 
+let weekOffset = 0;
+let selectedWeekday = null;
+
+function getDefaultWeekMonday(now) {
+  const monday = getWeekMonday(now);
+  return now.getDay() === 0 || now.getDay() === 6 ? addDays(monday, 7) : monday;
+}
+
+function openScheduleDate(date) {
+  const monday = getWeekMonday(date);
+  // Округлення враховує перехід на літній або зимовий час.
+  weekOffset = Math.round((monday - getDefaultWeekMonday(getNow())) / (7 * 86400000));
+  selectedWeekday = (date.getDay() + 6) % 7;
+  setViewMode('week');
+  document.querySelector('.day-pill.active')?.focus();
+}
+
 function handleScheduleClick(e) {
+  if (e.target.closest('[data-reset-week]')) {
+    weekOffset = 0;
+    selectedWeekday = null;
+    haptic('light');
+    renderSchedule();
+    document.querySelector('.day-pill.active')?.focus({ preventScroll: true });
+    return;
+  }
+
+  const weekControl = e.target.closest('[data-pick-day], [data-shift-week]');
+  if (weekControl) {
+    const { pickDay, shiftWeek } = weekControl.dataset;
+    if (pickDay !== undefined) selectedWeekday = Number(pickDay);
+    else weekOffset += Number(shiftWeek);
+    const selector = pickDay !== undefined
+      ? `[data-pick-day="${pickDay}"]`
+      : `[data-shift-week="${shiftWeek}"]`;
+    haptic('light');
+    renderSchedule();
+    document.querySelector(selector)?.focus({ preventScroll: true });
+    return;
+  }
   const tab = e.target.closest('[data-group-tab]');
   if (tab) {
     setGroup(tab.dataset.groupTab);
@@ -404,21 +445,22 @@ function weekTypeChip(date, extraClass = '') {
 
 function renderDayStrip(monday, activeDate, now, scheduleByDay) {
   const buttons = [];
-  for (let i = 0; i < 5; i++) {
+  const showWeekend = activeDate.getDay() === 0 || activeDate.getDay() === 6;
+  for (let i = 0; i < (showWeekend ? 7 : 5); i++) {
     const d = addDays(monday, i);
     const isSelected = activeDate && isSameDay(d, activeDate);
     const isCurrentToday = isSameDay(d, now);
     const dayObj = scheduleByDay.find(x => x.dayId === i + 1);
     const hasPairs = isTeachingDay(d) && dayObj && dayObj.pairs.some(p => !p.isWindow && isPairOnDate(p, d));
     buttons.push(`
-      <button type="button" class="day-pill ${isSelected ? 'active' : ''} ${isCurrentToday ? 'is-today' : ''}" data-pick-day="${i}">
+      <button type="button" class="day-pill ${isSelected ? 'active' : ''} ${isCurrentToday ? 'is-today' : ''}" data-pick-day="${i}" aria-pressed="${Boolean(isSelected)}" aria-label="${DAY_NAMES[d.getDay()]}, ${formatDayMonth(d)}">
         <span class="day-pill-dow">${DAY_SHORT[d.getDay()]}</span>
         <span class="day-pill-num">${d.getDate()}</span>
         <i class="day-pill-dot ${hasPairs ? 'has-pairs' : ''}"></i>
       </button>
     `);
   }
-  return `<div class="day-strip" role="tablist" aria-label="День тижня">${buttons.join('')}</div>`;
+  return `<div class="day-strip${showWeekend ? ' includes-weekend' : ''}" role="group" aria-label="День тижня">${buttons.join('')}</div>`;
 }
 
 function renderSchedule() {
@@ -435,28 +477,16 @@ function renderSchedule() {
   const livePairNum = getCurrentPairNum(now);
   const scheduleForGroup = getScheduleForGroup(currentGroup);
   const isWeekend = now.getDay() === 0 || now.getDay() === 6;
-  const monday = isWeekend ? addDays(getWeekMonday(now), 7) : getWeekMonday(now);
 
   let html = '';
-
-  if (!hasExplicitGroup()) {
-    html += `
-      <aside class="schedule-group-hint" role="note">
-        <div class="schedule-group-hint-content">
-          ${icon('info', 16)}
-          <span>Показано розклад <strong>${escapeHtml(GROUP_LABELS[PRIMARY_GROUP] || PRIMARY_GROUP)}</strong></span>
-        </div>
-        <button type="button" class="btn btn-outline-lime" onclick="openGroupPicker(event)">
-          ${currentUser ? 'Змінити в профілі' : 'Обрати свою групу'}
-        </button>
-      </aside>
-    `;
-  }
 
   if (currentView === 'today') {
     const dayData = scheduleForGroup.find(d => d.dayId === now.getDay()) || null;
 
-    html += `<div class="now-card" id="nowCard"></div>`;
+    html += `<header class="today-heading">
+      <p>${escapeHtml(DAY_NAMES[now.getDay()])}, ${formatDayMonth(now)}</p>
+      <h1>Сьогодні</h1>
+    </header><div class="now-card" id="nowCard"></div><div class="schedule-notices" id="scheduleNotices" hidden></div>`;
     html += `<div class="days days-single">${createDayCard(dayData, now, {
       isToday: true,
       livePairNum,
@@ -464,32 +494,35 @@ function renderSchedule() {
       detailedHeader: true
     })}</div>`;
   } else {
-    const friday = addDays(monday, 4);
-    const rangeStr = monday.getMonth() === friday.getMonth()
-      ? `${monday.getDate()} – ${formatDayMonth(friday)}`
-      : `${formatDayMonth(monday)} – ${formatDayMonth(friday)}`;
+    const monday = addDays(getDefaultWeekMonday(now), weekOffset * 7);
+    const dayIndex = selectedWeekday ?? (isWeekend ? 0 : now.getDay() - 1);
+    const date = addDays(monday, dayIndex);
+    const lastDay = addDays(monday, dayIndex >= 5 ? 6 : 4);
+    const range = monday.getMonth() === lastDay.getMonth()
+      ? `${monday.getDate()}–${formatDayMonth(lastDay)}`
+      : `${formatDayMonth(monday)} – ${formatDayMonth(lastDay)}`;
+    const isToday = isSameDay(date, now);
 
     html += `
       <div class="week-bar">
+        <button type="button" class="btn btn-icon btn-secondary" data-shift-week="-1" aria-label="Попередній тиждень">${icon('chevronLeft', 18)}</button>
         <div class="week-bar-title">
-          <span class="week-bar-label">${isWeekend ? 'Наступний тиждень' : 'Поточний тиждень'}</span>
-          <span class="week-bar-dates">${rangeStr}</span>
+          <span class="week-bar-label">${escapeHtml(range)}, ${lastDay.getFullYear()}</span>
+          ${weekTypeChip(monday, 'chip-xs')}
+          ${weekOffset ? '<button type="button" class="btn btn-secondary btn-sm" data-reset-week>Цей тиждень</button>' : ''}
         </div>
-        ${weekTypeChip(monday)}
+        <button type="button" class="btn btn-icon btn-secondary" data-shift-week="1" aria-label="Наступний тиждень">${icon('chevronRight', 18)}</button>
+      </div>
+      ${renderDayStrip(monday, date, now, scheduleForGroup)}
+      <div class="days days-single days-week">
+        ${createDayCard(scheduleForGroup[dayIndex], date, {
+          isToday,
+          livePairNum: isToday ? livePairNum : null,
+          editable,
+          compact: true
+        })}
       </div>
     `;
-
-    const days = scheduleForGroup.map(dayData => {
-      const date = addDays(monday, dayData.dayId - 1);
-      const isToday = isSameDay(date, now);
-      return createDayCard(dayData, date, {
-        isToday,
-        livePairNum: isToday ? livePairNum : null,
-        editable,
-        compact: true
-      });
-    }).join('');
-    html += `<div class="days days-week">${days}</div>`;
   }
 
   if (scheduleFromFallback) {
@@ -537,25 +570,20 @@ function createDayCard(dayData, date, opts = {}) {
   const tags = [];
   if (isTodayFinished) {
     tags.push('<span class="chip chip-lime chip-xs">Завершено</span>');
-  } else if (isToday) {
+  } else if (isToday && !detailedHeader) {
     tags.push('<span class="chip chip-lime chip-xs">Сьогодні</span>');
   }
   if (detailedHeader && !isOff) tags.push(weekTypeChip(date, 'chip-xs'));
   if (dayType === 'control' && !isOff) tags.push('<span class="chip chip-blue chip-xs">Контроль</span>');
 
-  const subParts = [formatDayMonth(date)];
+  const subParts = detailedHeader ? [] : [formatDayMonth(date)];
   if (summary) {
     subParts.push(summary.countLabel);
-    if (detailedHeader && summary.endText) {
+    if (summary.endText) {
       subParts.push(`до ${summary.endText}`);
     }
   } else if (isOff && reason) {
     subParts.push(reason);
-  }
-
-  let finishedNotice = '';
-  if (detailedHeader && isTodayFinished) {
-    finishedNotice = `<div class="day-status-banner">${icon('check', 16)}<span>На сьогодні пари вже закінчилися</span></div>`;
   }
 
   let body = '';
@@ -587,12 +615,11 @@ function createDayCard(dayData, date, opts = {}) {
     <article class="day-card ${isToday ? 'is-today' : ''} ${isOff || activePairs.length === 0 ? 'is-empty-day' : ''}">
       <header class="day-head">
         <div class="day-head-text">
-          <h2 class="day-name">${escapeHtml(DAY_NAMES[date.getDay()])}</h2>
+          <h2 class="day-name">${detailedHeader ? 'Пари сьогодні' : escapeHtml(DAY_NAMES[date.getDay()])}</h2>
           <span class="day-date">${escapeHtml(subParts.join(' · '))}</span>
         </div>
         ${tags.length ? `<div class="day-tags">${tags.join('')}</div>` : ''}
       </header>
-      ${finishedNotice}
       <div class="pairs">${body}</div>
     </article>
   `;
@@ -603,6 +630,14 @@ function createPairRow(pair, dayId, date, { isLive, groupCode, compact }) {
   const baseAttrs = `data-day="${dayId}" data-pair="${pair.num}" data-group="${groupCode}"`;
 
   if (pair.isWindow) {
+    if (compact) {
+      return `
+        <div class="pair is-window" ${baseAttrs}>
+          <span class="pair-window-time mono">${slot.from}</span>
+          <span class="pair-window-label">Вікно · ${pair.num} пара</span>
+        </div>
+      `;
+    }
     return `
       <div class="pair is-window" ${baseAttrs}>
         <div class="pair-rail" aria-hidden="true">
@@ -623,20 +658,31 @@ function createPairRow(pair, dayId, date, { isLive, groupCode, compact }) {
   if (isLive && !offWeek) {
     badges.push('<span class="live-pill"><i></i>Зараз</span>');
   }
-  if (pair.parity) {
+  if (pair.parity && (!compact || offWeek)) {
     const label = offWeek
       ? (pair.parity === 'num' ? 'За чисельником' : 'За знаменником')
       : (pair.parity === 'num' ? 'Чисельник' : 'Знаменник');
     badges.push(`<span class="pair-parity ${pair.parity === 'num' ? 'is-num' : 'is-den'}">${label}</span>`);
   }
 
-  const metaParts = [`${pair.num} пара`];
-  if (pair.teacher) metaParts.push(escapeHtml(pair.teacher));
-  if (pair.classroom) metaParts.push(`ауд. ${escapeHtml(pair.classroom)}`);
+  if (compact) {
+    return `
+      <div class="pair ${isLive && !offWeek ? 'is-live' : ''} ${offWeek ? 'is-off-week' : ''}" ${baseAttrs}>
+        <div class="pair-time is-compact mono"><span class="pair-from">${slot.from}</span><span class="pair-to">${slot.to}</span></div>
+        <div class="pair-body">
+          <div class="pair-subject-row"><span class="pair-subject">${escapeHtml(pair.subject)}</span>${badges.join('')}</div>
+          ${pair.classroom ? `<div class="week-pair-room">Ауд. ${escapeHtml(pair.classroom)}</div>` : ''}
+          ${pair.teacher ? `<div class="pair-meta">${escapeHtml(pair.teacher)}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
 
-  const timeHtml = compact
-    ? `<div class="pair-time is-compact mono"><span class="pair-from">${slot.from}</span><span class="pair-to">${slot.to}</span></div>`
-    : `<div class="pair-time mono"><span class="pair-from">${slot.from} – ${slot.to}</span></div>`;
+  const metaParts = [`${pair.num} пара`];
+  if (pair.classroom) metaParts.push(`<strong>Ауд. ${escapeHtml(pair.classroom)}</strong>`);
+  if (pair.teacher) metaParts.push(escapeHtml(pair.teacher));
+
+  const timeHtml = `<div class="pair-time mono"><span class="pair-from">${slot.from} – ${slot.to}</span></div>`;
 
   return `
     <div class="pair ${isLive && !offWeek ? 'is-live' : ''} ${offWeek ? 'is-off-week' : ''}" ${baseAttrs}>

@@ -77,18 +77,20 @@ function setViewMode(mode, { silent = false } = {}) {
   if (!silent) haptic('light');
 
   document.querySelectorAll('.tab[data-view]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.view === mode);
+    const active = btn.dataset.view === mode;
+    btn.classList.toggle('active', active);
+    if (active) btn.setAttribute('aria-current', 'page');
+    else btn.removeAttribute('aria-current');
   });
 
   const schedEl = document.getElementById('scheduleContainer');
   const calEl = document.getElementById('calendarContainer');
-  const shameEl = document.getElementById('shameContainer');
   const visitsEl = document.getElementById('visitsContainer');
   const starostaEl = document.getElementById('starostaContainer');
 
   schedEl.hidden = !(mode === 'week' || mode === 'today');
+  schedEl.dataset.view = mode;
   calEl.hidden = mode !== 'calendar';
-  shameEl.hidden = mode !== 'shame';
   if (visitsEl) visitsEl.hidden = mode !== 'visits';
   if (starostaEl) starostaEl.hidden = mode !== 'starosta';
 
@@ -96,8 +98,6 @@ function setViewMode(mode, { silent = false } = {}) {
     renderSchedule();
   } else if (mode === 'calendar') {
     renderCalendar();
-  } else if (mode === 'shame') {
-    loadShameEntries();
   } else if (mode === 'visits') {
     loadAdminVisits();
   } else if (mode === 'starosta') {
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   setViewMode(currentView, { silent: true });
-  await initSchedule();
+  initSchedule().catch(error => console.warn('Schedule initialization failed:', error));
   updateClockAndCountdown(true);
   setInterval(updateClockAndCountdown, 1000);
   await initAuth();

@@ -26,44 +26,6 @@ function getRealPairsForDate(date, groupCode = currentGroup) {
   return dayData.pairs.filter(p => !p.isWindow && isPairOnDate(p, date));
 }
 
-const NOW_RING_RADIUS = 23;
-const NOW_RING_CIRCUMFERENCE = 2 * Math.PI * NOW_RING_RADIUS;
-
-function formatRemainMinutesText(sec) {
-  const mins = Math.max(1, Math.ceil(Math.max(0, sec) / 60));
-  return `залишилось ${mins} хв`;
-}
-
-function formatWindowMinutesText(sec) {
-  const mins = Math.max(1, Math.ceil(Math.max(0, sec) / 60));
-  return `Вікно ${mins} хв`;
-}
-
-function buildCircularProgressRing(progressPct, centerVal, centerUnit = '') {
-  const pct = Math.max(0, Math.min(100, Number(progressPct) || 0));
-  const offset = NOW_RING_CIRCUMFERENCE * (1 - pct / 100);
-  return `
-    <div class="now-ring" aria-hidden="true">
-      <svg class="now-ring-svg" viewBox="0 0 58 58">
-        <circle class="now-ring-track" cx="29" cy="29" r="${NOW_RING_RADIUS}" />
-        <circle
-          class="now-ring-fill"
-          data-now-ring-circle
-          cx="29"
-          cy="29"
-          r="${NOW_RING_RADIUS}"
-          stroke-dasharray="${NOW_RING_CIRCUMFERENCE.toFixed(2)}"
-          stroke-dashoffset="${offset.toFixed(2)}"
-        />
-      </svg>
-      <div class="now-ring-center">
-        <span class="now-ring-val mono" data-now-ring-val>${escapeHtml(String(centerVal))}</span>
-        ${centerUnit ? `<span class="now-ring-unit">${escapeHtml(centerUnit)}</span>` : ''}
-      </div>
-    </div>
-  `;
-}
-
 // Знаходить стан на зараз: активна пара, перерва/вікно до наступної пари сьогодні,
 // або наступна пара в інший навчальний день.
 function computeScheduleStatus(now = getNow(), groupCode = currentGroup) {
@@ -81,26 +43,17 @@ function computeScheduleStatus(now = getNow(), groupCode = currentGroup) {
         kind: 'live',
         pair: p,
         slot,
-        remainingSec: endSec - secNow,
-        progress: ((secNow - startSec) / (endSec - startSec)) * 100
+        remainingSec: endSec - secNow
       };
     }
     if (secNow < startSec) {
       const firstSlotStartSec = timeSlots[1] ? timeSlots[1].start * 60 : 8 * 3600;
       const isWindow = prevEndSec !== null || (p.num > 1 && secNow >= firstSlotStartSec);
-      const windowStartSec = prevEndSec !== null
-        ? prevEndSec
-        : (p.num > 1 && secNow >= firstSlotStartSec ? firstSlotStartSec : Math.max(0, startSec - 3600));
-      const totalWinSec = Math.max(60, startSec - windowStartSec);
-      const progress = Math.max(0, Math.min(100, ((secNow - windowStartSec) / totalWinSec) * 100));
-
       return {
         kind: isWindow ? 'window' : 'today-next',
         pair: p,
         slot,
-        untilSec: startSec - secNow,
-        windowTotalSec: totalWinSec,
-        progress
+        untilSec: startSec - secNow
       };
     }
     prevEndSec = endSec;
@@ -115,22 +68,18 @@ function computeScheduleStatus(now = getNow(), groupCode = currentGroup) {
     if (pairs.length > 0) {
       const first = pairs[0];
       const slot = timeSlots[first.num];
-      const target = new Date(d);
-      target.setHours(Math.floor(slot.start / 60), slot.start % 60, 0, 0);
       return {
         kind: 'upcoming',
         todayFinished: hadPairsToday,
-        todayCount: todayPairs.length,
         date: d,
         daysAhead: add,
         pair: first,
-        slot,
-        untilSec: Math.max(0, Math.floor((target - now) / 1000))
+        slot
       };
     }
   }
 
-  return { kind: 'none', todayFinished: hadPairsToday, todayCount: todayPairs.length };
+  return { kind: 'none', todayFinished: hadPairsToday };
 }
 
 function updateClockAndCountdown(forceRender = false) {
@@ -148,6 +97,7 @@ function updateClockAndCountdown(forceRender = false) {
   if (!card) return;
 
   const status = computeScheduleStatus(now, currentGroup);
+  const notices = document.getElementById('scheduleNotices');
   if (typeof activeAnnouncement !== 'undefined' && activeAnnouncement && typeof isAnnouncementExpired === 'function' && isAnnouncementExpired(activeAnnouncement)) {
     activeAnnouncement = null;
     if (typeof triggerExpiredAnnouncementsCleanup === 'function') {
@@ -162,241 +112,61 @@ function updateClockAndCountdown(forceRender = false) {
     ? getActiveScheduleChangeForGroup(currentGroup)
     : null;
   const changeSig = changeObj ? changeObj.key : 'nochange';
-  const signature = `${status.kind}:${status.pair ? status.pair.num : 0}:${currentGroup}:${newsSig}:${changeSig}`;
-
+  const signature = `${status.kind}:${status.pair?.num ?? 0}:${now.toDateString()}:${currentGroup}`;
   if (forceRender || card.dataset.sig !== signature) {
     card.dataset.sig = signature;
-    card.className = `now-card is-${status.kind} ${newsObj ? 'has-news' : ''} ${changeObj ? 'has-change' : ''}`.trim();
     card.innerHTML = buildNowCardHtml(status, now);
   } else {
-    const timerEl = card.querySelector('[data-now-timer]');
-    if (timerEl) {
-      const sec = status.kind === 'live' ? status.remainingSec : status.untilSec;
-      timerEl.textContent = formatCountdown(sec);
+    const statusLabel = card.querySelector('[data-now-status]');
+    if (statusLabel) {
+      const text = getNowStatusLabel(status);
+      if (statusLabel.textContent !== text) statusLabel.textContent = text;
     }
-    const remainMinEl = card.querySelector('[data-now-remain-min]');
-    if (remainMinEl && status.kind === 'live') {
-      remainMinEl.textContent = formatRemainMinutesText(status.remainingSec);
-    }
-    const windowMinEl = card.querySelector('[data-now-window-min]');
-    if (windowMinEl && (status.kind === 'window' || status.kind === 'today-next')) {
-      windowMinEl.textContent = formatWindowMinutesText(status.untilSec);
-    }
-    const ringCircle = card.querySelector('[data-now-ring-circle]');
-    if (ringCircle && (status.kind === 'live' || status.kind === 'window')) {
-      const pct = Math.max(0, Math.min(100, status.progress || 0));
-      const offset = NOW_RING_CIRCUMFERENCE * (1 - pct / 100);
-      ringCircle.setAttribute('stroke-dashoffset', offset.toFixed(2));
-    }
-    const ringVal = card.querySelector('[data-now-ring-val]');
-    if (ringVal) {
-      if (status.kind === 'live') {
-        ringVal.textContent = `${Math.round(status.progress)}%`;
-      } else if (status.kind === 'window') {
-        ringVal.textContent = String(Math.max(1, Math.ceil(status.untilSec / 60)));
-      }
-    }
-    const barEl = card.querySelector('[data-now-progress]');
-    if (barEl && status.kind === 'live') {
-      barEl.style.width = `${status.progress.toFixed(1)}%`;
-    }
-    const waveEl = card.querySelector('[data-now-wave]');
-    if (waveEl && (status.kind === 'live' || status.kind === 'window')) {
-      const bars = waveEl.querySelectorAll('i');
-      const activeCount = Math.round(((status.progress || 0) / 100) * bars.length);
-      bars.forEach((b, idx) => b.classList.toggle('is-filled', idx < activeCount));
+  }
+
+  if (notices) {
+    const noticeSignature = `${newsSig}:${changeSig}`;
+    if (forceRender || notices.dataset.sig !== noticeSignature) {
+      notices.dataset.sig = noticeSignature;
+      notices.innerHTML = buildNowCardScheduleChangeHtml(currentGroup) + buildNowCardAnnouncementHtml();
+      notices.hidden = !notices.firstElementChild;
     }
   }
 }
 
-function buildWaveBars(progressPct = 40, count = 28) {
-  const heights = [38, 62, 48, 80, 95, 70, 52, 86, 64, 42, 74, 92, 60, 46, 82, 68, 50, 88, 96, 72, 54, 78, 62, 44, 84, 68, 52, 40];
-  const activeCount = Math.round((Math.max(8, Math.min(100, progressPct)) / 100) * count);
-  const bars = [];
-  for (let i = 0; i < count; i++) {
-    const h = heights[i % heights.length];
-    const filled = i < activeCount ? 'is-filled' : '';
-    bars.push(`<i class="${filled}" style="height:${h}%"></i>`);
-  }
-  return `<div class="now-wave" data-now-wave aria-hidden="true">${bars.join('')}</div>`;
+function getNowStatusLabel(status) {
+  const seconds = status.kind === 'live' ? status.remainingSec : status.untilSec;
+  const minutes = Math.max(1, Math.ceil(seconds / 60));
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  const duration = [hours ? `${hours} год` : '', remainder ? `${remainder} хв` : ''].filter(Boolean).join(' ');
+  return status.kind === 'live' ? `Йде пара · ще ${duration}` : `Наступна пара · через ${duration}`;
 }
 
 function buildNowCardHtml(status, now) {
-  const dateHeader = `${DAY_NAMES[now.getDay()]}, ${formatDayMonth(now)}`;
-  const newsHtml = (typeof buildNowCardAnnouncementHtml === 'function')
-    ? buildNowCardAnnouncementHtml()
+  const dayStatus = status.todayFinished ? 'Пари на сьогодні закінчилися' : (getNoClassesReason(now) || 'Сьогодні пар немає');
+  if (status.kind === 'none') {
+    return `
+      <h2 class="now-title">${escapeHtml(dayStatus)}</h2>
+      <p class="now-sub">У розкладі поки немає наступної пари</p>
+    `;
+  }
+
+  const { pair, slot } = status;
+  const upcoming = status.kind === 'upcoming';
+  const when = upcoming
+    ? (status.daysAhead === 1 ? 'Завтра' : `${DAY_SHORT[status.date.getDay()]}, ${formatDayMonth(status.date)}`)
     : '';
-  const changeHtml = (typeof buildNowCardScheduleChangeHtml === 'function')
-    ? buildNowCardScheduleChangeHtml(currentGroup)
-    : '';
-  const bannersHtml = `${changeHtml}${newsHtml}`;
-
-  if (status.kind === 'live') {
-    const p = status.pair;
-    const meta = [p.teacher, p.classroom ? `ауд. ${p.classroom}` : ''].filter(Boolean).join(' · ') || dateHeader;
-    const remainText = formatRemainMinutesText(status.remainingSec);
-    return `
-      ${bannersHtml}
-      <div class="now-top">
-        <div class="now-head-left">
-          <div class="now-badges-row">
-            <span class="live-pill"><i></i>Йде пара</span>
-            <span class="now-hero-remain" data-now-remain-min>${escapeHtml(remainText)}</span>
-          </div>
-          <div class="now-title">${escapeHtml(p.subject)}</div>
-          <div class="now-sub">${escapeHtml(meta)}</div>
-        </div>
-        ${buildCircularProgressRing(status.progress, `${Math.round(status.progress)}%`)}
-      </div>
-      ${buildWaveBars(status.progress)}
-      <div class="now-stats">
-        <div class="now-stat">
-          <span class="now-stat-label">Час пари</span>
-          <strong class="now-stat-val mono">${escapeHtml(status.slot.from)} – ${escapeHtml(status.slot.to)}</strong>
-        </div>
-        <div class="now-stat">
-          <span class="now-stat-label">Заняття</span>
-          <strong class="now-stat-val">${p.num} пара</strong>
-        </div>
-        <div class="now-stat">
-          <span class="now-stat-label">Залишилось</span>
-          <strong class="now-stat-val mono" data-now-timer>${formatCountdown(status.remainingSec)}</strong>
-        </div>
-      </div>
-    `;
-  }
-
-  if (status.kind === 'window') {
-    const p = status.pair;
-    const meta = [p.teacher, p.classroom ? `ауд. ${p.classroom}` : ''].filter(Boolean).join(' · ') || dateHeader;
-    const winText = formatWindowMinutesText(status.untilSec);
-    const winMins = Math.max(1, Math.ceil(status.untilSec / 60));
-    return `
-      ${bannersHtml}
-      <div class="now-top">
-        <div class="now-head-left">
-          <div class="now-badges-row">
-            <span class="now-window-badge" data-now-window-min>${escapeHtml(winText)}</span>
-          </div>
-          <div class="now-title">Далі: ${escapeHtml(p.subject)}</div>
-          <div class="now-sub">${escapeHtml(meta)}</div>
-        </div>
-        ${buildCircularProgressRing(status.progress, winMins, 'хв')}
-      </div>
-      ${buildWaveBars(status.progress || 25)}
-      <div class="now-stats">
-        <div class="now-stat">
-          <span class="now-stat-label">Час пари</span>
-          <strong class="now-stat-val mono">${escapeHtml(status.slot.from)} – ${escapeHtml(status.slot.to)}</strong>
-        </div>
-        <div class="now-stat">
-          <span class="now-stat-label">Наступна</span>
-          <strong class="now-stat-val">${p.num} пара</strong>
-        </div>
-        <div class="now-stat">
-          <span class="now-stat-label">Початок через</span>
-          <strong class="now-stat-val mono" data-now-timer>${formatCountdown(status.untilSec)}</strong>
-        </div>
-      </div>
-    `;
-  }
-
-  if (status.kind === 'today-next') {
-    const p = status.pair;
-    const meta = [p.teacher, p.classroom ? `ауд. ${p.classroom}` : ''].filter(Boolean).join(' · ') || dateHeader;
-    return `
-      ${bannersHtml}
-      <div class="now-top">
-        <div class="now-head-left">
-          <div class="now-title">${escapeHtml(p.subject)}</div>
-          <div class="now-sub">${escapeHtml(meta)}</div>
-        </div>
-      </div>
-      ${buildWaveBars(22)}
-      <div class="now-stats">
-        <div class="now-stat">
-          <span class="now-stat-label">Час пари</span>
-          <strong class="now-stat-val mono">${escapeHtml(status.slot.from)} – ${escapeHtml(status.slot.to)}</strong>
-        </div>
-        <div class="now-stat">
-          <span class="now-stat-label">Наступна</span>
-          <strong class="now-stat-val">${p.num} пара</strong>
-        </div>
-        <div class="now-stat">
-          <span class="now-stat-label">Початок через</span>
-          <strong class="now-stat-val mono" data-now-timer>${formatCountdown(status.untilSec)}</strong>
-        </div>
-      </div>
-    `;
-  }
-
-  if (status.kind === 'upcoming') {
-    const p = status.pair;
-    const reason = getNoClassesReason(now);
-    const when = status.daysAhead === 1 ? 'Завтра' : `${DAY_SHORT[status.date.getDay()]}, ${status.date.getDate()}.${pad2(status.date.getMonth() + 1)}`;
-
-    if (status.todayFinished) {
-      const subtitle = `Усі заняття (${status.todayCount} ${plural(status.todayCount, ['пара', 'пари', 'пар'])}) завершено`;
-      return `
-        ${bannersHtml}
-        <div class="now-top">
-          <div class="now-head-left">
-            <div class="now-title">На сьогодні пари закінчилися</div>
-            <div class="now-sub">${escapeHtml(subtitle)}</div>
-          </div>
-        </div>
-        ${buildWaveBars(100)}
-        <div class="now-stats">
-          <div class="now-stat">
-            <span class="now-stat-label">Наступна</span>
-            <strong class="now-stat-val">${p.num} пара · ${escapeHtml(status.slot.from)}</strong>
-          </div>
-          <div class="now-stat">
-            <span class="now-stat-label">Коли</span>
-            <strong class="now-stat-val mono">${escapeHtml(when)}</strong>
-          </div>
-          <div class="now-stat">
-            <span class="now-stat-label">До початку</span>
-            <strong class="now-stat-val mono" data-now-timer>${formatCountdown(status.untilSec)}</strong>
-          </div>
-        </div>
-      `;
-    }
-
-    const offTitle = reason || 'Вихідний';
-    return `
-      ${bannersHtml}
-      <div class="now-top">
-        <div class="now-head-left">
-          <div class="now-title is-off-hero">${escapeHtml(offTitle)}</div>
-          <div class="now-sub">Сьогодні занять немає</div>
-        </div>
-      </div>
-      <div class="now-stats">
-        <div class="now-stat">
-          <span class="now-stat-label">Наступна</span>
-          <strong class="now-stat-val">${p.num} пара · ${escapeHtml(status.slot.from)}</strong>
-        </div>
-        <div class="now-stat">
-          <span class="now-stat-label">Коли</span>
-          <strong class="now-stat-val mono">${escapeHtml(when)}</strong>
-        </div>
-        <div class="now-stat">
-          <span class="now-stat-label">До початку</span>
-          <strong class="now-stat-val mono" data-now-timer>${formatCountdown(status.untilSec)}</strong>
-        </div>
-      </div>
-    `;
-  }
-
-  const fallbackReason = getNoClassesReason(now);
+  const time = status.kind === 'live' ? `до ${slot.to}` : `${slot.from}–${slot.to}`;
   return `
-    ${bannersHtml}
-    <div class="now-top">
-      <div class="now-head-left">
-        <div class="now-title ${status.todayFinished ? '' : 'is-off-hero'}">${escapeHtml(status.todayFinished ? 'На сьогодні пари закінчилися' : (fallbackReason || 'Вихідний'))}</div>
-        <div class="now-sub">${escapeHtml(status.todayFinished ? dateHeader : 'Сьогодні занять немає')}</div>
-      </div>
+    ${upcoming
+      ? `<p class="now-status">${escapeHtml(dayStatus)} · наступна пара</p>`
+      : `<p class="now-status" data-now-status>${escapeHtml(getNowStatusLabel(status))}</p>`}
+    <h2 class="now-title">${escapeHtml(pair.subject)}</h2>
+    <div class="now-meta">
+      ${pair.classroom ? `<strong>${icon('pin', 16)} Ауд. ${escapeHtml(pair.classroom)}</strong>` : ''}
+      <span>${icon('clock', 16)} ${when ? `${escapeHtml(when)} · ` : ''}${escapeHtml(time)}</span>
     </div>
+    ${pair.teacher ? `<p class="now-sub">${escapeHtml(pair.teacher)}</p>` : ''}
   `;
 }

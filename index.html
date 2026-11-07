@@ -33,15 +33,12 @@
 
   <link rel="stylesheet" href="css/base.css?v=20261022-03">
   <link rel="stylesheet" href="css/app-container.css?v=20261022-03">
-  <link rel="stylesheet" href="css/header.css?v=20261022-03">
-  <link rel="stylesheet" href="css/controls.css?v=20261022-03">
-  <link rel="stylesheet" href="css/schedule.css?v=20261022-03">
-  <link rel="stylesheet" href="css/calendar.css?v=20261022-03">
-  <link rel="stylesheet" href="css/shame.css?v=20261022-03">
+  <link rel="stylesheet" href="css/header.css?v=20261107-02">
+  <link rel="stylesheet" href="css/controls.css?v=20261107-03">
+  <link rel="stylesheet" href="css/schedule.css?v=20261107-06">
+  <link rel="stylesheet" href="css/calendar.css?v=20261107-05">
   <link rel="stylesheet" href="css/visits.css?v=20261022-03">
-  <link rel="stylesheet" href="css/reactions.css?v=20261022-03">
-  <link rel="stylesheet" href="css/comments.css?v=20261022-03">
-  <link rel="stylesheet" href="css/modal.css?v=20261022-03">
+  <link rel="stylesheet" href="css/modal.css?v=20261107-03">
   <link rel="stylesheet" href="css/confetti.css?v=20261022-03">
   <link rel="stylesheet" href="css/footer.css?v=20261022-03">
   <link rel="stylesheet" href="css/auth.css?v=20261022-03">
@@ -70,16 +67,12 @@
               <span class="tab-label">Сьогодні</span>
             </button>
             <button class="tab" id="btnWeek" data-view="week" onclick="setViewMode('week')" aria-label="Тиждень" title="Тиждень">
-              <span class="tab-icon" data-icon="barChart"></span>
+              <span class="tab-icon" data-icon="calendarWeek"></span>
               <span class="tab-label">Тиждень</span>
             </button>
             <button class="tab" id="btnCalendar" data-view="calendar" onclick="setViewMode('calendar')" aria-label="Календар" title="Календар">
               <span class="tab-icon" data-icon="calendar"></span>
               <span class="tab-label">Календар</span>
-            </button>
-            <button class="tab" id="btnShame" data-view="shame" onclick="setViewMode('shame')" aria-label="Дошка" title="Дошка">
-              <span class="tab-icon" data-icon="board"></span>
-              <span class="tab-label">Дошка</span>
             </button>
             <button class="tab" id="btnVisits" data-view="visits" onclick="setViewMode('visits')" aria-label="Адмін" title="Візити та старости (Адмін)" hidden>
               <span class="tab-icon" data-icon="users"></span>
@@ -93,6 +86,7 @@
         </nav>
 
         <div class="topbar-actions">
+          <button type="button" class="group-pill" id="headerGroupSwitch" onclick="openGroupPicker(event)" aria-label="Змінити групу"></button>
           <button class="btn btn-icon btn-glass" id="btnThemeToggle" onclick="toggleTheme()" title="Змінити тему" aria-label="Змінити тему">
             <span data-icon="moon"></span>
           </button>
@@ -130,32 +124,7 @@
         <div class="months" id="monthsGrid"></div>
       </section>
 
-      <!-- Дошка ганьби -->
-      <section class="view" id="shameContainer" hidden>
-        <div class="section-head">
-          <div>
-            <h1 class="section-title">Дошка ганьби</h1>
-            <p class="section-sub">Публікації та реакції групи</p>
-          </div>
-          <div class="section-actions">
-            <button class="btn btn-icon btn-danger-ghost" id="btnClearBoard" onclick="clearBoard()" title="Очистити дошку" hidden>
-              <span data-icon="trash"></span>
-            </button>
-            <button class="btn btn-primary btn-sm" id="btnAddShame" onclick="openShameModal()">
-              <span data-icon="plus"></span><span>Додати</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="segmented" role="tablist">
-          <button class="segmented-item active" id="btnShameNew" onclick="setShameSubView('new')">Нові</button>
-          <button class="segmented-item" id="btnShameTop" onclick="setShameSubView('top')">Топ тижня / місяця</button>
-        </div>
-
-        <div class="shame-grid" id="shameGrid"></div>
-      </section>
-
-      <!-- Відвідування та керування старостами (ТІЛЬКИ і ТІЛЬКИ для адміна — 5 вкладка) -->
+      <!-- Відвідування та керування старостами (для адміністратора) -->
       <section class="view" id="visitsContainer" hidden>
         <div class="section-head">
           <div>
@@ -180,12 +149,12 @@
         <p class="visits-retention-note">Дані про візити зберігаються 1 тиждень: заходи, яким більше 7 днів, автоматично зникають.</p>
       </section>
 
-      <!-- Панель старости: публікація важливих новин (5 вкладка для старост, 6 вкладка для адміна) -->
+      <!-- Панель старости: публікація важливих новин -->
       <section class="view" id="starostaContainer" hidden>
         <div class="section-head">
           <div>
             <h1 class="section-title">Важливі новини</h1>
-            <p class="section-sub">Зʼявляються у синьому блоці на головній та дублюються ботом у Telegram</p>
+            <p class="section-sub">Зʼявляються під карткою пари на головній та дублюються ботом у Telegram</p>
           </div>
           <div class="section-actions">
             <button class="btn btn-secondary btn-sm" onclick="loadStarostaAnnouncements()">
@@ -277,66 +246,21 @@
   <!-- Модальне вікно: вибір групи для гостя -->
   <div class="sheet-backdrop" id="guestGroupModal"></div>
 
-  <!-- Модальне вікно: додати на дошку -->
-  <div class="sheet-backdrop" id="shameModal">
-    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shameModalTitle">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header">
-        <h2 class="sheet-title" id="shameModalTitle">Новий запис</h2>
-        <button class="btn btn-icon btn-ghost" onclick="closeShameModal()" aria-label="Закрити"><span data-icon="close"></span></button>
-      </div>
-
-      <div class="form-error" id="modalError" hidden></div>
-
-      <form id="shameForm" class="form" onsubmit="handleShameSubmit(event)">
-        <label class="field">
-          <span class="field-label">Ім'я або нікнейм</span>
-          <input type="text" id="shameName" class="input" placeholder="Хто потрапив на дошку?" required maxlength="100" autocomplete="off" />
-        </label>
-
-        <label class="field">
-          <span class="field-label">Опис</span>
-          <textarea id="shameReason" class="input textarea" placeholder="Що трапилося…" required maxlength="500"></textarea>
-        </label>
-
-        <div class="field">
-          <span class="field-label">Фото <span class="field-hint">до 15 МБ</span></span>
-          <label class="file-drop" id="fileDrop">
-            <input type="file" id="shamePhoto" accept="image/*" onchange="handleFileSelect(event)" required />
-            <img class="file-preview" id="filePreview" alt="" hidden />
-            <span class="file-drop-text" id="fileLabel">
-              <span data-icon="image"></span>
-              <span>Обрати фото</span>
-            </span>
-          </label>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnSubmitShame">
-          <span id="submitBtnText">Опублікувати</span>
-        </button>
-      </form>
-    </div>
-  </div>
-
   <!-- Сповіщення -->
   <div class="toast-root" id="toastRoot" aria-live="assertive"></div>
 
   <script src="js/config.js?v=20261022-03"></script>
   <script src="js/data.js?v=20261022-03"></script>
-  <script src="js/state.js?v=20261022-03"></script>
-  <script src="js/utils.js?v=20261022-03"></script>
+  <script src="js/state.js?v=20261107-03"></script>
+  <script src="js/utils.js?v=20261107-03"></script>
   <script src="js/academic.js?v=20261022-03"></script>
   <script src="js/confetti.js?v=20261022-03"></script>
-  <script src="js/schedule.js?v=20261022-03"></script>
-  <script src="js/schedule-admin.js?v=20261022-03"></script>
-  <script src="js/calendar.js?v=20261022-03"></script>
-  <script src="js/clock.js?v=20261022-03"></script>
-  <script src="js/auth.js?v=20261022-03"></script>
-  <script src="js/reactions.js?v=20261022-03"></script>
-  <script src="js/comments.js?v=20261022-03"></script>
-  <script src="js/shame-board.js?v=20261022-03"></script>
-  <script src="js/shame-form.js?v=20261022-03"></script>
+  <script src="js/schedule.js?v=20261107-06"></script>
+  <script src="js/schedule-admin.js?v=20261107-02"></script>
+  <script src="js/calendar.js?v=20261107-05"></script>
+  <script src="js/clock.js?v=20261107-06"></script>
+  <script src="js/auth.js?v=20261107-03"></script>
   <script src="js/visits.js?v=20261022-03"></script>
-  <script src="js/app.js?v=20261022-03"></script>
+  <script src="js/app.js?v=20261107-06"></script>
 </body>
 </html>

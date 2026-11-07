@@ -15,7 +15,7 @@ function writeStored(key, value) {
   try { localStorage.setItem(key, value); } catch {}
 }
 
-const VALID_VIEWS = ['today', 'week', 'calendar', 'shame', 'visits', 'starosta'];
+const VALID_VIEWS = ['today', 'week', 'calendar', 'visits', 'starosta'];
 
 const URL_PARAMS = (() => {
   try { return new URLSearchParams(window.location.search); }
@@ -63,10 +63,6 @@ let dbRawRows = null;
 let scheduleLoaded = false;
 let scheduleFromFallback = false;
 
-let cachedShameEntries = [];
-let shameLoaded = false;
-let currentShameSubView = 'new';
-
 let cachedVisits = [];
 let cachedAdminUsers = [];
 let visitsLoaded = false;
@@ -78,12 +74,6 @@ let cachedAnnouncements = [];
 let announcementExpanded = false;
 
 let scheduleChangeMeta = null; // { changedAt: string, summaryByGroup: Record<string, string[]> }
-
-const POPULAR_EMOJIS = ['🐳', '❤️', '😍', '😡', '😱', '🔥', '🥶', '💀', '👍', '👎'];
-let userReactionsMap = {};     // entryId -> emoji
-
-const commentsCache = {};      // entryId -> array of comments
-const loadedComments = {};     // entryId -> bool (уже завантажено)
 
 let particles = [];
 let confettiLoopRunning = false;

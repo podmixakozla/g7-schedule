@@ -47,6 +47,7 @@ function formatCountdown(totalSec) {
 // ── Іконки (Lucide, MIT) ──
 const ICON_PATHS = {
   home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  calendarWeek: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M7 15h10"/>',
   barChart: '<line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
@@ -55,7 +56,6 @@ const ICON_PATHS = {
   bolt: '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
   list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
   calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
-  board: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
   trash: '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   close: '<path d="M18 6 6 18M6 6l12 12"/>',
@@ -182,16 +182,53 @@ function closeSheet(backdrop) {
   syncTelegramBackButton();
 }
 
-// Закриває верхній відкритий шар (лайтбокс → пікер → модалка). Повертає true, якщо щось закрито.
+function openLightbox(src, alt) {
+  const existing = document.getElementById('photoLightbox');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'photoLightbox';
+  overlay.className = 'lightbox-overlay';
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'lightbox-close';
+  closeBtn.setAttribute('aria-label', 'Закрити');
+  closeBtn.innerHTML = icon('close', 20);
+  closeBtn.onclick = closeLightbox;
+
+  const img = document.createElement('img');
+  img.className = 'lightbox-img';
+  img.src = src;
+  img.alt = alt || '';
+
+  overlay.append(closeBtn, img);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeLightbox();
+  });
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('open'));
+  syncTelegramBackButton();
+}
+
+function closeLightbox() {
+  const overlay = document.getElementById('photoLightbox');
+  if (overlay) {
+    overlay.classList.remove('open');
+    setTimeout(() => {
+      overlay.remove();
+      syncTelegramBackButton();
+    }, 200);
+  }
+}
+
+// Закриває верхній відкритий шар (лайтбокс → меню → модалка). Повертає true, якщо щось закрито.
 function closeTopLayer() {
   if (document.getElementById('photoLightbox')) { closeLightbox(); return true; }
-  if (typeof activePickerEl !== 'undefined' && activePickerEl) { closeReactionPicker(); return true; }
   const menu = document.querySelector('.user-menu.open');
   if (menu) { menu.classList.remove('open'); return true; }
   const open = Array.from(document.querySelectorAll('.sheet-backdrop.open')).pop();
   if (open) {
-    if (open.id === 'shameModal') closeShameModal();
-    else if (open.id === 'authOverlay') hideAuthOverlay();
+    if (open.id === 'authOverlay') hideAuthOverlay();
     else if (open.id === 'scheduleAdminModal') closeScheduleAdminModal();
     else closeSheet(open);
     return true;

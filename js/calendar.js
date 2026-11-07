@@ -100,13 +100,11 @@ function renderCalendar() {
           if (col >= 5) cls += ' is-weekend';
           if (isTodayCell) cls += ' is-today';
 
-          let attrs = `title="${dNum} ${MONTH_GENITIVE[m.monthIdx]} · ${DAY_TYPE_LABELS[type]} · ${isNumerator ? 'Чисельник' : 'Знаменник'}"`;
-          if (m.studentDay === dNum) {
-            cls += ' is-student-day';
-            attrs = `onclick="triggerStudentDayEasterEgg(event)" title="17 листопада — День студента"`;
-          }
-
-          cells += `<td class="${cls}" ${attrs}><span>${dNum}</span></td>`;
+          const isStudentDay = m.studentDay === dNum;
+          if (isStudentDay) cls += ' is-student-day';
+          const label = `${dNum} ${MONTH_GENITIVE[m.monthIdx]} ${m.year} · ${DAY_TYPE_LABELS[type]}${isStudentDay ? ' · День студента' : ''}`;
+          const celebration = isStudentDay ? 'triggerStudentDayEasterEgg(event); ' : '';
+          cells += `<td class="${cls}"><button type="button" class="cal-date" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" ${isTodayCell ? 'aria-current="date"' : ''} onclick="${celebration}openScheduleDate(new Date(${m.year}, ${m.monthIdx}, ${dNum}))"><span>${dNum}</span></button></td>`;
           dayCounter++;
         }
 

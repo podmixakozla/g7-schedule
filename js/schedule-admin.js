@@ -461,7 +461,7 @@ function buildNowCardAnnouncementHtml() {
 
   const photos = getAnnouncementPhotos(a);
   const hasPhotos = photos.length > 0;
-  const isLong = text.length > 140 || text.split('\n').length > 3;
+  const isLong = text.length > 60 || text.split('\n').length > 2;
   const canExpand = isLong || hasPhotos;
   const expanded = Boolean(announcementExpanded);
   const authorLabel = a.author_username

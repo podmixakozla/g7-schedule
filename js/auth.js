@@ -25,7 +25,7 @@ function showAuthOverlay() {
       <div class="auth-sheet-body">
         <div class="auth-emblem">${TELEGRAM_SVG}</div>
         <h3 class="auth-heading">Увійдіть через Telegram</h3>
-        <p class="auth-desc">Щоб залишати реакції, коментарі та додавати пости на дошку.</p>
+        <p class="auth-desc">Щоб зберегти групу в профілі та отримувати її новини в боті.</p>
         ${notice}
         <div class="form-error" id="authError" hidden></div>
         <button class="btn btn-telegram btn-block btn-lg" id="btnTelegramAuth" onclick="authenticateWithTelegram()">
@@ -250,19 +250,13 @@ function getUserInitials(user = currentUser) {
 }
 
 function renderUserSlot() {
+  renderHeaderGroupSwitch();
   const slot = document.getElementById('userSlot');
   if (!slot) return;
 
   if (!currentUser) {
-    const guestG = readStored('g7_guest_group', '') || readStored('g7_group', '');
-    const hasGroup = Boolean(guestG && guestG in GROUP_LABELS);
-    const pill = hasGroup
-      ? `<button type="button" class="group-pill is-set" onclick="openGuestGroupModal()" title="Обрана група: ${escapeHtml(GROUP_LABELS[guestG])}"><span class="group-pill-dot"></span><span>${escapeHtml(GROUP_LABELS[guestG])}</span></button>`
-      : `<button type="button" class="group-pill is-missing" onclick="openGuestGroupModal()" title="Оберіть групу для розкладу"><span class="group-pill-dot"></span><span>Група?</span></button>`;
-
     slot.innerHTML = `
       <div class="user-slot-guest">
-        ${pill}
         <button class="btn btn-secondary btn-sm user-login-btn" onclick="showAuthOverlay()" title="Увійти через Telegram" aria-label="Увійти через Telegram">
           ${TELEGRAM_SVG}<span class="user-login-text">Увійти</span>
         </button>
@@ -362,7 +356,7 @@ async function changeUserGroup(code, event) {
 function openGuestGroupModal() {
   const overlay = document.getElementById('guestGroupModal');
   if (!overlay) return;
-  const currentGuestG = readStored('g7_guest_group', '') || readStored('g7_group', '');
+  const currentGuestG = currentGroup;
   overlay.innerHTML = `
     <div class="sheet sheet-sm" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
       <div class="sheet-handle"></div>
@@ -388,7 +382,7 @@ function openGuestGroupModal() {
             ${TELEGRAM_SVG}<span>Увійти через Telegram</span>
           </button>
         </div>
-        ${currentGuestG ? `
+        ${hasExplicitGroup() ? `
           <button type="button" class="btn btn-ghost btn-sm btn-block" style="margin-top:0.5rem; color:var(--text-2)" onclick="setGuestGroup(null)">
             Скинути вибір
           </button>
@@ -450,11 +444,6 @@ function updateAuthUI() {
   const isAdmin = !!(currentUser && currentUser.is_admin);
   const isStarosta = isAdmin || !!(currentUser && currentUser.is_starosta);
 
-  const btnClearBoard = document.getElementById('btnClearBoard');
-  if (btnClearBoard) {
-    btnClearBoard.hidden = !isAdmin;
-  }
-
   const btnVisits = document.getElementById('btnVisits');
   if (btnVisits) {
     btnVisits.hidden = !isAdmin;
@@ -465,26 +454,11 @@ function updateAuthUI() {
     btnStarosta.hidden = !isStarosta;
   }
 
-  const tabbar = document.getElementById('tabbar');
-  if (tabbar) {
-    tabbar.classList.toggle('has-6-tabs', isAdmin);
-    tabbar.classList.toggle('has-5-tabs', !isAdmin && isStarosta);
-  }
-
   if (!isAdmin && currentView === 'visits') {
     setViewMode('today', { silent: true });
   }
   if (!isStarosta && currentView === 'starosta') {
     setViewMode('today', { silent: true });
-  }
-
-  if (currentUser) {
-    refreshUserReactions().then(() => {
-      if (shameLoaded) renderShameGrid(getFilteredShameEntries(cachedShameEntries));
-    });
-  } else {
-    userReactionsMap = {};
-    if (shameLoaded) renderShameGrid(getFilteredShameEntries(cachedShameEntries));
   }
 
   if (currentView === 'week' || currentView === 'today') {

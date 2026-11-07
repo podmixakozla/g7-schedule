@@ -225,6 +225,18 @@ html[data-theme="light"] .legend-week {
   user-select: none;
 }
 
+.cal-date {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 34px;
+  color: inherit;
+}
+
+.cal-date:hover span {
+  transform: scale(1.08);
+}
+
 .cal-cell span {
   width: 34px;
   height: 34px;

@@ -2,100 +2,110 @@
    Schedule View: #4558E6 Hero Card, Lime Day Strip & "Daily Activities" Timeline
 ------------------------------------------------------------------ */
 
-/* ── Акцент 2 (#4558E6): Головна картка поточної або наступної пари ── */
+.today-heading,
+.now-card,
+#scheduleContainer[data-view="today"] .day-card {
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+.today-heading {
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  padding: 0.25rem 0.25rem 0;
+}
+
+.today-heading p {
+  color: var(--text-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.today-heading h1 {
+  font-size: 2rem;
+  font-weight: 750;
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+}
+
 .now-card {
-  background: var(--blue);
-  color: #FFFFFF;
+  background: linear-gradient(145deg, #4053cb, #26388f);
+  color: #fff;
   border-radius: var(--radius-lg);
-  padding: 1.25rem 1.3rem;
+  padding: 1rem 1.15rem;
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
-  box-shadow: 0 14px 34px -10px rgba(69, 88, 230, 0.48), inset 0 1px 0 0 rgba(255, 255, 255, 0.22);
+  gap: 0.35rem;
+  box-shadow: 0 8px 24px -14px rgba(38, 56, 143, 0.65);
 }
 
-.now-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.now-head-left {
-  display: flex;
-  flex-direction: column;
-  gap: 0.18rem;
-  min-width: 0;
+.now-status {
+  color: #e2e7ff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .now-title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  color: #FFFFFF;
+  font-size: clamp(1.35rem, 5vw, 1.65rem);
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
-.now-title.is-off-hero {
-  font-size: 1.65rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+.now-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.85rem;
+  margin-top: 0.25rem;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.now-meta > * {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.now-meta .icon {
+  flex-shrink: 0;
 }
 
 .now-sub {
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.76);
+  color: #e2e7ff;
 }
 
-/* ── Важлива новина від старости всередині синього блоку (#nowCard) ── */
-.schedule-group-hint {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem;
-  padding: 0.55rem 0.95rem;
-  margin-bottom: 0.75rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-md);
-  font-size: 0.8125rem;
-  color: var(--text-2);
+#scheduleContainer[data-view="today"] .day-card {
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-card);
 }
 
-.schedule-group-hint-content {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-width: 0;
-}
-
-.schedule-group-hint-content strong {
+#scheduleContainer[data-view="today"] .pair-meta strong {
   color: var(--text);
 }
 
-.btn-outline-lime {
-  background: transparent;
-  border: 1px solid var(--lime);
-  color: var(--lime);
-  padding: 0.3rem 0.65rem;
-  font-size: 0.74rem;
-  font-weight: 700;
-  border-radius: 999px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-  font-family: inherit;
+@media (prefers-reduced-motion: no-preference) {
+  #scheduleContainer[data-view="today"] {
+    animation: today-appear 160ms ease-out;
+  }
+
+  @keyframes today-appear {
+    from { opacity: 0.7; transform: translateY(3px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 }
 
-.btn-outline-lime:hover {
-  background: var(--lime);
-  color: var(--lime-ink);
+.schedule-notices {
+  display: grid;
+  gap: 0.5rem;
 }
 
 .now-news {
-  background: rgba(18, 18, 18, 0.26);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 18px;
   padding: 0.85rem 0.95rem;
   display: flex;
@@ -137,8 +147,8 @@
   gap: 0.25rem;
   padding: 0.16rem 0.5rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  color: #FFFFFF;
+  background: var(--surface-2);
+  color: var(--text);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -181,7 +191,7 @@
 .now-news-author {
   font-size: 0.78rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -191,8 +201,8 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  color: #FFFFFF;
+  background: var(--surface-2);
+  color: var(--text);
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -200,21 +210,21 @@
 }
 
 .now-news-close:hover {
-  background: rgba(255, 255, 255, 0.26);
+  background: var(--surface-hover);
   transform: scale(1.06);
 }
 
 .now-news-body {
   font-size: 0.9rem;
   line-height: 1.48;
-  color: #FFFFFF;
+  color: var(--text);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .now-news-body.is-clamped {
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -247,8 +257,8 @@
   gap: 0.25rem;
   padding: 0.16rem 0.5rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  color: #FFFFFF;
+  background: var(--surface-2);
+  color: var(--text);
   font-size: 0.7rem;
   font-weight: 600;
 }
@@ -270,7 +280,7 @@
   max-height: 240px;
   object-fit: cover;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border);
   cursor: zoom-in;
   display: block;
 }
@@ -282,75 +292,19 @@
   gap: 0.3rem;
   padding: 0.28rem 0.65rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #FFFFFF;
+  background: var(--surface-2);
+  color: var(--text);
   font-size: 0.76rem;
   font-weight: 600;
   transition: background 0.2s var(--ease);
 }
 
 .now-news-toggle:hover {
-  background: rgba(255, 255, 255, 0.24);
+  background: var(--surface-hover);
 }
 
 .now-news-toggle .icon.is-rotated {
   transform: rotate(180deg);
-}
-
-/* Хвильовий індикатор прогресу (як у картці Physical Activity на референсі) */
-.now-wave {
-  height: 40px;
-  display: grid;
-  grid-template-columns: repeat(28, 1fr);
-  align-items: center;
-  gap: 4px;
-  padding: 0.15rem 0;
-}
-
-.now-wave i {
-  display: block;
-  width: 100%;
-  min-height: 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.25);
-  transition: background 0.25s var(--ease), height 0.25s var(--ease);
-}
-
-.now-wave i.is-filled {
-  background: var(--lime);
-}
-
-/* Нижні 3 колонки метрик у синій картці */
-.now-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
-  padding-top: 0.25rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
-}
-
-.now-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
-  min-width: 0;
-}
-
-.now-stat-label {
-  font-size: 0.72rem;
-  color: rgba(255, 255, 255, 0.72);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.now-stat-val {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #FFFFFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ── Акцентна плашка зміни розкладу («Змінилась 3 пара у вівторок») ── */
@@ -417,100 +371,7 @@
   background: rgba(18, 18, 18, 0.24);
 }
 
-/* ── Бейджі станів (Йде пара / залишилось 34 хв / Вікно 25 хв) ── */
-.now-badges-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.42rem;
-  margin-bottom: 0.2rem;
-}
-
-.now-hero-remain {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.24rem 0.68rem;
-  border-radius: 999px;
-  background: rgba(18, 18, 18, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: #FFFFFF;
-  font-size: 0.75rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.now-window-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.34rem;
-  padding: 0.28rem 0.76rem;
-  border-radius: 999px;
-  background: var(--lime);
-  color: var(--lime-ink);
-  font-size: 0.78rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ── Круговий прогрес (SVG ring) у синій картці ── */
-.now-ring {
-  position: relative;
-  width: 58px;
-  height: 58px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-}
-
-.now-ring-svg {
-  width: 58px;
-  height: 58px;
-  transform: rotate(-90deg);
-}
-
-.now-ring-track {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.2);
-  stroke-width: 5;
-}
-
-.now-ring-fill {
-  fill: none;
-  stroke: var(--lime);
-  stroke-width: 5;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.35s var(--ease);
-}
-
-.now-ring-center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  line-height: 1.05;
-  pointer-events: none;
-}
-
-.now-ring-val {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #FFFFFF;
-}
-
-.now-ring-unit {
-  font-size: 0.58rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.76);
-}
-
 /* ── Бейдж "Зараз" (лаймовий) ── */
-@keyframes livePulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.45; transform: scale(0.85); }
-}
-
 .live-pill {
   display: inline-flex;
   align-items: center;
@@ -529,7 +390,6 @@
   height: 6px;
   border-radius: 50%;
   background: var(--lime-ink);
-  animation: livePulse 1.8s ease-in-out infinite;
 }
 
 /* ── Стрічка вибору дня тижня (Пн–Пт у режимі "Сьогодні") ── */
@@ -541,6 +401,11 @@
   box-shadow: var(--shadow-card);
   border-radius: var(--radius-lg);
   padding: 0.45rem;
+}
+
+.day-strip.includes-weekend {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.15rem;
 }
 
 .day-pill {
@@ -613,29 +478,28 @@
 
 /* ── Шапка тижня (режим "Тиждень") ── */
 .week-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.2rem 0.15rem;
+  gap: 0.5rem;
+}
+
+.week-bar .btn {
+  width: 44px;
+  height: 44px;
 }
 
 .week-bar-title {
   display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  flex-wrap: wrap;
+  align-items: center;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: center;
 }
 
 .week-bar-label {
-  font-size: 1.35rem;
+  font-size: 1rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.week-bar-dates {
-  font-size: 0.8125rem;
-  color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
 
@@ -659,31 +523,39 @@
   grid-template-columns: 1fr;
 }
 
-.days-week {
-  grid-template-columns: 1fr;
+.days-week .pair {
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  column-gap: 0.75rem;
+  border-bottom: 1px solid var(--border);
 }
 
-@media (min-width: 640px) {
-  .days-week {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.days-week .pair:last-child {
+  border-bottom: 0;
+}
+
+.days-week .pair:not(:last-child)::before {
+  content: none;
+}
+
+.days-week .pair-time {
+  text-align: left;
+  align-items: flex-start;
+}
+
+.week-pair-room {
+  font-size: 0.875rem;
+  font-weight: 700;
 }
 
 @media (min-width: 860px) {
   .now-card,
+  .schedule-notices,
+  .week-bar,
   .day-strip,
   .days-single {
     max-width: 640px;
     width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-  }
-}
-
-@media (min-width: 1120px) {
-  .days-week {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.85rem;
+    margin-inline: auto;
   }
 }
 
@@ -734,22 +606,6 @@
   align-items: center;
   gap: 0.35rem;
   flex-shrink: 0;
-}
-
-.day-status-banner {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.55rem 0.85rem;
-  border-radius: var(--radius-sm);
-  background: var(--lime-soft);
-  color: var(--lime);
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
-html[data-theme="light"] .day-status-banner {
-  color: var(--lime-ink);
 }
 
 .day-empty {

@@ -132,7 +132,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  height: 32px;
+  min-height: 44px;
   padding: 0 0.65rem;
   border-radius: 999px;
   font-size: 0.76rem;
@@ -154,43 +154,6 @@
   transform: scale(0.96);
 }
 
-.group-pill.is-missing {
-  background: rgba(255, 107, 107, 0.12);
-  border-color: rgba(255, 107, 107, 0.4);
-  color: #FF6B6B;
-  animation: pulse-danger-pill 2.5s infinite;
-}
-
-.group-pill.is-missing .group-pill-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #FF6B6B;
-  box-shadow: 0 0 6px #FF6B6B;
-}
-
-.group-pill.is-set {
-  background: rgba(212, 245, 74, 0.12);
-  border-color: rgba(212, 245, 74, 0.35);
-  color: var(--lime);
-  font-weight: 700;
-}
-
-.group-pill.is-set .group-pill-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--lime);
-}
-
-@keyframes pulse-danger-pill {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.25);
-  }
-  50% {
-    box-shadow: 0 0 10px 1px rgba(255, 107, 107, 0.35);
-  }
-}
 
 .user-btn {
   display: inline-flex;
