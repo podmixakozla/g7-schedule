@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { unzipSync, strFromU8 } from 'https://esm.sh/fflate@0.8.2'
+import { GROUP_LABELS, PARENT_GROUP, scheduleKeyboard } from '../_shared/schedule-groups.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,16 +18,6 @@ const DAY_NAMES: Record<number, string> = {
   3: 'Середа',
   4: 'Четвер',
   5: "П'ятниця",
-}
-
-const GROUP_LABELS: Record<string, string> = {
-  'AR-26-1': 'АР-26-1',
-  'AR-26-2': 'АР-26-2',
-  'AR-26sk-1': 'АР-26ск-1',
-}
-
-const PARENT_GROUP: Record<string, string> = {
-  'AR-26sk-1': 'AR-26-1',
 }
 
 const SUBJECT_EXPANSIONS: Record<string, string> = {
@@ -651,7 +642,8 @@ function computeScheduleChanges(
 async function broadcastTelegramNotification(
   supabase: any,
   changesByGroup: Record<string, string[]>,
-  allChanges: string[]
+  allChanges: string[],
+  notifyGroups = true,
 ): Promise<{ sent: number; failed: number }> {
   const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN')
   if (!botToken) {
@@ -719,6 +711,23 @@ async function broadcastTelegramNotification(
     messagesToSend.set(adminId, allChangesText)
   }
 
+  const groupChats = new Map<number, string>()
+  if (notifyGroups) {
+    const { data, error } = await supabase
+      .from('telegram_schedule_chats')
+      .select('chat_id, group_code')
+      .in('group_code', Object.keys(changesByGroup).filter(group => changesByGroup[group].length))
+
+    if (error) console.warn('Failed to read linked Telegram chats:', error.message)
+    for (const binding of data ?? []) {
+      const chatId = Number(binding.chat_id)
+      const group = binding.group_code
+      if (!Number.isSafeInteger(chatId) || chatId >= 0 || !changesByGroup[group]?.length) continue
+      groupChats.set(chatId, group)
+      messagesToSend.set(chatId, formatList(changesByGroup[group], `Оновлено розклад · ${GROUP_LABELS[group]}`))
+    }
+  }
+
   let sent = 0
   let failed = 0
 
@@ -729,7 +738,8 @@ async function broadcastTelegramNotification(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: chatId,
-          text,
+          text: text.length > 3900 ? text.slice(0, 3900) + '…' : text,
+          ...(groupChats.has(chatId) ? { reply_markup: scheduleKeyboard(groupChats.get(chatId)!) } : {}),
           disable_web_page_preview: true,
         }),
       })
@@ -772,9 +782,16 @@ Deno.serve(async (req) => {
       }
     }
 
+    if ((quarterOverride || testMessage) && req.headers.get('authorization') !== `Bearer ${serviceRoleKey}`) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // Immediate test notification mode if requested
     if (testMessage) {
-      const notifyStats = await broadcastTelegramNotification(supabase, testMessage)
+      const notifyStats = await broadcastTelegramNotification(supabase, {}, [testMessage], false)
       return new Response(
         JSON.stringify({
           ok: true,
@@ -903,7 +920,7 @@ Deno.serve(async (req) => {
     // 7. If schedule changed and not silent, notify users via Telegram bot!
     let notifyStats = null
     if (allChanges.length > 0 && !silent) {
-      notifyStats = await broadcastTelegramNotification(supabase, changesByGroup, allChanges)
+      notifyStats = await broadcastTelegramNotification(supabase, changesByGroup, allChanges, quarterOverride === null)
     }
 
     return new Response(

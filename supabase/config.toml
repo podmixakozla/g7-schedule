@@ -1,2 +1,5 @@
 [project]
 id = "fvbnnjghfiuiuulgoktn"
+
+[functions.telegram-group-bot]
+verify_jwt = false
